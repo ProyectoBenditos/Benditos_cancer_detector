@@ -22,8 +22,9 @@ Sistema inteligente de apoyo a la detección temprana de cáncer de pulmón en e
 - Preparación para integración posterior del módulo IA
 
 ## Estado actual del proyecto
+
 ### Completado
-### Completado
+
 - Fase 1: estructura base del proyecto
 - Fase 2: frontend inicializado con Next.js
 - Fase 3: backend inicializado con FastAPI
