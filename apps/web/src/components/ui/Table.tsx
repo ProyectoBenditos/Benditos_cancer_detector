@@ -26,25 +26,25 @@ export function TableBody({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function TableRow({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+export function TableRow({ children, className = "", ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
-    <tr className={`text-slate-700 hover:bg-slate-50 transition-colors ${className}`}>
+    <tr className={`text-slate-700 hover:bg-slate-50 transition-colors ${className}`} {...props}>
       {children}
     </tr>
   );
 }
 
-export function TableCell({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+export function TableCell({ children, className = "", ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <td className={`px-6 py-4 ${className}`}>
+    <td className={`px-6 py-4 ${className}`} {...props}>
       {children}
     </td>
   );
 }
 
-export function TableHeaderCell({ children, className = "" }: { children: React.ReactNode, className?: string }) {
+export function TableHeaderCell({ children, className = "", ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
-    <th className={`px-6 py-4 ${className}`}>
+    <th className={`px-6 py-4 ${className}`} {...props}>
       {children}
     </th>
   );
