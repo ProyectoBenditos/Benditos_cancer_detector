@@ -26,40 +26,7 @@ export default function Home() {
           >
             Ingresar a la plataforma
           </a>
-
-          <a
-            href="#sobre"
-            className="rounded-xl border border-slate-700 px-6 py-3 font-medium text-slate-200 transition hover:bg-slate-900"
-          >
-            Conocer más
-          </a>
         </div>
-
-        <section
-          id="sobre"
-          className="mt-16 grid gap-6 md:grid-cols-3"
-        >
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold text-sky-300">Objetivo</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              Apoyar al personal de salud en la identificación oportuna de riesgos oncológicos.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold text-sky-300">MVP inicial</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              Homepage pública, autenticación, plataforma privada y carga de archivos DICOM.
-            </p>
-          </div>
-
-          <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-            <h2 className="text-lg font-semibold text-sky-300">Stack</h2>
-            <p className="mt-3 text-sm text-slate-300">
-              Next.js, FastAPI, Supabase, Railway y Vercel.
-            </p>
-          </div>
-        </section>
       </section>
     </main>
   );
