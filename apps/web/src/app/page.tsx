@@ -220,9 +220,9 @@ export default function LandingPage() {
           {[
             { name: "Juan Esteban Aldana", role: "Backend Developer" },
             { name: "Nicolás Chávez Oliveros", role: "Tech Lead & Data Engineer" },
-            { name: "Juan Mateo Salas Arturo", role: "Project manager & DevOps" },
-            { name: "Luis De Ávila Mosquera.", role: "AI Engineer & QA" },
             { name: "Juan Pablo Sotelo Mejía", role: "Frontend & UI/UX" },
+            { name: "Luis De Ávila Mosquera.", role: "AI Engineer & QA" },
+            { name: "Juan Mateo Salas Arturo", role: "Project manager & DevOps" },
           ].map((member, i) => (
             <div key={i} className="flex flex-col items-center group">
               <div className="w-24 h-24 mb-4 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center group-hover:border-[#22AFFF] transition">

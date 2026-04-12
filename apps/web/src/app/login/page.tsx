@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 
 export default function LoginPage() {
@@ -37,11 +38,17 @@ export default function LoginPage() {
     return (
         <main className="flex min-h-screen items-center justify-center bg-[#1a0000] px-6">
             <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-2xl">
-                <div className="mb-8 text-center">
-                    <h1 className="text-3xl font-bold tracking-wide text-slate-800">
-                        <span className="text-rose-600">Onca</span>Scan
-                    </h1>
-                    <p className="mt-2 text-sm text-slate-500">
+                <div className="mb-8 text-center flex flex-col items-center">
+                    <Image 
+                        src="/images/brand/logo-oncascan.png" 
+                        alt="OncaScan Logo" 
+                        width={200} 
+                        height={50} 
+                        style={{ width: 'auto', height: '2.5rem' }}
+                        priority
+                        className="object-contain mb-2"
+                    />
+                    <p className="text-sm text-slate-500">
                         Acceso seguro a la plataforma médica
                     </p>
                 </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { LayoutDashboard, Users, Bell, Brain, FileText, Settings, Upload, FileStack } from "lucide-react";
 import { PhantomLink } from "../ui/PhantomButton";
 import { usePathname } from "next/navigation";
@@ -16,11 +17,16 @@ export function Sidebar() {
 
   return (
     <aside className="w-64 bg-brand-sidebar text-slate-400 flex flex-col h-screen fixed left-0 top-0 border-r border-slate-900">
-      <div className="p-6 border-b border-slate-900">
-        <h1 className="text-2xl font-bold text-white tracking-wider flex items-center gap-1">
-          <span className="text-brand-danger">O</span><span className="text-brand-primary">S</span>
-          <span className="ml-1 text-lg">OncaScan</span>
-        </h1>
+      <div className="p-6 border-b border-slate-900 flex items-center">
+        <Image 
+            src="/images/brand/logo-oncascan.png" 
+            alt="OncaScan Logo" 
+            width={160} 
+            height={42} 
+            style={{ width: 'auto', height: '1.75rem' }}
+            priority
+            className="object-contain"
+        />
       </div>
       
       <nav className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
