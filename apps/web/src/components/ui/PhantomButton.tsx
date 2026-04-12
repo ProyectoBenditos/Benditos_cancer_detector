@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { toast } from "sonner";
 
 interface PhantomButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   featureName?: string;
@@ -18,7 +19,9 @@ export function PhantomButton({
     e.preventDefault();
     e.stopPropagation();
     
-    alert(`${featureName} estará disponible próximamente en OncaScan.`);
+    toast.info("Próximamente", {
+      description: `El módulo "${featureName}" se encuentra en desarrollo activo.`
+    });
     
     if (onClick) {
       onClick(e);
@@ -40,7 +43,9 @@ export function PhantomButton({
 export function PhantomLink({ children, featureName = "Esta función", className = "" }: { children: React.ReactNode, featureName?: string, className?: string }) {
     const handleClick = (e: React.MouseEvent) => {
         e.preventDefault();
-        alert(`${featureName} estará disponible próximamente en OncaScan.`);
+        toast.info("Próximamente", {
+          description: `El módulo "${featureName}" se encuentra en desarrollo activo.`
+        });
     }
 
     return (

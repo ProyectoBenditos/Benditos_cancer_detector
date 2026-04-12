@@ -16,11 +16,11 @@ export default async function PlatformLayout({
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FA] flex">
+    <div className="min-h-screen bg-brand-bg flex">
       <Sidebar />
       <div className="flex-1 ml-64 flex flex-col min-h-screen relative">
         <Header userEmail={user.email} />
-        <main className="p-8 flex-1 overflow-y-auto">
+        <main className="p-8 flex-1 overflow-y-auto w-full">
           {children}
         </main>
       </div>

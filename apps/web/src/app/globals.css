@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* OncaScan Design System Tokens */
+  --color-brand-primary: #1e3a8a;
+  --color-brand-primary-hover: #1e40af;
+  --color-brand-danger: #e11d48;
+  --color-brand-sidebar: #0a0a0a;
+  --color-brand-bg: #f8f9fa;
+  --color-brand-surface: #ffffff;
 }
 
 @theme inline {
@@ -10,6 +18,13 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter);
   --font-mono: var(--font-geist-mono);
+
+  --color-brand-primary: var(--color-brand-primary);
+  --color-brand-primary-hover: var(--color-brand-primary-hover);
+  --color-brand-danger: var(--color-brand-danger);
+  --color-brand-sidebar: var(--color-brand-sidebar);
+  --color-brand-bg: var(--color-brand-bg);
+  --color-brand-surface: var(--color-brand-surface);
 }
 
 @media (prefers-color-scheme: dark) {
