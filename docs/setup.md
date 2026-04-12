@@ -1,18 +1,15 @@
-# Setup Guide
+# Setup del proyecto
 
-## Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
+## Requisitos
+- Git
+- Node.js 20+
+- Python 3.11+
+- Visual Studio Code
 
-## Installation
-1. Clone the repository
-2. Install dependencies for the API:
-   ```bash
-   cd apps/api
-   # pip install -r requirements.txt
-   ```
-3. Install dependencies for the Web app:
-   ```bash
-   cd apps/web
-   # npm install
-   ```
+## Repositorio
+Proyecto base para OncaScan Platform.
+
+## Estructura inicial
+- apps/web
+- apps/api
+- docs
