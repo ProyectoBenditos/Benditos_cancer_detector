@@ -2,7 +2,7 @@ import React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/Card";
-import { 
+import {
   Upload, Users, Activity, FileText, ShieldCheck, Stethoscope,
   ArrowRight, CheckCircle2, Server, Database, Layout, Globe,
   BriefcaseMedical, Code
@@ -11,15 +11,15 @@ import {
 export default function LandingPage() {
   return (
     <div className="min-h-screen bg-[#020B2D] text-white selection:bg-[#22AFFF]/30 font-sans">
-      
+
       {/* 1. Navbar */}
       <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-[#020B2D]/80 backdrop-blur border-b border-white/10">
         <div className="flex items-center gap-2">
-          <Image 
-            src="/images/brand/logo-oncascan.png" 
-            alt="OncaScan Logo" 
-            width={120} 
-            height={32} 
+          <Image
+            src="/images/brand/logo-oncascan.png"
+            alt="OncaScan Logo"
+            width={120}
+            height={32}
             className="h-8 w-auto object-contain"
           />
         </div>
@@ -40,16 +40,16 @@ export default function LandingPage() {
       <header className="relative px-6 py-24 md:py-32 overflow-hidden flex flex-col items-center text-center">
         {/* Glow effect */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#22AFFF]/20 blur-[120px] rounded-full pointer-events-none" />
-        
+
         <div className="mb-6 inline-flex rounded-full border border-[#22AFFF]/30 bg-[#22AFFF]/10 px-4 py-1.5 text-sm text-[#22AFFF] shadow-[0_0_10px_rgba(34,175,255,0.2)]">
           <BriefcaseMedical className="w-4 h-4 mr-2" />
           Prototipo de Investigación Académica
         </div>
-        
+
         <h1 className="max-w-5xl text-5xl md:text-7xl font-bold tracking-tight mb-6 mt-4">
           Inteligencia Artificial para la <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#22AFFF] to-cyan-300">Detección Temprana</span>
         </h1>
-        
+
         <p className="max-w-3xl text-lg md:text-xl text-slate-300 mb-4 leading-relaxed">
           Plataforma de análisis de imágenes médicas enfocada en priorizar el riesgo oncológico de pulmón para entornos con recursos clínicos limitados.
         </p>
@@ -69,11 +69,11 @@ export default function LandingPage() {
 
         <div className="w-full max-w-6xl relative z-10 perspective-1000">
           <div className="rounded-xl border border-white/20 shadow-[0_20px_50px_rgba(0,0,0,0.5)] overflow-hidden transform hover:scale-[1.01] transition duration-500">
-            <Image 
-              src="/images/project/hero-dashboard.png" 
-              alt="OncaScan Dashboard" 
-              width={1200} 
-              height={800} 
+            <Image
+              src="/images/project/hero-dashboard.png"
+              alt="OncaScan Dashboard"
+              width={1200}
+              height={800}
               className="w-full h-auto object-cover"
             />
           </div>
@@ -141,7 +141,7 @@ export default function LandingPage() {
             Componentes construidos para garantizar eficiencia operativa y seguridad clínica.
           </p>
         </div>
-        
+
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
             { icon: <Upload className="w-6 h-6" />, title: "Carga DICOM Segura", desc: "Subida robusta de tomografías de tórax en formato estándar." },
@@ -172,7 +172,7 @@ export default function LandingPage() {
             Stack tecnológico de punta que asegura escalabilidad, velocidad y fiabilidad en tiempo real.
           </p>
         </div>
-        
+
         <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { icon: <Layout className="w-10 h-10" />, title: "Next.js 14", sub: "Frontend (React)" },
@@ -199,7 +199,7 @@ export default function LandingPage() {
           </div>
           <h2 className="text-2xl md:text-3xl font-bold mb-4">Contexto de Investigación Estudiantil</h2>
           <p className="text-slate-300 text-lg leading-relaxed mb-6">
-            Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej. LIDC-IDRI). 
+            Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej. LIDC-IDRI).
           </p>
           <div className="inline-block px-4 py-2 bg-blue-900/30 text-blue-300 rounded-lg text-sm border border-blue-800">
             Fase de Desarrollo Universitario
@@ -215,14 +215,14 @@ export default function LandingPage() {
             Investigadores y desarrolladores detrás de OncaScan.
           </p>
         </div>
-        
+
         <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-8">
           {[
-            { name: "Andres Suarez", role: "Frontend & UI/UX" },
-            { name: "Valeria", role: "Backend & ML" },
-            { name: "Juan David", role: "DevOps & Cloud" },
-            { name: "Andres B.", role: "Investigador Clínico" },
-            { name: "Santiago", role: "Product Manager" },
+            { name: "Juan Esteban Aldana", role: "Backend Developer" },
+            { name: "Nicolás Chávez Oliveros", role: "Tech Lead & Data Engineer" },
+            { name: "Juan Mateo Salas Arturo", role: "Project manager & DevOps" },
+            { name: "Luis De Ávila Mosquera.", role: "AI Engineer & QA" },
+            { name: "Juan Pablo Sotelo Mejía", role: "Frontend & UI/UX" },
           ].map((member, i) => (
             <div key={i} className="flex flex-col items-center group">
               <div className="w-24 h-24 mb-4 rounded-full bg-gradient-to-br from-white/10 to-white/5 border border-white/20 overflow-hidden flex items-center justify-center group-hover:border-[#22AFFF] transition">
@@ -255,7 +255,7 @@ export default function LandingPage() {
         <div className="max-w-4xl mx-auto text-center mb-16">
           <h2 className="text-3xl font-bold mb-4">Hoja de Ruta del Proyecto</h2>
         </div>
-        
+
         <div className="max-w-3xl mx-auto space-y-6">
           {[
             { phase: "Fase 1", title: "MVP Funcional (Actual)", status: "Completado", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
