@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
-import LogoutButton from "@/app/platform/logout-button";
+import LogoutButton from "./logout-button";
 
 export default async function PlatformPage() {
     const supabase = await createClient();
@@ -25,12 +26,34 @@ export default async function PlatformPage() {
                     <LogoutButton />
                 </div>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                    <h2 className="text-xl font-semibold text-sky-300">Estado actual</h2>
-                    <p className="mt-3 text-slate-300">
-                        Autenticación funcionando correctamente. El siguiente paso es habilitar
-                        la carga de archivos DICOM.
-                    </p>
+                <div className="grid gap-6 md:grid-cols-2">
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                        <h2 className="text-xl font-semibold text-sky-300">Carga DICOM</h2>
+                        <p className="mt-3 text-slate-300">
+                            Sube un archivo DICOM y registra sus metadatos básicos en la plataforma.
+                        </p>
+
+                        <Link
+                            href="/platform/upload"
+                            className="mt-5 inline-block rounded-xl bg-sky-600 px-5 py-3 font-medium hover:bg-sky-500"
+                        >
+                            Ir a subir archivo
+                        </Link>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
+                        <h2 className="text-xl font-semibold text-sky-300">Historial de cargas</h2>
+                        <p className="mt-3 text-slate-300">
+                            Consulta los archivos DICOM ya cargados y revisa sus metadatos básicos.
+                        </p>
+
+                        <Link
+                            href="/platform/uploads"
+                            className="mt-5 inline-block rounded-xl border border-slate-700 px-5 py-3 font-medium hover:bg-slate-800"
+                        >
+                            Ver historial
+                        </Link>
+                    </div>
                 </div>
             </div>
         </main>
