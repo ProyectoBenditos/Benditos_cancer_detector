@@ -23,27 +23,27 @@ Sistema inteligente de apoyo a la detección temprana de cáncer de pulmón en e
 
 ## Estado actual del proyecto
 ### Completado
+### Completado
 - Fase 1: estructura base del proyecto
 - Fase 2: frontend inicializado con Next.js
 - Fase 3: backend inicializado con FastAPI
 - Fase 4: autenticación base con Supabase
-- Fase 5: tabla `dicom_uploads` y bucket privado `dicom-files` creados en Supabase
+- Fase 5: tabla `dicom_uploads` y bucket privado `dicom-files`
+- Fase 6: endpoint backend protegido con JWT real para carga DICOM
+- Fase 7: integración frontend-backend para subida real
+- Fase 8: historial de cargas DICOM
+- Fase 9: vista detalle de carga
+- Fase 10: despliegue en Vercel y Railway
+- Fase 12: documentación técnica del despliegue y smoke test
 
-### En progreso
-- Fase 6: endpoint backend para carga de archivos DICOM con validación JWT real
-- Integración frontend-backend para subida real
-
-## Objetivo inmediato
-Dejar funcionando el flujo:
-1. usuario inicia sesión
-2. entra a la plataforma privada
-3. sube un archivo DICOM
-4. el backend valida el archivo
-5. el archivo se guarda en Supabase Storage
-6. se registra una fila en `dicom_uploads`
+### Estado operativo actual
+- MVP desplegado y funcional en entorno académico
+- Login operativo
+- Subida DICOM operativa
+- Storage y base de datos sincronizados
+- Historial y detalle funcionales
 
 ## Próximos módulos
-- Formulario de carga DICOM en frontend
 - Listado de cargas realizadas
 - Visualización de metadatos básicos
 - Integración progresiva con motor de IA
