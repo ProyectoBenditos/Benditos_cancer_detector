@@ -75,81 +75,84 @@ export default function UploadDicomPage() {
     };
 
     return (
-        <main className="min-h-screen bg-slate-950 px-6 py-10 text-white">
-            <div className="mx-auto max-w-4xl">
-                <div className="mb-8 flex items-center justify-between">
+        <div className="mx-auto max-w-4xl">
+            <div className="mb-8 flex items-center justify-between">
+                <div>
+                    <p className="text-sm text-rose-500 font-medium">Plataforma privada</p>
+                    <h1 className="text-3xl font-bold text-slate-800">Subida de archivo DICOM</h1>
+                    <p className="mt-2 text-slate-500">
+                        Carga un estudio DICOM para validación y registro de metadatos.
+                    </p>
+                </div>
+
+                <Link
+                    href="/platform"
+                    className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-medium"
+                >
+                    Volver al Dashboard
+                </Link>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+                <form onSubmit={handleUpload} className="space-y-6">
                     <div>
-                        <p className="text-sm text-sky-300">Plataforma privada</p>
-                        <h1 className="text-3xl font-bold">Subida de archivo DICOM</h1>
-                        <p className="mt-2 text-slate-400">
-                            Carga un estudio DICOM para validación y registro de metadatos.
-                        </p>
+                        <label className="mb-2 block text-sm font-medium text-slate-700">
+                            Archivo DICOM (.dcm)
+                        </label>
+                        <input
+                            type="file"
+                            accept=".dcm,application/dicom"
+                            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                            className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 transition-all font-medium focus:border-rose-300 focus:ring-1 focus:ring-rose-300 outline-none"
+                        />
                     </div>
 
-                    <Link
-                        href="/platform"
-                        className="rounded-xl border border-slate-700 px-4 py-2 text-sm text-slate-200 hover:bg-slate-900"
+                    <button
+                        type="submit"
+                        disabled={loading}
+                        className="rounded-xl bg-rose-600 px-6 py-3 font-medium text-white hover:bg-rose-500 disabled:opacity-60 transition-colors shadow-sm"
                     >
-                        Volver
-                    </Link>
-                </div>
+                        {loading ? "Subiendo archivo..." : "Subir DICOM"}
+                    </button>
+                </form>
 
-                <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6">
-                    <form onSubmit={handleUpload} className="space-y-5">
-                        <div>
-                            <label className="mb-2 block text-sm text-slate-300">
-                                Archivo DICOM (.dcm)
-                            </label>
-                            <input
-                                type="file"
-                                accept=".dcm,application/dicom"
-                                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                                className="block w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm"
-                            />
-                        </div>
+                {errorMsg ? (
+                    <div className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700 font-medium">
+                        {errorMsg}
+                    </div>
+                ) : null}
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="rounded-xl bg-sky-600 px-5 py-3 font-medium hover:bg-sky-500 disabled:opacity-60"
-                        >
-                            {loading ? "Subiendo..." : "Subir DICOM"}
-                        </button>
-                    </form>
+                {successData ? (
+                    <div className="mt-8 rounded-2xl border border-emerald-200 bg-emerald-50/50 p-6">
+                        <h2 className="text-lg font-semibold text-emerald-700 border-b border-emerald-100 pb-3 mb-4">
+                            Carga exitosa
+                        </h2>
 
-                    {errorMsg ? (
-                        <div className="mt-6 rounded-xl border border-red-800 bg-red-950/40 p-4 text-sm text-red-300">
-                            {errorMsg}
-                        </div>
-                    ) : null}
-
-                    {successData ? (
-                        <div className="mt-6 rounded-2xl border border-emerald-800 bg-emerald-950/30 p-5">
-                            <h2 className="text-lg font-semibold text-emerald-300">
-                                Carga exitosa
-                            </h2>
-
-                            <div className="mt-4 grid gap-3 text-sm text-slate-200 md:grid-cols-2">
-                                <div>
-                                    <span className="text-slate-400">Archivo:</span> {successData.filename}
-                                </div>
-                                <div>
-                                    <span className="text-slate-400">Ruta:</span> {successData.storage_path}
-                                </div>
-                                <div>
-                                    <span className="text-slate-400">Modalidad:</span> {successData.modality ?? "N/D"}
-                                </div>
-                                <div>
-                                    <span className="text-slate-400">Fecha de estudio:</span> {successData.study_date ?? "N/D"}
-                                </div>
-                                <div>
-                                    <span className="text-slate-400">Patient ID DICOM:</span> {successData.patient_id_dicom ?? "N/D"}
-                                </div>
+                        <div className="grid gap-4 text-sm text-slate-700 md:grid-cols-2">
+                            <div className="bg-white p-3 rounded-xl border border-emerald-100">
+                                <span className="block text-xs font-semibold text-emerald-600 mb-1">Archivo</span>
+                                {successData.filename}
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-emerald-100">
+                                <span className="block text-xs font-semibold text-emerald-600 mb-1">Ruta</span>
+                                <span className="break-all">{successData.storage_path}</span>
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-emerald-100">
+                                <span className="block text-xs font-semibold text-emerald-600 mb-1">Modalidad</span>
+                                {successData.modality ?? "N/D"}
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-emerald-100">
+                                <span className="block text-xs font-semibold text-emerald-600 mb-1">Fecha de estudio</span>
+                                {successData.study_date ?? "N/D"}
+                            </div>
+                            <div className="bg-white p-3 rounded-xl border border-emerald-100 md:col-span-2">
+                                <span className="block text-xs font-semibold text-emerald-600 mb-1">Patient ID DICOM</span>
+                                {successData.patient_id_dicom ?? "N/D"}
                             </div>
                         </div>
-                    ) : null}
-                </div>
+                    </div>
+                ) : null}
             </div>
-        </main>
+        </div>
     );
 }

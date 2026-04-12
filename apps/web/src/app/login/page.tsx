@@ -35,45 +35,53 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-slate-950 px-6 text-white">
-            <div className="w-full max-w-md rounded-2xl border border-slate-800 bg-slate-900 p-8 shadow-xl">
-                <h1 className="text-2xl font-bold">Ingresar a OncaScan</h1>
-                <p className="mt-2 text-sm text-slate-400">
-                    Acceso para usuarios autorizados
-                </p>
+        <main className="flex min-h-screen items-center justify-center bg-[#1a0000] px-6">
+            <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-2xl">
+                <div className="mb-8 text-center">
+                    <h1 className="text-3xl font-bold tracking-wide text-slate-800">
+                        <span className="text-rose-600">Onca</span>Scan
+                    </h1>
+                    <p className="mt-2 text-sm text-slate-500">
+                        Acceso seguro a la plataforma médica
+                    </p>
+                </div>
 
-                <form onSubmit={handleLogin} className="mt-6 space-y-4">
+                <form onSubmit={handleLogin} className="space-y-5">
                     <div>
-                        <label className="mb-2 block text-sm text-slate-300">Correo</label>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Correo Electrónico</label>
                         <input
                             type="email"
-                            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-rose-300 focus:ring-1 focus:ring-rose-300 transition-all text-slate-700"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
+                            placeholder="usuario@institucion.edu"
                         />
                     </div>
 
                     <div>
-                        <label className="mb-2 block text-sm text-slate-300">Contraseña</label>
+                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Contraseña</label>
                         <input
                             type="password"
-                            className="w-full rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 outline-none"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-rose-300 focus:ring-1 focus:ring-rose-300 transition-all text-slate-700"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
+                            placeholder="••••••••"
                         />
                     </div>
 
-                    {errorMsg ? <p className="text-sm text-red-400">{errorMsg}</p> : null}
+                    {errorMsg ? <p className="text-sm text-rose-500 bg-rose-50 p-3 rounded-lg border border-rose-100">{errorMsg}</p> : null}
 
                     <button
                         type="submit"
                         disabled={loading}
-                        className="w-full rounded-xl bg-sky-600 px-4 py-3 font-medium hover:bg-sky-500 disabled:opacity-60"
+                        className="w-full rounded-xl bg-rose-600 px-4 py-3.5 font-medium text-white hover:bg-rose-500 disabled:opacity-60 transition-colors mt-2 shadow-sm shadow-rose-200"
                     >
-                        {loading ? "Ingresando..." : "Ingresar"}
+                        {loading ? "Ingresando..." : "Iniciar Sesión"}
                     </button>
+                    
+                    <p className="text-xs text-center text-slate-400 mt-6">Sistema exclusivo de uso académico controlado</p>
                 </form>
             </div>
         </main>
