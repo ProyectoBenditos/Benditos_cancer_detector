@@ -26,7 +26,7 @@ export default async function UploadsPage() {
                         <p className="text-sm text-sky-300">Plataforma privada</p>
                         <h1 className="text-3xl font-bold">Historial de cargas DICOM</h1>
                         <p className="mt-2 text-slate-400">
-                            Archivos subidos por el usuario autenticado.
+                            Archivos subidos
                         </p>
                     </div>
 
