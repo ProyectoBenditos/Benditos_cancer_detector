@@ -13,6 +13,11 @@ Sistema inteligente de apoyo a la detección temprana de cáncer de pulmón en e
 - `apps/api`: backend y servicios
 - `docs`: documentación técnica y de implementación
 
+## 🚀 Comenzando
+
+Para configurar el entorno de desarrollo en un nuevo equipo, consulta nuestra [**Guía de Instalación Detallada**](docs/setup-nuevo-pc.md).
+
+
 ## Alcance del MVP inicial
 - Homepage pública informativa
 - Plataforma privada con autenticación
