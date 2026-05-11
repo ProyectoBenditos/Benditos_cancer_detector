@@ -53,6 +53,8 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `SUPABASE_BUCKET_NAME`
 - `FRONTEND_URL`
+- `HF_API_BASE_URL` — URL del Space de Hugging Face que expone `/predict` (default: `https://luisdam-oncoscan-ai.hf.space`).
+- `HF_PREDICT_TIMEOUT` — timeout en segundos para la inferencia (default: `120`). Subir si el Space hace cold-start frecuente.
 
 ## 5. Configuración relevante
 
@@ -70,6 +72,14 @@ Configuración de URLs de autenticación:
 
 ### 5.3 Tabla operativa
 - Tabla: `public.dicom_uploads`
+- Migración IA: ejecutar `docs/ai-service-migration.sql` en el SQL editor de Supabase para añadir las columnas del flujo IA (`file_type`, `clinical_features`, `ai_score`, `ai_risk_level`, `ai_recommendation`, `ai_model_version`, `ai_processed_at`, `ai_error`).
+
+### 5.4 Servicio de inferencia IA (OncaScan AI)
+- Plataforma: Hugging Face Spaces
+- URL base: `https://luisdam-oncoscan-ai.hf.space`
+- Endpoint: `POST /predict` (multipart/form-data — imagen PNG/JPG + 8 features clínicas)
+- Health: `GET /health`
+- Comportamiento: cold-start posible de 30–60s; el backend procesa la inferencia en background y el frontend hace polling al endpoint `GET /api/v1/analysis/{id}`.
 
 ## 6. Flujo operativo validado
 
@@ -140,7 +150,7 @@ El flujo desplegado y validado es el siguiente:
 
 ## 9. Limitaciones actuales del MVP
 
-- No incluye aún inferencia IA operativa en producción.
+- La inferencia IA depende del Space de Hugging Face (puede tener cold-starts y caídas; no hay SLA).
 - No incorpora visor clínico DICOM avanzado.
 - No reemplaza el criterio del especialista.
 - No está diseñado para uso hospitalario productivo.
