@@ -20,13 +20,33 @@ function RiskBadge({ level }: { level: string | null }) {
     );
 }
 
-export default async function UploadsPage() {
+type PageProps = {
+    searchParams: Promise<{ q?: string }>;
+};
+
+export default async function UploadsPage({ searchParams }: PageProps) {
+    const { q } = await searchParams;
     const supabase = await createClient();
 
-    const { data: uploads, error } = await supabase
+    let query = supabase
         .from("dicom_uploads")
-        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, ai_score, ai_risk_level")
+        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, ai_score, ai_risk_level, metadata_json")
         .order("created_at", { ascending: false });
+
+    // Filtrar por nombre de archivo si hay búsqueda
+    if (q && q.trim()) {
+        query = query.ilike("original_name", `%${q.trim()}%`);
+    }
+
+    const { data: uploads, error } = await query;
+
+    // Filtrar también por case_ref en metadata_json (client-side sobre los resultados)
+    const filtered = q && q.trim()
+        ? uploads?.filter(u =>
+            u.original_name.toLowerCase().includes(q.toLowerCase()) ||
+            (u.metadata_json?.case_ref ?? "").toLowerCase().includes(q.toLowerCase())
+          )
+        : uploads;
 
     return (
         <PageContainer>
@@ -51,28 +71,66 @@ export default async function UploadsPage() {
                 }
             />
 
+            {/* Buscador */}
+            <form method="GET" className="mb-6">
+                <div className="flex gap-3">
+                    <input
+                        type="text"
+                        name="q"
+                        defaultValue={q ?? ""}
+                        placeholder="Buscar por nombre de archivo o referencia del caso..."
+                        className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all shadow-sm"
+                    />
+                    <button
+                        type="submit"
+                        className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-primary-hover transition-colors shadow-sm"
+                    >
+                        Buscar
+                    </button>
+                    {q && (
+                        <Link
+                            href="/platform/uploads"
+                            className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                        >
+                            Limpiar
+                        </Link>
+                    )}
+                </div>
+                {q && (
+                    <p className="text-xs text-slate-500 mt-2">
+                        {filtered?.length ?? 0} resultado(s) para "{q}"
+                    </p>
+                )}
+            </form>
+
             {error && (
                 <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-600 mb-6 font-medium">
                     Error cargando historial: {error.message}
                 </div>
             )}
 
-            {!uploads || uploads.length === 0 ? (
+            {!filtered || filtered.length === 0 ? (
                 <Card>
                     <CardContent className="p-16 text-center">
                         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200">
                             <span className="text-2xl">📋</span>
                         </div>
-                        <h3 className="text-xl font-bold text-slate-800 mb-2">No hay estudios registrados</h3>
+                        <h3 className="text-xl font-bold text-slate-800 mb-2">
+                            {q ? "Sin resultados" : "No hay estudios registrados"}
+                        </h3>
                         <p className="text-slate-500 mb-8 max-w-sm mx-auto">
-                            Aún no se ha realizado ninguna carga exitosa de imágenes hacia la plataforma.
+                            {q
+                                ? `No se encontraron estudios que coincidan con "${q}".`
+                                : "Aún no se ha realizado ninguna carga exitosa."}
                         </p>
-                        <Link
-                            href="/platform/upload"
-                            className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white hover:bg-brand-primary-hover shadow-sm transition-all"
-                        >
-                            Realizar la primera carga
-                        </Link>
+                        {!q && (
+                            <Link
+                                href="/platform/upload"
+                                className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white hover:bg-brand-primary-hover shadow-sm transition-all"
+                            >
+                                Realizar la primera carga
+                            </Link>
+                        )}
                     </CardContent>
                 </Card>
             ) : (
@@ -80,9 +138,9 @@ export default async function UploadsPage() {
                     <TableHead>
                         <tr>
                             <TableHeaderCell>Archivo</TableHeaderCell>
+                            <TableHeaderCell>Referencia</TableHeaderCell>
                             <TableHeaderCell>Modalidad</TableHeaderCell>
                             <TableHeaderCell>Fecha Estudio</TableHeaderCell>
-                            <TableHeaderCell>Patient ID</TableHeaderCell>
                             <TableHeaderCell>Riesgo IA</TableHeaderCell>
                             <TableHeaderCell>Score IA</TableHeaderCell>
                             <TableHeaderCell>Estado</TableHeaderCell>
@@ -91,18 +149,19 @@ export default async function UploadsPage() {
                         </tr>
                     </TableHead>
                     <TableBody>
-                        {uploads.map((upload) => (
+                        {filtered.map((upload) => (
                             <TableRow key={upload.id}>
-                                <TableCell className="font-bold text-slate-800 truncate max-w-[180px]" title={upload.original_name}>
+                                <TableCell className="font-bold text-slate-800 truncate max-w-[150px]" title={upload.original_name}>
                                     {upload.original_name}
+                                </TableCell>
+                                <TableCell className="text-slate-600 truncate max-w-[120px]" title={upload.metadata_json?.case_ref ?? ""}>
+                                    {upload.metadata_json?.case_ref
+                                        ? <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium">{upload.metadata_json.case_ref}</span>
+                                        : <span className="text-slate-400 text-xs">—</span>
+                                    }
                                 </TableCell>
                                 <TableCell>{upload.modality ?? "N/D"}</TableCell>
                                 <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
-                                <TableCell>
-                                    <span className="bg-slate-100 text-slate-700 px-2.5 py-1 rounded-md text-xs font-bold border border-slate-200 uppercase tracking-widest">
-                                        {upload.patient_id_dicom ?? "N/D"}
-                                    </span>
-                                </TableCell>
                                 <TableCell>
                                     <RiskBadge level={upload.ai_risk_level} />
                                 </TableCell>
