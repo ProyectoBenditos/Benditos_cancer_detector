@@ -39,6 +39,7 @@ export function Sidebar() {
           <LayoutDashboard className="w-5 h-5 text-brand-primary" />
           Dashboard General
         </Link>
+
         <Link 
           href="/platform/upload" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${isActive('/platform/upload') ? 'bg-slate-800 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-slate-200'}`}
@@ -46,6 +47,7 @@ export function Sidebar() {
           <Upload className="w-5 h-5 text-brand-danger" />
           Subir DICOM
         </Link>
+
         <Link 
           href="/platform/uploads" 
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${isActive('/platform/uploads') ? 'bg-slate-800 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-slate-200'}`}
@@ -53,24 +55,22 @@ export function Sidebar() {
           <FileStack className="w-5 h-5 text-slate-300" />
           Historial DICOM
         </Link>
+
+        <Link
+          href="/platform/alertas"
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all font-medium ${isActive('/platform/alertas') ? 'bg-slate-800 text-white shadow-sm' : 'hover:bg-slate-800 hover:text-slate-200'}`}
+        >
+          <Bell className="w-5 h-5 text-red-400" />
+          Centro de Alertas
+        </Link>
         
         <div className="my-6 border-t border-slate-800/50"></div>
 
-        <p className="px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Expedientes (Próximamente)</p>
+        <p className="px-3 text-xs font-semibold text-slate-600 uppercase tracking-wider mb-3">Próximamente</p>
         
         <PhantomLink featureName="Módulo de Pacientes" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors opacity-60 hover:opacity-100">
           <Users className="w-5 h-5" />
           Pacientes Registrados
-        </PhantomLink>
-        
-        <PhantomLink featureName="Análisis Integrado de IA" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors opacity-60 hover:opacity-100">
-          <Brain className="w-5 h-5" />
-          Motor de Análisis IA
-        </PhantomLink>
-
-        <PhantomLink featureName="Centro de Alertas" className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors opacity-60 hover:opacity-100 mt-2">
-          <Bell className="w-5 h-5" />
-          Centro de Alertas
         </PhantomLink>
 
         <div className="my-6 border-t border-slate-800/50"></div>
