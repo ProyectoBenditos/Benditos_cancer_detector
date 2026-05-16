@@ -189,13 +189,14 @@ export default function UploadDicomPage() {
                             </label>
                             <input
                                 type="file"
-                                accept=".dcm,application/dicom"
+                                accept=".dcm,.png,.jpg,.jpeg,application/dicom,image/png,image/jpeg"
                                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
-                            <p className="text-xs text-slate-500 mt-2">
-                                Formato requerido estándar DICOM. Tamaño máximo procesable: 50MB.
-                            </p>
+<p className="text-xs text-slate-500 mt-2">Formatos compatibles estándar DICOM, PNG y JPG . Tamaño máximo procesable: 50MB.</p>
+<p className="text-xs text-amber-600 mt-1 font-medium">
+  ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos de imagen (OT, MR, CR, etc.) producirán resultados no válidos.
+</p>
                         </div>
 
                         <button
