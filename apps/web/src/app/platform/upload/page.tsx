@@ -69,6 +69,7 @@ export default function UploadDicomPage() {
     const supabase = createClient();
 
     const [file, setFile]               = useState<File | null>(null);
+    const [caseRef, setCaseRef]         = useState("");
     const [loading, setLoading]         = useState(false);
     const [analyzing, setAnalyzing]     = useState(false);
     const [errorMsg, setErrorMsg]       = useState("");
@@ -83,7 +84,7 @@ export default function UploadDicomPage() {
         setAnalysisResult(null);
 
         if (!file) {
-            setErrorMsg("Debes seleccionar un archivo DICOM.");
+            setErrorMsg("Debes seleccionar un archivo.");
             return;
         }
 
@@ -98,6 +99,9 @@ export default function UploadDicomPage() {
 
             const formData = new FormData();
             formData.append("file", file);
+            if (caseRef.trim()) {
+                formData.append("case_ref", caseRef.trim());
+            }
 
             const response = await fetch(
                 `${process.env.NEXT_PUBLIC_API_URL}/api/v1/dicom/upload`,
@@ -183,9 +187,28 @@ export default function UploadDicomPage() {
             <Card>
                 <CardContent className="p-8">
                     <form onSubmit={handleUpload} className="space-y-6">
+
+                        {/* Referencia del caso */}
                         <div>
                             <label className="mb-2 block text-sm font-medium text-slate-700">
-                                Archivo DICOM (.dcm)
+                                Referencia del caso <span className="text-slate-400 font-normal">(opcional)</span>
+                            </label>
+                            <input
+                                type="text"
+                                value={caseRef}
+                                onChange={(e) => setCaseRef(e.target.value)}
+                                placeholder="Ej: Caso-001, Paciente-Juan, Estudio-Tórax-2026..."
+                                className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+                            />
+                            <p className="text-xs text-slate-400 mt-1">
+                                Referencia interna para identificar el caso en el historial.
+                            </p>
+                        </div>
+
+                        {/* Archivo */}
+                        <div>
+                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                                Archivo DICOM o imagen
                             </label>
                             <input
                                 type="file"
@@ -193,10 +216,12 @@ export default function UploadDicomPage() {
                                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
-<p className="text-xs text-slate-500 mt-2">Formatos compatibles estándar DICOM, PNG y JPG . Tamaño máximo procesable: 50MB.</p>
-<p className="text-xs text-amber-600 mt-1 font-medium">
-  ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos de imagen (OT, MR, CR, etc.) producirán resultados no válidos.
-</p>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Formatos compatibles: DICOM (.dcm), PNG y JPG. Tamaño máximo: 50MB.
+                            </p>
+                            <p className="text-xs text-amber-600 mt-1 font-medium">
+                                ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos (OT, MR, CR, etc.) producirán resultados no válidos.
+                            </p>
                         </div>
 
                         <button
@@ -221,6 +246,12 @@ export default function UploadDicomPage() {
                                 Carga procesada exitosamente
                             </h2>
                             <div className="grid gap-4 text-sm text-slate-700 md:grid-cols-2">
+                                {caseRef && (
+                                    <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm md:col-span-2">
+                                        <span className="block text-xs font-bold text-emerald-600 mb-1 uppercase tracking-wider">Referencia del caso</span>
+                                        <span className="font-medium">{caseRef}</span>
+                                    </div>
+                                )}
                                 <div className="bg-white p-4 rounded-xl border border-emerald-100 shadow-sm">
                                     <span className="block text-xs font-bold text-emerald-600 mb-1 uppercase tracking-wider">Archivo</span>
                                     <span className="font-medium truncate">{successData.filename}</span>
@@ -336,6 +367,7 @@ export default function UploadDicomPage() {
                                 setSuccessData(null);
                                 setAnalysisResult(null);
                                 setFeatures(DEFAULT_FEATURES);
+                                setCaseRef("");
                                 setErrorMsg("");
                             }}
                             className="mt-6 rounded-xl border border-slate-300 px-6 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"

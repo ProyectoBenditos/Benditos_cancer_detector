@@ -7,7 +7,7 @@ from uuid import uuid4
 import httpx
 import numpy as np
 import pydicom
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from PIL import Image
 from pydantic import BaseModel
 
@@ -57,6 +57,7 @@ def dicom_to_png_bytes(file_bytes: bytes) -> bytes:
 @router.post("/dicom/upload")
 async def upload_dicom(
     file: UploadFile = File(...),
+    case_ref: str = Form(""),
     current_user: dict = Depends(get_current_user),
 ):
     if not file.filename:
@@ -73,11 +74,8 @@ async def upload_dicom(
     if not contents:
         raise HTTPException(status_code=400, detail="Archivo vacío")
 
-    # Determinar tipo de archivo
-    is_dicom = file_ext == ".dcm"
-
-    # Extraer metadatos según tipo
-    modality         = None
+    is_dicom  = file_ext == ".dcm"
+    modality  = None
     study_date       = None
     patient_id_dicom = None
     temp_path        = None
@@ -93,10 +91,8 @@ async def upload_dicom(
             study_date       = str(getattr(dataset, "StudyDate", "")) or None
             patient_id_dicom = str(getattr(dataset, "PatientID", "")) or None
         else:
-            # Para PNG/JPG indicamos que es imagen directa
             modality = "IMG"
 
-        # Determinar content-type para storage
         content_type_map = {
             ".dcm":  "application/dicom",
             ".png":  "image/png",
@@ -128,6 +124,7 @@ async def upload_dicom(
                 "content_type":      file.content_type,
                 "uploaded_by_email": current_user["email"],
                 "file_ext":          file_ext,
+                "case_ref":          case_ref or None,
             },
         }).execute()
 
@@ -143,6 +140,7 @@ async def upload_dicom(
             "study_date":       study_date,
             "patient_id_dicom": patient_id_dicom,
             "file_type":        "dicom" if is_dicom else "image",
+            "case_ref":         case_ref or None,
         }
 
     except HTTPException:
@@ -184,10 +182,8 @@ async def analyze_dicom(
 
         # 3. Preparar PNG para el modelo
         if is_dicom:
-            # Convertir DICOM → PNG
             png_bytes = dicom_to_png_bytes(file_bytes)
         else:
-            # PNG/JPG: convertir a RGB por si acaso y recodificar como PNG
             pil_img    = Image.open(io.BytesIO(file_bytes)).convert("RGB")
             png_buffer = io.BytesIO()
             pil_img.save(png_buffer, format="PNG")
