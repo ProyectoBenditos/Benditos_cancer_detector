@@ -4,11 +4,12 @@
   --background: #ffffff;
   --foreground: #171717;
 
-  /* OncaScan Design System Tokens */
-  --color-brand-primary: #1e3a8a;
-  --color-brand-primary-hover: #1e40af;
-  --color-brand-danger: #e11d48;
-  --color-brand-sidebar: #0a0a0a;
+  /* OncoScan Design System Tokens — Deep Space Blue + Raspberry Red */
+  --color-brand-primary: #012641;
+  --color-brand-primary-hover: #01365e;
+  --color-brand-danger: #EE005A;
+  --color-brand-danger-hover: #c4004a;
+  --color-brand-sidebar: #012641;
   --color-brand-bg: #f8f9fa;
   --color-brand-surface: #ffffff;
 }
@@ -22,6 +23,7 @@
   --color-brand-primary: var(--color-brand-primary);
   --color-brand-primary-hover: var(--color-brand-primary-hover);
   --color-brand-danger: var(--color-brand-danger);
+  --color-brand-danger-hover: var(--color-brand-danger-hover);
   --color-brand-sidebar: var(--color-brand-sidebar);
   --color-brand-bg: var(--color-brand-bg);
   --color-brand-surface: var(--color-brand-surface);
@@ -29,8 +31,11 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #020617;
+    --foreground: #e2e8f0;
+    --color-brand-bg: #020617;
+    --color-brand-surface: #0f172a;
+    /* Brand colors NO cambian en dark — preservan el perfil clínico */
   }
 }
 
