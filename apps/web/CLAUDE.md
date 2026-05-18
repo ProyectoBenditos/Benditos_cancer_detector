@@ -4,10 +4,11 @@
 
 | Token Tailwind | Valor | Uso semántico |
 |---------------|-------|---------------|
-| `brand-primary` | `#1e3a8a` | Acción principal, iconos de navegación activos |
-| `brand-primary-hover` | `#1e40af` | Estado hover de acciones principales |
-| `brand-danger` | `#e11d48` | **Solo alertas clínicas críticas.** Errores genéricos de UI: `slate`. |
-| `brand-sidebar` | `#0a0a0a` | Fondo del sidebar |
+| `brand-primary` | `#012641` (Deep Space Blue) | Acción principal, iconos de navegación activos |
+| `brand-primary-hover` | `#01365e` | Estado hover de acciones principales |
+| `brand-danger` | `#EE005A` (Raspberry Red) | **Solo alertas clínicas críticas.** Errores genéricos de UI: `slate`. |
+| `brand-danger-hover` | `#c4004a` | Estado hover de variantes danger |
+| `brand-sidebar` | `#012641` | Fondo del sidebar (unificado con brand-primary) |
 | `brand-bg` | `#f8f9fa` | Fondo de página |
 | `brand-surface` | `#ffffff` | Fondo de tarjetas/paneles |
 
@@ -19,16 +20,35 @@ Antes de crear un componente nuevo, revisar esta tabla:
 
 | Componente | Ubicación | Cuándo usarlo |
 |-----------|-----------|--------------|
+| `Button` | `src/components/ui/Button.tsx` | Toda acción interactiva. Variantes `primary` / `secondary` / `ghost` / `danger`, tamaños `sm` / `md` / `lg`. Prop `loading` para spinner + `aria-busy`. |
+| `buttonVariants` | `src/components/ui/Button.tsx` | Helper para aplicar estilos de Button a `<Link>` u otros: `<Link className={buttonVariants({ variant: "primary", size: "lg" })}>`. |
+| `AlertBanner` | `src/components/ui/AlertBanner.tsx` | Mensaje persistente inline (no transitorio). Variantes `critical` / `warning` / `info` / `error` / `success`. `critical` usa `role="alert"` + `aria-live="assertive"`. |
+| `RiskBadge` | `src/components/ui/RiskBadge.tsx` | Badge para nivel de riesgo IA (`ALTO` / `MEDIO` / `BAJO`). `null` renderiza "Sin análisis". |
 | `Card` | `src/components/ui/Card.tsx` | Contenedor de panel con borde y sombra |
 | `Input` | `src/components/ui/Input.tsx` | Campos de texto del formulario |
 | `PageContainer` | `src/components/ui/PageContainer.tsx` | Wrapper de página con padding y max-width |
 | `PhantomButton` | `src/components/ui/PhantomButton.tsx` | Botón/link de feature no implementada (muestra toast) |
 | `PhantomLink` | `src/components/ui/PhantomButton.tsx` | Link de feature no implementada |
 | `SectionHeader` | `src/components/ui/SectionHeader.tsx` | Título + descripción de sección |
-| `StatusBadge` | `src/components/ui/StatusBadge.tsx` | Badge de estado IA (`processing`, `ai_completed`, `ai_failed`) |
+| `StatusBadge` | `src/components/ui/StatusBadge.tsx` | Badge de estado IA (`processing`, `ai_completed`, `ai_failed`, etc.) |
 | `Table` | `src/components/ui/Table.tsx` | Tabla de datos con estilos consistentes |
 
 **Regla:** Si el componente que necesitas no está aquí, pregunta antes de inventar uno nuevo.
+
+## Escala tipográfica semántica
+
+Tailwind 4 ya provee la escala completa. Esta guía indica **cuándo usar cada nivel**:
+
+| Rol | Clases Tailwind |
+|-----|----------------|
+| H1 de página | `text-2xl font-bold text-slate-800` |
+| H2 de sección | `text-sm font-semibold uppercase tracking-wider text-slate-500` |
+| Título de card | `text-xl font-bold text-slate-800` |
+| Body | `text-sm text-slate-600` |
+| Caption / metadata | `text-xs text-slate-500` |
+| Label de formulario | `text-sm font-medium text-slate-700` |
+
+Si necesitas un nivel fuera de esta tabla, primero pregunta.
 
 ## Patrón de página
 
