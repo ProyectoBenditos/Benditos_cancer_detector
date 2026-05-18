@@ -11,8 +11,8 @@ export function Header({ userEmail = "Usuario" }: { userEmail?: string }) {
       <span className="text-lg font-bold text-brand-primary tracking-tight">OncoScan</span>
       <div className="flex items-center gap-4">
         <PhantomButton featureName="Notificaciones" className="p-2 text-slate-400 hover:text-slate-600 rounded-full hover:bg-slate-100 transition-colors relative">
-          <Bell className="w-5 h-5" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-rose-500 rounded-full"></span>
+          <Bell className="w-5 h-5" aria-hidden="true" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-brand-danger rounded-full" aria-hidden="true"></span>
         </PhantomButton>
         
         <div className="flex items-center gap-3 pl-4 border-l border-slate-200">
