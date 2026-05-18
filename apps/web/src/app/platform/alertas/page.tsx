@@ -4,6 +4,8 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { TableWrapper, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "@/components/ui/Table";
+import { AlertBanner } from "@/components/ui/AlertBanner";
+import { buttonVariants } from "@/components/ui/Button";
 
 export default async function AlertasPage() {
     const supabase = await createClient();
@@ -24,35 +26,32 @@ export default async function AlertasPage() {
                 action={
                     <Link
                         href="/platform"
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                        className={buttonVariants({ variant: "secondary", size: "md" })}
                     >
                         Volver
                     </Link>
                 }
             />
 
-            {/* Contador */}
-            <div className="mb-6 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-5 py-4">
-                <span className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 font-bold text-lg">
-                    {total}
-                </span>
-                <div>
-                    <p className="font-semibold text-red-700">
-                        {total === 0
-                            ? "No hay alertas activas"
-                            : total === 1
+            {total > 0 && (
+                <div className="mb-6">
+                    <AlertBanner
+                        variant="critical"
+                        title={total === 1
                             ? "1 estudio requiere evaluación urgente"
                             : `${total} estudios requieren evaluación urgente`}
-                    </p>
-                    <p className="text-xs text-red-500">
-                        Casos clasificados con riesgo ALTO por el modelo IA
-                    </p>
+                        description="Casos clasificados con riesgo ALTO por el modelo IA"
+                    />
                 </div>
-            </div>
+            )}
 
             {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-600 mb-6 font-medium">
-                    Error cargando alertas: {error.message}
+                <div className="mb-6">
+                    <AlertBanner
+                        variant="error"
+                        title="Error cargando alertas"
+                        description={error.message}
+                    />
                 </div>
             )}
 
@@ -60,7 +59,7 @@ export default async function AlertasPage() {
                 <Card>
                     <CardContent className="p-16 text-center">
                         <div className="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4 border border-emerald-200">
-                            <span className="text-2xl">✅</span>
+                            <span className="text-2xl" aria-hidden="true">✅</span>
                         </div>
                         <h3 className="text-xl font-bold text-slate-800 mb-2">Sin alertas críticas</h3>
                         <p className="text-slate-500 max-w-sm mx-auto">
@@ -94,7 +93,7 @@ export default async function AlertasPage() {
                                 </TableCell>
                                 <TableCell>{alerta.modality ?? "N/D"}</TableCell>
                                 <TableCell>
-                                    <span className="font-bold text-red-600">
+                                    <span className="font-bold text-brand-danger">
                                         {alerta.ai_score != null
                                             ? `${(alerta.ai_score * 100).toFixed(1)}%`
                                             : "N/D"}
@@ -111,7 +110,7 @@ export default async function AlertasPage() {
                                 <TableCell className="text-right">
                                     <Link
                                         href={`/platform/uploads/${alerta.id}`}
-                                        className="text-red-600 hover:text-red-700 hover:underline font-medium transition-colors"
+                                        className="text-brand-danger hover:text-brand-danger-hover hover:underline font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded"
                                     >
                                         Ver detalle
                                     </Link>
