@@ -34,3 +34,6 @@ Thumbs.db
 
 # Claude Code — configuración local del usuario (no versionar)
 .claude/settings.local.json
+
+# Superpowers brainstorming sessions
+.superpowers/
