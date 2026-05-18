@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
+import { Button } from "@/components/ui/Button";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 export default function LoginPage() {
     const router = useRouter();
@@ -36,14 +38,14 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center bg-[#1a0000] px-6">
+        <main className="flex min-h-screen items-center justify-center bg-brand-sidebar px-6">
             <div className="w-full max-w-md rounded-2xl bg-white p-10 shadow-2xl">
                 <div className="mb-8 text-center flex flex-col items-center">
-                    <Image 
-                        src="/images/brand/logo-oncascan.png" 
-                        alt="OncaScan Logo" 
-                        width={200} 
-                        height={50} 
+                    <Image
+                        src="/images/brand/logo-oncascan.png"
+                        alt="OncaScan Logo"
+                        width={200}
+                        height={50}
                         style={{ width: 'auto', height: '2.5rem' }}
                         priority
                         className="object-contain mb-2"
@@ -55,10 +57,11 @@ export default function LoginPage() {
 
                 <form onSubmit={handleLogin} className="space-y-5">
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Correo Electrónico</label>
+                        <label htmlFor="login-email" className="mb-1.5 block text-sm font-medium text-slate-700">Correo Electrónico</label>
                         <input
+                            id="login-email"
                             type="email"
-                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-rose-300 focus:ring-1 focus:ring-rose-300 transition-all text-slate-700"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary transition-all text-slate-700"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
@@ -67,10 +70,11 @@ export default function LoginPage() {
                     </div>
 
                     <div>
-                        <label className="mb-1.5 block text-sm font-medium text-slate-700">Contraseña</label>
+                        <label htmlFor="login-password" className="mb-1.5 block text-sm font-medium text-slate-700">Contraseña</label>
                         <input
+                            id="login-password"
                             type="password"
-                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-rose-300 focus:ring-1 focus:ring-rose-300 transition-all text-slate-700"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary transition-all text-slate-700"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
@@ -78,16 +82,24 @@ export default function LoginPage() {
                         />
                     </div>
 
-                    {errorMsg ? <p className="text-sm text-rose-500 bg-rose-50 p-3 rounded-lg border border-rose-100">{errorMsg}</p> : null}
+                    {errorMsg ? (
+                        <AlertBanner
+                            variant="error"
+                            title="No pudimos iniciar sesión"
+                            description={errorMsg}
+                        />
+                    ) : null}
 
-                    <button
+                    <Button
                         type="submit"
-                        disabled={loading}
-                        className="w-full rounded-xl bg-rose-600 px-4 py-3.5 font-medium text-white hover:bg-rose-500 disabled:opacity-60 transition-colors mt-2 shadow-sm shadow-rose-200"
+                        variant="primary"
+                        size="lg"
+                        loading={loading}
+                        className="w-full"
                     >
                         {loading ? "Ingresando..." : "Iniciar Sesión"}
-                    </button>
-                    
+                    </Button>
+
                     <p className="text-xs text-center text-slate-400 mt-6">Sistema exclusivo de uso académico controlado</p>
                 </form>
             </div>
