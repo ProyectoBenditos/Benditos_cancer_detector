@@ -30,7 +30,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
 
     let query = supabase
         .from("dicom_uploads")
-        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, ai_score, ai_risk_level, metadata_json")
+        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, file_type, ai_score, ai_risk_level, metadata_json")
         .order("created_at", { ascending: false });
 
     // Filtrar por nombre de archivo si hay búsqueda
@@ -51,8 +51,8 @@ export default async function UploadsPage({ searchParams }: PageProps) {
     return (
         <PageContainer>
             <SectionHeader
-                title="Historial de cargas DICOM"
-                description="Listado centralizado y gestión de toda la operación de estudios."
+                title="Historial de cargas y análisis"
+                description="Listado centralizado de estudios DICOM y análisis IA."
                 action={
                     <>
                         <Link
@@ -60,6 +60,12 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                             className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary-hover transition-colors shadow-sm"
                         >
                             Subir DICOM
+                        </Link>
+                        <Link
+                            href="/platform/analyze"
+                            className="rounded-lg border border-brand-primary/40 bg-brand-primary/5 px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 transition-colors shadow-sm"
+                        >
+                            Análisis IA
                         </Link>
                         <Link
                             href="/platform"
@@ -138,6 +144,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                     <TableHead>
                         <tr>
                             <TableHeaderCell>Archivo</TableHeaderCell>
+                            <TableHeaderCell>Tipo</TableHeaderCell>
                             <TableHeaderCell>Referencia</TableHeaderCell>
                             <TableHeaderCell>Modalidad</TableHeaderCell>
                             <TableHeaderCell>Fecha Estudio</TableHeaderCell>
@@ -149,44 +156,59 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                         </tr>
                     </TableHead>
                     <TableBody>
-                        {filtered.map((upload) => (
-                            <TableRow key={upload.id}>
-                                <TableCell className="font-bold text-slate-800 truncate max-w-[150px]" title={upload.original_name}>
-                                    {upload.original_name}
-                                </TableCell>
-                                <TableCell className="text-slate-600 truncate max-w-[120px]" title={upload.metadata_json?.case_ref ?? ""}>
-                                    {upload.metadata_json?.case_ref
-                                        ? <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium">{upload.metadata_json.case_ref}</span>
-                                        : <span className="text-slate-400 text-xs">—</span>
-                                    }
-                                </TableCell>
-                                <TableCell>{upload.modality ?? "N/D"}</TableCell>
-                                <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
-                                <TableCell>
-                                    <RiskBadge level={upload.ai_risk_level} />
-                                </TableCell>
-                                <TableCell className="text-slate-700 font-medium">
-                                    {upload.ai_score != null
-                                        ? `${(upload.ai_score * 100).toFixed(1)}%`
-                                        : <span className="text-slate-400 text-xs">—</span>
-                                    }
-                                </TableCell>
-                                <TableCell>
-                                    <StatusBadge status={upload.upload_status} />
-                                </TableCell>
-                                <TableCell className="text-slate-500 text-xs">
-                                    {new Date(upload.created_at).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell className="text-right font-medium">
-                                    <Link
-                                        href={`/platform/uploads/${upload.id}`}
-                                        className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
-                                    >
-                                        Ver detalle
-                                    </Link>
-                                </TableCell>
-                            </TableRow>
-                        ))}
+                        {filtered.map((upload) => {
+                            const isAnalysis = upload.file_type === "png_analysis";
+                            const detailHref = isAnalysis
+                                ? `/platform/analyze/${upload.id}`
+                                : `/platform/uploads/${upload.id}`;
+                            return (
+                                <TableRow key={upload.id}>
+                                    <TableCell className="font-bold text-slate-800 truncate max-w-[150px]" title={upload.original_name}>
+                                        {upload.original_name}
+                                    </TableCell>
+                                    <TableCell>
+                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
+                                            isAnalysis
+                                                ? "bg-brand-primary/10 text-brand-primary border-brand-primary/20"
+                                                : "bg-slate-100 text-slate-700 border-slate-200"
+                                        }`}>
+                                            {isAnalysis ? "IA" : "DICOM"}
+                                        </span>
+                                    </TableCell>
+                                    <TableCell className="text-slate-600 truncate max-w-[120px]" title={upload.metadata_json?.case_ref ?? ""}>
+                                        {upload.metadata_json?.case_ref
+                                            ? <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium">{upload.metadata_json.case_ref}</span>
+                                            : <span className="text-slate-400 text-xs">—</span>
+                                        }
+                                    </TableCell>
+                                    <TableCell>{upload.modality ?? "N/D"}</TableCell>
+                                    <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
+                                    <TableCell>
+                                        <RiskBadge level={upload.ai_risk_level} />
+                                    </TableCell>
+                                    <TableCell className="text-slate-700 font-medium">
+                                        {upload.ai_score != null
+                                            ? `${(upload.ai_score * 100).toFixed(1)}%`
+                                            : <span className="text-slate-400 text-xs">—</span>
+                                        }
+                                    </TableCell>
+                                    <TableCell>
+                                        <StatusBadge status={upload.upload_status} />
+                                    </TableCell>
+                                    <TableCell className="text-slate-500 text-xs">
+                                        {new Date(upload.created_at).toLocaleDateString()}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                        <Link
+                                            href={detailHref}
+                                            className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
+                                        >
+                                            {isAnalysis ? "Ver IA" : "Ver detalle"}
+                                        </Link>
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
                     </TableBody>
                 </TableWrapper>
             )}
