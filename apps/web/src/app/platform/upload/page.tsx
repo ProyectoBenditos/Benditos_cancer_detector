@@ -6,6 +6,8 @@ import { createClient } from "@/utils/supabase/client";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 type UploadResponse = {
     message: string;
@@ -60,9 +62,9 @@ const DEFAULT_FEATURES: ClinicalFeatures = {
 };
 
 const riskColor = (nivel: string) => {
-    if (nivel === "ALTO")  return "text-red-600 bg-red-50 border-red-200";
-    if (nivel === "MEDIO") return "text-amber-600 bg-amber-50 border-amber-200";
-    return "text-emerald-600 bg-emerald-50 border-emerald-200";
+    if (nivel === "ALTO")  return "text-brand-danger bg-brand-danger/10 border-brand-danger/20";
+    if (nivel === "MEDIO") return "text-amber-700 bg-amber-50 border-amber-200";
+    return "text-emerald-700 bg-emerald-50 border-emerald-200";
 };
 
 export default function UploadDicomPage() {
@@ -176,7 +178,7 @@ export default function UploadDicomPage() {
                 action={
                     <Link
                         href="/platform"
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-medium"
+                        className={buttonVariants({ variant: "secondary", size: "md" })}
                     >
                         Cancelar y Volver
                     </Link>
@@ -224,18 +226,24 @@ export default function UploadDicomPage() {
                             </p>
                         </div>
 
-                        <button
+                        <Button
                             type="submit"
-                            disabled={loading || !!successData}
-                            className="rounded-xl bg-brand-primary px-8 py-3.5 font-medium text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors shadow-sm"
+                            variant="primary"
+                            size="lg"
+                            loading={loading}
+                            disabled={!!successData}
                         >
                             {loading ? "Procesando archivo..." : "Subir DICOM"}
-                        </button>
+                        </Button>
                     </form>
 
                     {errorMsg && (
-                        <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-600 font-medium">
-                            {errorMsg}
+                        <div className="mt-6">
+                            <AlertBanner
+                                variant="error"
+                                title="No pudimos procesar el archivo"
+                                description={errorMsg}
+                            />
                         </div>
                     )}
 
@@ -313,13 +321,15 @@ export default function UploadDicomPage() {
                             ))}
                         </div>
 
-                        <button
+                        <Button
                             onClick={handleAnalyze}
-                            disabled={analyzing}
-                            className="mt-8 w-full rounded-xl bg-brand-primary px-8 py-4 font-semibold text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors shadow-sm text-base"
+                            variant="primary"
+                            size="lg"
+                            loading={analyzing}
+                            className="mt-8 w-full"
                         >
                             {analyzing ? "Analizando con IA... (puede tardar hasta 2 min)" : "Analizar con IA"}
-                        </button>
+                        </Button>
                     </CardContent>
                 </Card>
             )}
@@ -362,7 +372,7 @@ export default function UploadDicomPage() {
                             ⚠️ Este resultado es de apoyo diagnóstico y no reemplaza el criterio del especialista.
                         </p>
 
-                        <button
+                        <Button
                             onClick={() => {
                                 setSuccessData(null);
                                 setAnalysisResult(null);
@@ -370,10 +380,12 @@ export default function UploadDicomPage() {
                                 setCaseRef("");
                                 setErrorMsg("");
                             }}
-                            className="mt-6 rounded-xl border border-slate-300 px-6 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                            variant="secondary"
+                            size="md"
+                            className="mt-6"
                         >
                             Subir otro DICOM
-                        </button>
+                        </Button>
                     </CardContent>
                 </Card>
             )}
