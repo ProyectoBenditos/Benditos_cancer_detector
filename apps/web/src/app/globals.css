@@ -1,6 +1,12 @@
 @import "tailwindcss";
 
 :root {
+  /* Forzamos light mode en toda la plataforma clínica.
+     Razón: las alertas clínicas tienen perfil de color exacto que
+     no debe alterarse según el ambiente del usuario. Patrón estándar
+     en Epic, Cerner y otras plataformas médicas. */
+  color-scheme: light;
+
   --background: #ffffff;
   --foreground: #171717;
 
@@ -27,16 +33,6 @@
   --color-brand-sidebar: var(--color-brand-sidebar);
   --color-brand-bg: var(--color-brand-bg);
   --color-brand-surface: var(--color-brand-surface);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #e2e8f0;
-    --color-brand-bg: #020617;
-    --color-brand-surface: #0f172a;
-    /* Brand colors NO cambian en dark — preservan el perfil clínico */
-  }
 }
 
 body {
