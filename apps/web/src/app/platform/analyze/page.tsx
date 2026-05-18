@@ -8,6 +8,8 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 type FeatureKey =
     | "subtlety"
@@ -140,7 +142,7 @@ export default function AnalyzePage() {
                 action={
                     <Link
                         href="/platform"
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-medium"
+                        className={buttonVariants({ variant: "secondary", size: "md" })}
                     >
                         Cancelar y Volver
                     </Link>
@@ -189,18 +191,18 @@ export default function AnalyzePage() {
                             </p>
                         </div>
 
-                        <button
-                            type="submit"
-                            disabled={loading}
-                            className="rounded-xl bg-brand-primary px-8 py-3.5 font-medium text-white hover:bg-brand-primary-hover disabled:opacity-60 transition-colors shadow-sm"
-                        >
+                        <Button type="submit" variant="primary" size="lg" loading={loading}>
                             {loading ? "Iniciando analisis..." : "Ejecutar analisis"}
-                        </button>
+                        </Button>
                     </form>
 
                     {errorMsg && (
-                        <div className="mt-8 rounded-xl border border-brand-danger/30 bg-brand-danger/5 p-4 text-sm text-brand-danger font-medium">
-                            {errorMsg}
+                        <div className="mt-8">
+                            <AlertBanner
+                                variant="error"
+                                title="No pudimos iniciar el análisis"
+                                description={errorMsg}
+                            />
                         </div>
                     )}
                 </CardContent>
