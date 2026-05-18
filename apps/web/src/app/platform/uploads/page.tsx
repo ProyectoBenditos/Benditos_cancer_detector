@@ -5,20 +5,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { TableWrapper, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "@/components/ui/Table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-
-function RiskBadge({ level }: { level: string | null }) {
-    if (!level) return <span className="text-slate-400 text-xs">Sin análisis</span>;
-    const colors: Record<string, string> = {
-        ALTO:  "bg-red-100 text-red-700 border-red-200",
-        MEDIO: "bg-amber-100 text-amber-700 border-amber-200",
-        BAJO:  "bg-emerald-100 text-emerald-700 border-emerald-200",
-    };
-    return (
-        <span className={`px-2.5 py-1 rounded-md text-xs font-bold border ${colors[level] ?? "bg-slate-100 text-slate-600"}`}>
-            {level}
-        </span>
-    );
-}
+import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { AlertBanner } from "@/components/ui/AlertBanner";
 
 type PageProps = {
     searchParams: Promise<{ q?: string }>;
@@ -33,14 +22,12 @@ export default async function UploadsPage({ searchParams }: PageProps) {
         .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, file_type, ai_score, ai_risk_level, metadata_json")
         .order("created_at", { ascending: false });
 
-    // Filtrar por nombre de archivo si hay búsqueda
     if (q && q.trim()) {
         query = query.ilike("original_name", `%${q.trim()}%`);
     }
 
     const { data: uploads, error } = await query;
 
-    // Filtrar también por case_ref en metadata_json (client-side sobre los resultados)
     const filtered = q && q.trim()
         ? uploads?.filter(u =>
             u.original_name.toLowerCase().includes(q.toLowerCase()) ||
@@ -57,19 +44,19 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                     <>
                         <Link
                             href="/platform/upload"
-                            className="rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary-hover transition-colors shadow-sm"
+                            className={buttonVariants({ variant: "primary", size: "md" })}
                         >
                             Subir DICOM
                         </Link>
                         <Link
                             href="/platform/analyze"
-                            className="rounded-lg border border-brand-primary/40 bg-brand-primary/5 px-4 py-2 text-sm font-medium text-brand-primary hover:bg-brand-primary/10 transition-colors shadow-sm"
+                            className={buttonVariants({ variant: "secondary", size: "md" })}
                         >
                             Análisis IA
                         </Link>
                         <Link
                             href="/platform"
-                            className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                            className={buttonVariants({ variant: "secondary", size: "md" })}
                         >
                             Volver
                         </Link>
@@ -80,23 +67,22 @@ export default async function UploadsPage({ searchParams }: PageProps) {
             {/* Buscador */}
             <form method="GET" className="mb-6">
                 <div className="flex gap-3">
+                    <label htmlFor="uploads-search" className="sr-only">Buscar estudios</label>
                     <input
+                        id="uploads-search"
                         type="text"
                         name="q"
                         defaultValue={q ?? ""}
                         placeholder="Buscar por nombre de archivo o referencia del caso..."
-                        className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all shadow-sm"
+                        className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary outline-none transition-all shadow-sm"
                     />
-                    <button
-                        type="submit"
-                        className="rounded-xl bg-brand-primary px-5 py-2.5 text-sm font-medium text-white hover:bg-brand-primary-hover transition-colors shadow-sm"
-                    >
+                    <Button type="submit" variant="primary" size="md">
                         Buscar
-                    </button>
+                    </Button>
                     {q && (
                         <Link
                             href="/platform/uploads"
-                            className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm"
+                            className={buttonVariants({ variant: "secondary", size: "md" })}
                         >
                             Limpiar
                         </Link>
@@ -104,14 +90,18 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                 </div>
                 {q && (
                     <p className="text-xs text-slate-500 mt-2">
-                        {filtered?.length ?? 0} resultado(s) para "{q}"
+                        {filtered?.length ?? 0} resultado(s) para &quot;{q}&quot;
                     </p>
                 )}
             </form>
 
             {error && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-red-600 mb-6 font-medium">
-                    Error cargando historial: {error.message}
+                <div className="mb-6">
+                    <AlertBanner
+                        variant="error"
+                        title="Error cargando historial"
+                        description={error.message}
+                    />
                 </div>
             )}
 
@@ -119,7 +109,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                 <Card>
                     <CardContent className="p-16 text-center">
                         <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200">
-                            <span className="text-2xl">📋</span>
+                            <span className="text-2xl" aria-hidden="true">📋</span>
                         </div>
                         <h3 className="text-xl font-bold text-slate-800 mb-2">
                             {q ? "Sin resultados" : "No hay estudios registrados"}
@@ -132,7 +122,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                         {!q && (
                             <Link
                                 href="/platform/upload"
-                                className="inline-flex items-center justify-center rounded-xl bg-brand-primary px-6 py-3 text-sm font-semibold text-white hover:bg-brand-primary-hover shadow-sm transition-all"
+                                className={buttonVariants({ variant: "primary", size: "lg" })}
                             >
                                 Realizar la primera carga
                             </Link>
@@ -184,7 +174,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                                     <TableCell>{upload.modality ?? "N/D"}</TableCell>
                                     <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
                                     <TableCell>
-                                        <RiskBadge level={upload.ai_risk_level} />
+                                        <RiskBadge level={upload.ai_risk_level as RiskLevel | null} />
                                     </TableCell>
                                     <TableCell className="text-slate-700 font-medium">
                                         {upload.ai_score != null
@@ -201,7 +191,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                                     <TableCell className="text-right font-medium">
                                         <Link
                                             href={detailHref}
-                                            className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
+                                            className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded"
                                         >
                                             {isAnalysis ? "Ver IA" : "Ver detalle"}
                                         </Link>
