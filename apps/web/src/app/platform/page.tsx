@@ -5,6 +5,7 @@ import { PhantomButton } from "@/components/ui/PhantomButton";
 import { Card, CardContent } from "@/components/ui/Card";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { PageContainer } from "@/components/ui/PageContainer";
+import { buttonVariants } from "@/components/ui/Button";
 
 export default async function PlatformPage() {
     const supabase = await createClient();
@@ -81,7 +82,7 @@ export default async function PlatformPage() {
                             </p>
                             <Link
                                 href="/platform/upload"
-                                className="mt-6 w-full text-center rounded-xl bg-brand-primary px-5 py-3 text-sm font-semibold text-white hover:bg-brand-primary-hover hover:shadow-md transition-all"
+                                className={`${buttonVariants({ variant: "primary", size: "lg" })} mt-6 w-full`}
                             >
                                 Seleccionar archivo y subir
                             </Link>
@@ -105,7 +106,7 @@ export default async function PlatformPage() {
                             </p>
                             <Link
                                 href="/platform/uploads"
-                                className="mt-6 w-full text-center rounded-xl border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:shadow-sm transition-all"
+                                className={`${buttonVariants({ variant: "secondary", size: "lg" })} mt-6 w-full`}
                             >
                                 Auditar historial completo
                             </Link>
