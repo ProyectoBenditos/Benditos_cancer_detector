@@ -1746,10 +1746,15 @@ Expected: ver la secuencia de commits del sub-proyecto B (tokens → Button → 
 1. **`apps/web/src/app/page.tsx`** (landing pública). Tiene su propio sistema visual de marketing (navy `#020B2D` + cyan `#22AFFF`, 17 instancias de `bg-[#...]`, 1 de `red-*`). Decisión pendiente para C: ¿el landing usa los platform tokens o mantiene identidad de marketing separada? Si lo segundo, definir tokens `--color-landing-*` o documentar la excepción.
 2. **`apps/web/src/app/platform/uploads/[id]/page.tsx`** (vista de detalle). Tema oscuro (`bg-slate-950`, white text, cards dark) — distinto al resto de la plataforma que es light. Tiene 5 ocurrencias de `red-*` y una función local `RiskBadge` (eliminada como dead code durante el sweep porque no se usaba). La página necesita rediseño completo a light theme + uso de `Card` + `PageContainer` para encajar con el resto. Trabajo de C.
 
+**Componentes pendientes de migrar para sub-proyecto C (detectados visualmente con el dev server arriba):**
+
+- `apps/web/src/app/platform/logout-button.tsx` ("Cerrar sesión" en el Header). Renderiza casi sin estilo visible (parece texto plano). Debe migrarse a `<Button variant="secondary" size="sm">` o `ghost` según el peso visual deseado en el Header.
+
 **Cambios extra hechos durante el sweep (más allá de la spec original):**
 
 - `apps/web/src/components/layout/Header.tsx`: `bg-rose-500` del indicador de notificación → `bg-brand-danger`. Estaba fuera de la lista de la spec pero violaba criterio 3 (cero `rose-*`).
 - `apps/web/src/app/platform/upload/page.tsx`: migración completa (Link → buttonVariants, button raw → Button, error div → AlertBanner, `riskColor()` ahora usa `brand-danger` en vez de `red-*`). Estaba fuera de la lista de la spec pero pertenece visualmente al mismo sistema que las otras páginas de la plataforma.
+- **Hotfix post-implementación**: el bloque `@media (prefers-color-scheme: dark)` que adaptaba `--color-brand-bg` y `--color-brand-surface` se eliminó. Razón: las páginas usan clases Tailwind hardcoded (`text-slate-800`, `text-slate-600`) sobre tokens que cambiaban a oscuro → texto invisible cuando el OS del usuario tiene dark mode. Se forzó `color-scheme: light` en `:root` siguiendo la decisión #7 de la spec (Epic/Cerner pattern: plataformas clínicas no aplican dark mode al contenido). Commit `9c4e3c9`.
 - Fixes de lint pre-existentes (no relacionados al design system pero bloqueaban el criterio 2):
   - `apps/web/src/app/layout.tsx`: `Metadata` ahora tipa la exportación en vez de quedar import unused.
   - `apps/web/src/app/page.tsx`: comillas escapadas a `&ldquo;`/`&rdquo;`.
