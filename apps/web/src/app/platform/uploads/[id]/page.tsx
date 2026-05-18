@@ -6,20 +6,6 @@ type PageProps = {
     params: Promise<{ id: string }>;
 };
 
-function RiskBadge({ level }: { level: string | null }) {
-    if (!level) return null;
-    const styles: Record<string, string> = {
-        ALTO:  "bg-red-500/20 text-red-400 border-red-500/30",
-        MEDIO: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-        BAJO:  "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    };
-    return (
-        <span className={`px-3 py-1 rounded-lg text-sm font-bold border ${styles[level] ?? "bg-slate-700 text-slate-300"}`}>
-            {level}
-        </span>
-    );
-}
-
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
     return (
         <div className="flex flex-col gap-1">

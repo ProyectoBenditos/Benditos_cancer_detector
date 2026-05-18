@@ -1,5 +1,10 @@
 import type { Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
+
+export const metadata: Metadata = {
+  title: "OncaScan Platform",
+  description: "Sistema inteligente de apoyo a la detección temprana de cáncer de pulmón",
+};
 import { Toaster } from "sonner";
 import "./globals.css";
 
@@ -12,11 +17,6 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
-export const metadata = {
-  title: "OncaScan Platform",
-  description: "Sistema inteligente de apoyo a la detección temprana de cáncer de pulmón",
-};
 
 export default function RootLayout({
   children,

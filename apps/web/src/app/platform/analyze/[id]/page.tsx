@@ -46,7 +46,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
     const [row, setRow] = useState<AnalysisRow | null>(null);
     const [error, setError] = useState("");
     const [timedOut, setTimedOut] = useState(false);
-    const startedAtRef = useRef<number>(Date.now());
+    const startedAtRef = useRef<number>(0);
 
     const fetchRow = useCallback(async () => {
         const { data, error: sessionError } = await supabase.auth.getSession();
@@ -77,6 +77,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
     useEffect(() => {
         let cancelled = false;
         let timer: ReturnType<typeof setTimeout> | null = null;
+        startedAtRef.current = Date.now();
 
         const tick = async () => {
             if (cancelled) return;

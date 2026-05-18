@@ -125,7 +125,7 @@ export default function LandingPage() {
                 <div className="p-3 bg-emerald-500/20 text-emerald-400 rounded-lg"><Stethoscope className="w-6 h-6" /></div>
                 <div>
                   <h3 className="font-semibold text-lg">Asistente, no reemplazo</h3>
-                  <p className="text-sm text-slate-400">Diseñado con "Second-Reader Paradigm"</p>
+                  <p className="text-sm text-slate-400">Diseñado con &ldquo;Second-Reader Paradigm&rdquo;</p>
                 </div>
               </div>
             </div>
