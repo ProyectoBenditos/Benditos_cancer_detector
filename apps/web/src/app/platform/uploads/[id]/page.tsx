@@ -168,17 +168,26 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         <span className="w-2 h-2 rounded-full bg-slate-400 inline-block"></span>
                         Información del archivo
                     </h2>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                        <InfoItem label="ID"           value={<span className="font-mono text-xs text-slate-400">{upload.id}</span>} />
-                        <InfoItem label="Estado"       value={upload.upload_status} />
-                        <InfoItem label="Archivo"      value={upload.original_name} />
-                        <InfoItem label="Tamaño"       value={upload.file_size ? `${(upload.file_size / 1024).toFixed(1)} KB` : null} />
-                        <InfoItem label="Modalidad"    value={upload.modality} />
-                        <InfoItem label="Fecha estudio" value={upload.study_date} />
-                        <InfoItem label="Patient ID"   value={upload.patient_id_dicom} />
-                        <InfoItem label="Creado"       value={new Date(upload.created_at).toLocaleString()} />
-                        <InfoItem label="Ruta storage" value={<span className="font-mono text-xs text-slate-500 break-all">{upload.storage_path}</span>} />
-                    </div>
+                    // DESPUÉS — agrega la línea de Referencia justo después de "Estado":
+<div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+    <InfoItem label="ID"           value={<span className="font-mono text-xs text-slate-400">{upload.id}</span>} />
+    <InfoItem label="Estado"       value={upload.upload_status} />
+    <InfoItem
+        label="Referencia del caso"
+        value={
+            upload.metadata_json?.case_ref
+                ? <span className="bg-blue-900/40 text-sky-300 border border-sky-700/40 px-2 py-0.5 rounded-md text-xs font-medium">{String(upload.metadata_json.case_ref)}</span>
+                : <span className="text-slate-500 text-xs italic">Sin referencia asignada</span>
+        }
+    />
+    <InfoItem label="Archivo"      value={upload.original_name} />
+    <InfoItem label="Tamaño"       value={upload.file_size ? `${(upload.file_size / 1024).toFixed(1)} KB` : null} />
+    <InfoItem label="Modalidad"    value={upload.modality} />
+    <InfoItem label="Fecha estudio" value={upload.study_date} />
+    <InfoItem label="Patient ID"   value={upload.patient_id_dicom} />
+    <InfoItem label="Creado"       value={new Date(upload.created_at).toLocaleString()} />
+    <InfoItem label="Ruta storage" value={<span className="font-mono text-xs text-slate-500 break-all">{upload.storage_path}</span>} />
+</div>
                 </div>
 
                 {/* Features clínicas si existen */}

@@ -28,25 +28,21 @@ export default async function UploadsPage({ searchParams }: PageProps) {
     const { q } = await searchParams;
     const supabase = await createClient();
 
-    let query = supabase
-        .from("dicom_uploads")
-        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, ai_score, ai_risk_level, metadata_json")
-        .order("created_at", { ascending: false });
+    // DESPUÉS — poner esto en su lugar:
+let query = supabase
+    .from("dicom_uploads")
+    .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, file_type, ai_score, ai_risk_level, metadata_json")
+    .order("created_at", { ascending: false });
 
-    // Filtrar por nombre de archivo si hay búsqueda
-    if (q && q.trim()) {
-        query = query.ilike("original_name", `%${q.trim()}%`);
-    }
+if (q && q.trim()) {
+    const term = q.trim();
+    query = query.or(
+        `original_name.ilike.%${term}%,metadata_json->>case_ref.ilike.%${term}%`
+    );
+}
 
-    const { data: uploads, error } = await query;
-
-    // Filtrar también por case_ref en metadata_json (client-side sobre los resultados)
-    const filtered = q && q.trim()
-        ? uploads?.filter(u =>
-            u.original_name.toLowerCase().includes(q.toLowerCase()) ||
-            (u.metadata_json?.case_ref ?? "").toLowerCase().includes(q.toLowerCase())
-          )
-        : uploads;
+const { data: uploads, error } = await query;
+const filtered = uploads;
 
     return (
         <PageContainer>
