@@ -1,7 +1,4 @@
-"use client";
-
 import { User } from "lucide-react";
-import LogoutButton from "@/app/platform/logout-button";
 
 export function Header({ userEmail = "Usuario" }: { userEmail?: string }) {
   return (
@@ -15,7 +12,6 @@ export function Header({ userEmail = "Usuario" }: { userEmail?: string }) {
           <p className="text-sm font-medium text-slate-700 truncate max-w-[160px]">{userEmail}</p>
           <p className="text-xs text-slate-500">Médico</p>
         </div>
-        <LogoutButton />
       </div>
     </header>
   );
