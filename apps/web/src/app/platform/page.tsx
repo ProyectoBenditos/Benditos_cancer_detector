@@ -72,7 +72,7 @@ export default async function PlatformPage() {
                                     <FileStack className="w-4 h-4 text-slate-400" aria-hidden="true" />
                                 </div>
                                 <p className="text-3xl font-extrabold text-slate-800">{totalUploads ?? 0}</p>
-                                <Link href="/platform/uploads" className="text-xs text-brand-primary font-medium hover:underline">Ver historial →</Link>
+                                <Link href="/platform/uploads" className="text-xs text-brand-primary font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded">Ver historial →</Link>
                             </CardContent>
                         </Card>
 
@@ -94,7 +94,7 @@ export default async function PlatformPage() {
                                     <ShieldAlert className="w-4 h-4 text-brand-danger" aria-hidden="true" />
                                 </div>
                                 <p className="text-3xl font-extrabold text-brand-danger">{altosRiesgo ?? 0}</p>
-                                <Link href="/platform/alertas" className="text-xs text-brand-danger font-medium hover:underline">Ver alertas →</Link>
+                                <Link href="/platform/alertas" className="text-xs text-brand-danger font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-danger focus-visible:ring-offset-1 rounded">Ver alertas →</Link>
                             </CardContent>
                         </Card>
 
@@ -105,7 +105,7 @@ export default async function PlatformPage() {
                                     <Brain className="w-4 h-4 text-white/80" aria-hidden="true" />
                                 </div>
                                 <p className="text-base font-bold text-white mt-1">multimodal-v1.0</p>
-                                <Link href="/platform/modelo" className="text-xs text-white/80 font-medium hover:underline">Ver detalles →</Link>
+                                <Link href="/platform/modelo" className="text-xs text-white/80 font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Ver detalles →</Link>
                             </CardContent>
                         </Card>
                     </div>
@@ -160,13 +160,13 @@ export default async function PlatformPage() {
                 <div>
                     <div className="flex items-center justify-between mb-4">
                         <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500">Actividad Reciente</h2>
-                        <Link href="/platform/uploads" className="text-xs text-brand-primary font-semibold hover:underline">Ver todo →</Link>
+                        <Link href="/platform/uploads" className="text-xs text-brand-primary font-semibold hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded">Ver todo →</Link>
                     </div>
                     <Card>
                         <CardContent className="p-0">
                             {!recientes || recientes.length === 0 ? (
                                 <div className="p-10 text-center text-slate-400 text-sm">
-                                    No hay estudios aún. <Link href="/platform/upload" className="text-brand-primary underline">Sube el primero</Link>.
+                                    No hay estudios aún. <Link href="/platform/upload" className="text-brand-primary underline focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded">Sube el primero</Link>.
                                 </div>
                             ) : (
                                 <ul className="divide-y divide-slate-100">

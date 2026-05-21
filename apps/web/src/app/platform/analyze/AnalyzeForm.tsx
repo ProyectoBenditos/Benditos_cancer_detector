@@ -33,7 +33,7 @@ export function AnalyzeForm() {
     const [fileInfo, setFileInfo] = useState<{ name: string; size: number } | null>(null);
 
     return (
-        <form action={formAction} className="space-y-8">
+        <form action={formAction} aria-label="Análisis IA de nódulo pulmonar" className="space-y-8">
             <div>
                 <label htmlFor="analyze-imagen" className="mb-2 block text-sm font-medium text-slate-700">
                     Imagen CT (PNG / JPG, máx 10 MB)

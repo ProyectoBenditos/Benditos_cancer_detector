@@ -13,7 +13,7 @@ export default function LandingPage() {
     <div className="min-h-screen bg-brand-primary text-white selection:bg-brand-danger/30 font-sans">
 
       {/* 1. Navbar */}
-      <nav className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-brand-primary/90 backdrop-blur border-b border-white/10">
+      <nav aria-label="Navegación principal" className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-brand-primary/90 backdrop-blur border-b border-white/10">
         <div className="flex items-center gap-2">
           <Image
             src="/images/brand/logo-oncascan.png"
@@ -24,18 +24,19 @@ export default function LandingPage() {
           />
         </div>
         <div className="hidden md:flex gap-6 text-sm font-medium text-slate-300">
-          <a href="#about" className="hover:text-brand-danger transition">Acerca de</a>
-          <a href="#features" className="hover:text-brand-danger transition">Características</a>
-          <a href="#architecture" className="hover:text-brand-danger transition">Tecnología</a>
-          <a href="#roadmap" className="hover:text-brand-danger transition">Roadmap</a>
+          <a href="#about" className="hover:text-brand-danger transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Acerca de</a>
+          <a href="#features" className="hover:text-brand-danger transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Características</a>
+          <a href="#architecture" className="hover:text-brand-danger transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Tecnología</a>
+          <a href="#roadmap" className="hover:text-brand-danger transition focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Roadmap</a>
         </div>
         <div>
-          <Link href="/login" className="px-5 py-2.5 bg-brand-danger hover:bg-brand-danger-hover text-white text-sm font-bold rounded-lg transition shadow-[0_0_15px_rgba(238,0,90,0.35)]">
+          <Link href="/login" className="px-5 py-2.5 bg-brand-danger hover:bg-brand-danger-hover text-white text-sm font-bold rounded-lg transition shadow-[0_0_15px_rgba(238,0,90,0.35)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary">
             Ingresar
           </Link>
         </div>
       </nav>
 
+      <main>
       {/* 2. Hero Section */}
       <header className="relative px-6 py-24 md:py-32 overflow-hidden flex flex-col items-center text-center">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-brand-danger/20 blur-[120px] rounded-full pointer-events-none" aria-hidden="true" />
@@ -58,10 +59,10 @@ export default function LandingPage() {
         </p>
 
         <div className="flex gap-4 relative z-10 mb-20">
-          <Link href="/login" className="flex items-center px-6 py-3 bg-brand-danger hover:bg-brand-danger-hover text-white font-semibold rounded-lg transition shadow-[0_0_20px_rgba(238,0,90,0.4)]">
+          <Link href="/login" className="flex items-center px-6 py-3 bg-brand-danger hover:bg-brand-danger-hover text-white font-semibold rounded-lg transition shadow-[0_0_20px_rgba(238,0,90,0.4)] focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary">
             Acceder a la Plataforma <ArrowRight className="ml-2 w-4 h-4" aria-hidden="true" />
           </Link>
-          <a href="#about" className="flex items-center px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition border border-white/10">
+          <a href="#about" className="flex items-center px-6 py-3 bg-white/5 hover:bg-white/10 text-white font-medium rounded-lg transition border border-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary">
             Conoce más
           </a>
         </div>
@@ -243,7 +244,7 @@ export default function LandingPage() {
           <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto">
             Creemos que la tecnología médica debe ser transparente y auditable. El código base de la plataforma OncaScan estará disponible en el repositorio de la organización.
           </p>
-          <a href="https://github.com/ProyectoBenditos/Benditos_cancer_detector" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-6 py-3 bg-white text-brand-primary font-medium rounded-lg hover:bg-slate-200 transition">
+          <a href="https://github.com/ProyectoBenditos/Benditos_cancer_detector" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-6 py-3 bg-white text-brand-primary font-medium rounded-lg hover:bg-slate-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2">
             Ver Repositorio <ArrowRight className="ml-2 w-4 h-4" aria-hidden="true" />
           </a>
         </div>
@@ -275,6 +276,8 @@ export default function LandingPage() {
         </div>
       </section>
 
+      </main>
+
       {/* 10. Footer */}
       <footer className="px-6 py-12 bg-black border-t border-white/10 text-center md:text-left">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
@@ -285,9 +288,9 @@ export default function LandingPage() {
             </p>
           </div>
           <div className="flex gap-4 text-xs font-medium text-slate-500">
-            <a href="#" className="hover:text-white transition">Privacidad</a>
-            <a href="#" className="hover:text-white transition">Términos</a>
-            <a href="https://github.com/ProyectoBenditos" className="hover:text-white transition">GitHub</a>
+            <a href="#" className="hover:text-white transition focus:outline-none focus-visible:ring-1 focus-visible:ring-white rounded">Privacidad</a>
+            <a href="#" className="hover:text-white transition focus:outline-none focus-visible:ring-1 focus-visible:ring-white rounded">Términos</a>
+            <a href="https://github.com/ProyectoBenditos" className="hover:text-white transition focus:outline-none focus-visible:ring-1 focus-visible:ring-white rounded">GitHub</a>
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-8 border-t border-white/5 text-xs text-slate-600 text-center">

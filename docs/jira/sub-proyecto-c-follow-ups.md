@@ -139,6 +139,36 @@ ef1f83e feat: redisenar uploads/[id] de dark theme a light theme + design system
  26 files changed, 1330 insertions(+), 509 deletions(-)
 ```
 
+## A11y findings pendientes para Sub-proyecto D
+
+Findings identificados en el sweep WCAG AA del 2026-05-21. Los que eran triviales se aplicaron directamente (ver commits `fix: a11y`). Los que requieren refactor se listan aquí.
+
+### Mayor — `modelo/page.tsx:130-138` — Bloque "Aviso Clínico" raw `<div>` (WCAG 1.3.1, Nivel A)
+
+El bloque de aviso clínico al final de la página usa un `<div>` con `<AlertTriangle>` + texto manual en vez del componente `AlertBanner`:
+
+```tsx
+<div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4">
+  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
+  <div>
+    <p className="text-sm font-bold text-amber-800 mb-1">Aviso Clínico Importante</p>
+    <p className="text-sm text-amber-700">...</p>
+  </div>
+</div>
+```
+
+**Solución**: Reemplazar por `<AlertBanner variant="warning" title="Aviso Clínico Importante" description="..." />`. Además de consistencia con el design system, el componente ya incluye `role="status"` + `aria-live="polite"`.
+
+**Impacto**: 1 archivo, 10 líneas → 1 línea. Bajo riesgo.
+
+### Menor — `AnalyzeForm.tsx` — inputs de features sin `<fieldset>`/`<legend>` (best practice, no WCAG failure)
+
+Los 8 inputs de features clínicas (Subtlety, Calcification, etc.) están agrupados bajo un `<h3>` pero sin `<fieldset>` + `<legend>`. Cada input tiene su propio `<label>` correctamente asociado (corregido en este sweep), por lo que no es fallo WCAG. Sin embargo, un `<fieldset>` mejoraría la navegación por AT en formularios con múltiples grupos.
+
+**Solución**: Envolver el grid de features en `<fieldset><legend className="sr-only">Features clínicas LIDC-IDRI</legend>...grid...</fieldset>`.
+
+---
+
 ## Co-authorship de fronted-nicolas
 
 Commits que adoptan trabajo de Nicolás Chávez Oliveros (`nicolaker031@gmail.com`):
