@@ -100,7 +100,14 @@ export default function LoginPage() {
                         {loading ? "Ingresando..." : "Iniciar Sesión"}
                     </Button>
 
-                    <p className="text-xs text-center text-slate-400 mt-6">Sistema exclusivo de uso académico controlado</p>
+                    <p className="text-center text-sm text-slate-500 mt-4">
+                        ¿No tienes cuenta?{" "}
+                        <a href="/signup" className="font-medium text-brand-primary hover:underline">
+                            Regístrate
+                        </a>
+                    </p>
+
+                    <p className="text-xs text-center text-slate-400 mt-4">Sistema exclusivo de uso académico controlado</p>
                 </form>
             </div>
         </main>
