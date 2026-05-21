@@ -23,17 +23,20 @@ export default async function UploadsPage({ searchParams }: PageProps) {
         .order("created_at", { ascending: false });
 
     if (q && q.trim()) {
-        query = query.ilike("original_name", `%${q.trim()}%`);
+        // Escapar caracteres que Supabase interpreta como separadores/wildcards en .or() filters.
+        // % y _ son wildcards en ilike; comas/paréntesis/comillas pueden romper la sintaxis del filtro.
+        const escaped = q
+            .trim()
+            .replace(/\\/g, "\\\\")
+            .replace(/[%_]/g, "\\$&")
+            .replace(/[,()'"]/g, "");
+        query = query.or(
+            `original_name.ilike.%${escaped}%,metadata_json->>case_ref.ilike.%${escaped}%`
+        );
     }
 
     const { data: uploads, error } = await query;
-
-    const filtered = q && q.trim()
-        ? uploads?.filter(u =>
-            u.original_name.toLowerCase().includes(q.toLowerCase()) ||
-            (u.metadata_json?.case_ref ?? "").toLowerCase().includes(q.toLowerCase())
-          )
-        : uploads;
+    const filtered = uploads;
 
     return (
         <PageContainer>
