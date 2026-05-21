@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { PageContainer } from "@/components/ui/PageContainer";
@@ -72,12 +72,19 @@ export default function UploadDicomPage() {
 
     const [file, setFile]               = useState<File | null>(null);
     const [caseRef, setCaseRef]         = useState("");
+    const [patientId, setPatientId]     = useState("");
+    const [patients, setPatients]       = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
     const [loading, setLoading]         = useState(false);
     const [analyzing, setAnalyzing]     = useState(false);
     const [errorMsg, setErrorMsg]       = useState("");
     const [successData, setSuccessData] = useState<UploadResponse | null>(null);
     const [features, setFeatures]       = useState<ClinicalFeatures>(DEFAULT_FEATURES);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+
+    useEffect(() => {
+        supabase.from("patients").select("id, external_id, display_alias").order("created_at", { ascending: false })
+            .then(({ data }) => { if (data) setPatients(data); });
+    }, []);
 
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -103,6 +110,9 @@ export default function UploadDicomPage() {
             formData.append("file", file);
             if (caseRef.trim()) {
                 formData.append("case_ref", caseRef.trim());
+            }
+            if (patientId) {
+                formData.append("patient_id", patientId);
             }
 
             const response = await fetch(
@@ -189,6 +199,30 @@ export default function UploadDicomPage() {
             <Card>
                 <CardContent className="p-8">
                     <form onSubmit={handleUpload} className="space-y-6">
+
+                        {/* Paciente asociado */}
+                        {patients.length > 0 && (
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700">
+                                    Paciente <span className="text-slate-400 font-normal">(opcional)</span>
+                                </label>
+                                <select
+                                    value={patientId}
+                                    onChange={(e) => setPatientId(e.target.value)}
+                                    className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+                                >
+                                    <option value="">Sin paciente asociado</option>
+                                    {patients.map((p) => (
+                                        <option key={p.id} value={p.id}>
+                                            {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-xs text-slate-400 mt-1">
+                                    Asociar el estudio a un paciente para agrupar sus análisis.
+                                </p>
+                            </div>
+                        )}
 
                         {/* Referencia del caso */}
                         <div>
@@ -378,6 +412,7 @@ export default function UploadDicomPage() {
                                 setAnalysisResult(null);
                                 setFeatures(DEFAULT_FEATURES);
                                 setCaseRef("");
+                                setPatientId("");
                                 setErrorMsg("");
                             }}
                             variant="secondary"
