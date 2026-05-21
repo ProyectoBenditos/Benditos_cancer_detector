@@ -72,7 +72,7 @@ export async function analyzeAction(
     let uploadId: string | undefined;
     try {
         const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/api/v1/analysis/predict`,
+            `${process.env.API_URL}/api/v1/analysis/predict`,
             {
                 method: "POST",
                 headers: { Authorization: `Bearer ${data.session.access_token}` },
