@@ -56,8 +56,9 @@ export function AnalyzeForm() {
                 )}
             </div>
 
-            <div>
-                <h3 className="text-sm font-semibold text-slate-800 mb-3">Features clínicas</h3>
+            <fieldset className="border-0 p-0 m-0">
+                <legend className="sr-only">Features clínicas LIDC-IDRI</legend>
+                <p aria-hidden="true" className="text-sm font-semibold text-slate-800 mb-3">Features clínicas</p>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {FEATURES.map((spec) => (
                         <Input
@@ -76,7 +77,7 @@ export function AnalyzeForm() {
                 <p className="text-xs text-slate-500 mt-3">
                     Las features siguen la convención LIDC-IDRI. Valor por defecto 3 = intermedio.
                 </p>
-            </div>
+            </fieldset>
 
             <Button type="submit" variant="primary" size="lg" loading={pending}>
                 {pending ? "Iniciando análisis..." : "Ejecutar análisis"}
