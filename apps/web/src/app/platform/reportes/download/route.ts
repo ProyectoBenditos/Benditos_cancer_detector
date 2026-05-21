@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
     let query = supabase
         .from("dicom_uploads")
         .select("id, original_name, modality, study_date, ai_risk_level, ai_score, ai_recommendation, ai_model_version, upload_status, created_at, metadata_json")
+        .eq("user_id", user.id)
         .order("created_at", { ascending: false });
 
     if (tipo === "alto_riesgo") {
