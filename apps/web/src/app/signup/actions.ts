@@ -43,27 +43,34 @@ export async function signupAction(
 
   const supabase = await createClient();
 
+  // Los datos del perfil se pasan como metadata — el trigger on_auth_user_created
+  // los lee de raw_user_meta_data e inserta en public.profiles automáticamente.
+  // Esto evita problemas de RLS al insertar desde el server action.
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      data: {
+        full_name: fullName,
+        cedula_profesional: cedulaProfesional,
+        especialidad,
+        institucion,
+      },
+    },
   });
 
-  if (authError || !authData.user) {
-    return { error: authError?.message ?? "No se pudo crear la cuenta. Intenta de nuevo." };
+  if (authError) {
+    return { error: authError.message ?? "No se pudo crear la cuenta. Intenta de nuevo." };
   }
 
-  const { error: profileError } = await supabase.from("profiles").insert({
-    id: authData.user.id,
-    full_name: fullName,
-    cedula_profesional: cedulaProfesional,
-    especialidad,
-    institucion,
-    role: "medico",
-    status: "pending",
-  });
+  if (!authData.user) {
+    return { error: "No se pudo crear la cuenta. Intenta de nuevo." };
+  }
 
-  if (profileError) {
-    return { error: "No se pudo guardar el perfil profesional. Contacta soporte." };
+  // Si el email ya estaba registrado, Supabase no devuelve error pero sí user sin session.
+  // Identificamos este caso por la ausencia de identidades en el response.
+  if (authData.user.identities && authData.user.identities.length === 0) {
+    return { error: "Este correo ya tiene una cuenta registrada. Intenta iniciar sesión." };
   }
 
   redirect("/signup?ok=true");

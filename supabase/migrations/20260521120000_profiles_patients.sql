@@ -1,6 +1,6 @@
 -- ============================================================
 -- Sub-proyecto E: profiles + patients + patient_id en dicom_uploads
--- Aplicar manualmente en el dashboard Supabase
+-- Aplicar manualmente en el dashboard Supabase > SQL Editor
 -- ============================================================
 
 -- --------------------------------------------------------
@@ -54,6 +54,43 @@ CREATE POLICY profiles_admin_update ON public.profiles
       WHERE p.id = auth.uid() AND p.role = 'admin'
     )
   );
+
+-- --------------------------------------------------------
+-- Trigger: crea fila en profiles automáticamente al registrarse
+-- Bypasa RLS — no requiere service role key en el frontend.
+-- Lee los datos del médico desde raw_user_meta_data.
+-- --------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger
+LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = ''
+AS $$
+BEGIN
+  INSERT INTO public.profiles (
+    id,
+    full_name,
+    cedula_profesional,
+    especialidad,
+    institucion,
+    role,
+    status
+  )
+  VALUES (
+    NEW.id,
+    COALESCE(NEW.raw_user_meta_data->>'full_name', 'Sin nombre'),
+    COALESCE(NEW.raw_user_meta_data->>'cedula_profesional', 'N/A'),
+    COALESCE(NEW.raw_user_meta_data->>'especialidad', 'N/A'),
+    COALESCE(NEW.raw_user_meta_data->>'institucion', 'N/A'),
+    'medico',
+    'pending'
+  );
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
 
 -- --------------------------------------------------------
 -- Tabla: patients
