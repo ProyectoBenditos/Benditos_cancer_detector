@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 
 export default function LoginPage() {
-    const router = useRouter();
     const supabase = createClient();
 
     const [email, setEmail] = useState("");
@@ -33,8 +31,9 @@ export default function LoginPage() {
             return;
         }
 
-        router.push("/platform");
-        router.refresh();
+        // Hard navigation para garantizar que las cookies de sesión
+        // lleguen frescas al Server Component (evita race condition con router.push)
+        window.location.href = "/platform";
     };
 
     return (

@@ -37,23 +37,34 @@ CREATE POLICY profiles_insert_own ON public.profiles
 CREATE POLICY profiles_update_own ON public.profiles
   FOR UPDATE USING (auth.uid() = id);
 
+-- --------------------------------------------------------
+-- Helper SECURITY DEFINER para evitar recursión infinita en policies
+-- Una policy sobre profiles NO puede consultar profiles directamente
+-- (PostgreSQL aborta con error 42P17). Esta función bypasa RLS al
+-- consultar la tabla porque corre con privilegios del owner.
+-- --------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS boolean
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = ''
+STABLE
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.profiles
+    WHERE id = auth.uid() AND role = 'admin'
+  );
+$$;
+
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
 -- Admin puede leer TODOS los perfiles
 CREATE POLICY profiles_admin_select ON public.profiles
-  FOR SELECT USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
-  );
+  FOR SELECT USING (public.is_admin());
 
 -- Admin puede actualizar TODOS los perfiles (para aprobar/rechazar)
 CREATE POLICY profiles_admin_update ON public.profiles
-  FOR UPDATE USING (
-    EXISTS (
-      SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'admin'
-    )
-  );
+  FOR UPDATE USING (public.is_admin());
 
 -- --------------------------------------------------------
 -- Trigger: crea fila en profiles automáticamente al registrarse
