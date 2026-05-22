@@ -1,0 +1,55 @@
+#!/usr/bin/env sh
+# Hook commit-msg para OncoScan.
+# Documentado en docs/psp/conventions.md (KAN-69, KAN-70).
+#
+# Convención obligatoria (regla absoluta 1 de PSP — Trazabilidad):
+#   tipo(KAN-XX): descripción
+#
+# `tipo` ∈ feat | fix | chore | docs | refactor | style | test
+# `KAN-XX` (entre paréntesis) es opcional sintácticamente para
+# permitir commits de merge / revert / squash, pero CI/PR enforcement
+# debe rechazar PRs cuyos commits regulares no lo lleven a partir
+# de 2026-05-22.
+#
+# Activación en el clon local:
+#   git config core.hooksPath .githooks
+
+MSG_FILE="$1"
+# Primer renglón solamente (subject del commit).
+SUBJECT="$(head -n1 "$MSG_FILE")"
+
+# Permitir commits de merge, revert y fixup sin validar.
+case "$SUBJECT" in
+    Merge*|"Revert "*|fixup!*|squash!*) exit 0 ;;
+esac
+
+REGEX='^(feat|fix|chore|docs|refactor|style|test)(\([A-Za-z0-9_-]+\))?(\(KAN-[0-9]+\))?: .{4,}$'
+
+if ! echo "$SUBJECT" | grep -Eq "$REGEX"; then
+    cat <<MSG >&2
+[commit-msg] ❌  Mensaje no cumple la convención de OncoScan.
+
+Recibido:
+    $SUBJECT
+
+Esperado (subject):
+    tipo(KAN-XX): descripción breve
+
+  tipo  ∈ feat | fix | chore | docs | refactor | style | test
+  KAN-XX (opcional) — referencia al issue Jira que cierra/avanza.
+
+Ejemplos válidos:
+    feat(KAN-55): logging estructurado con allowlist PHI
+    fix(KAN-56): eliminar print() que exponen PHI
+    docs(KAN-69): publicar convenciones de commits
+    chore: limpiar archivos temporales
+
+Para anular este hook en una emergencia (admin only):
+    git commit --no-verify ...
+
+Ver docs/psp/conventions.md para el detalle.
+MSG
+    exit 1
+fi
+
+exit 0

@@ -25,10 +25,20 @@ tipo(KAN-XX): descripción breve en español
 
 ### Hook commit-msg
 
-`apps/web/.husky/commit-msg` (creado en KAN-pendiente de Fase 6.3) rechaza mensajes que no cumplan:
+[`.githooks/commit-msg`](../../.githooks/commit-msg) valida la convención. Se eligió `.githooks/` portable en lugar de `apps/web/.husky/` para no acoplarlo al instalador de npm de la app web y para que aplique al repo completo.
+
+**Activación local (cada integrante, una sola vez):**
+
+```sh
+git config core.hooksPath .githooks
+```
+
+En Windows el hook funciona porque Git Bash interpreta el shebang. Si Git no lo invoca como script, marcar permisos: `chmod +x .githooks/commit-msg` (ya commiteado).
+
+Regex validada:
 
 ```
-^(feat|fix|chore|docs|refactor|style|test)(\([A-Za-z0-9-]+\))?(\(KAN-\d+\))?: .{4,}$
+^(feat|fix|chore|docs|refactor|style|test)(\([A-Za-z0-9_-]+\))?(\(KAN-\d+\))?: .{4,}$
 ```
 
 Override con `--no-verify` está permitido solo para Mateo Salas (admin del repo) en correcciones de emergencia, y debe quedar registrado en el cuerpo del siguiente commit normal.
