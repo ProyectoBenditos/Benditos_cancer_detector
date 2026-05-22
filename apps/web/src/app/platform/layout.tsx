@@ -15,9 +15,20 @@ export default async function PlatformLayout({
     redirect("/login");
   }
 
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("role, status")
+    .eq("id", user.id)
+    .single();
+
+  // Si no tiene perfil o no está aprobado (y no es admin) → cuenta-pendiente
+  if (!profile || (profile.status !== "approved" && profile.role !== "admin")) {
+    redirect("/cuenta-pendiente");
+  }
+
   return (
     <div className="min-h-screen bg-brand-bg flex">
-      <Sidebar />
+      <Sidebar userRole={profile.role} />
       <div className="flex-1 ml-64 flex flex-col min-h-screen relative">
         <Header userEmail={user.email} />
         <main className="p-8 flex-1 overflow-y-auto w-full">

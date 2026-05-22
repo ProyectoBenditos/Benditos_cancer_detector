@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createClient } from "@/utils/supabase/client";
 import { Button } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 
 export default function LoginPage() {
-    const router = useRouter();
     const supabase = createClient();
 
     const [email, setEmail] = useState("");
@@ -33,8 +31,9 @@ export default function LoginPage() {
             return;
         }
 
-        router.push("/platform");
-        router.refresh();
+        // Hard navigation para garantizar que las cookies de sesión
+        // lleguen frescas al Server Component (evita race condition con router.push)
+        window.location.href = "/platform";
     };
 
     return (
@@ -100,7 +99,14 @@ export default function LoginPage() {
                         {loading ? "Ingresando..." : "Iniciar Sesión"}
                     </Button>
 
-                    <p className="text-xs text-center text-slate-400 mt-6">Sistema exclusivo de uso académico controlado</p>
+                    <p className="text-center text-sm text-slate-500 mt-4">
+                        ¿No tienes cuenta?{" "}
+                        <a href="/signup" className="font-medium text-brand-primary hover:underline">
+                            Regístrate
+                        </a>
+                    </p>
+
+                    <p className="text-xs text-center text-slate-400 mt-4">Sistema exclusivo de uso académico controlado</p>
                 </form>
             </div>
         </main>

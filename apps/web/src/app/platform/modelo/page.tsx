@@ -2,7 +2,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Brain, Database, BarChart3, ShieldCheck, AlertTriangle, Layers } from "lucide-react";
+import { Brain, Database, BarChart3, ShieldCheck, Layers } from "lucide-react";
 
 export default function ModeloPage() {
     return (
@@ -15,7 +15,7 @@ export default function ModeloPage() {
             <AlertBanner
                 variant="warning"
                 title="Contenido pendiente de validación clínica"
-                description="La información técnica de esta página está pendiente de revisión por el equipo de IA del proyecto. No usar como referencia para decisiones clínicas reales."
+                description="Información técnica pendiente de validación por el AI Engineer del proyecto. No usar como referencia para decisiones clínicas reales."
                 className="mb-6"
             />
 
@@ -127,15 +127,11 @@ export default function ModeloPage() {
             </div>
 
             {/* Aviso clínico */}
-            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 flex gap-4">
-                <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" aria-hidden="true" />
-                <div>
-                    <p className="text-sm font-bold text-amber-800 mb-1">Aviso Clínico Importante</p>
-                    <p className="text-sm text-amber-700">
-                        Este sistema es exclusivamente una <strong>herramienta de apoyo diagnóstico</strong>. Los resultados del modelo IA no constituyen diagnóstico médico definitivo y no deben reemplazar el juicio clínico del especialista. Todo resultado debe ser validado por un profesional de salud calificado antes de tomar decisiones terapéuticas.
-                    </p>
-                </div>
-            </div>
+            <AlertBanner
+                variant="warning"
+                title="Aviso Clínico Importante"
+                description="Este sistema es exclusivamente una herramienta de apoyo diagnóstico. Los resultados del modelo IA no constituyen diagnóstico médico definitivo y no deben reemplazar el juicio clínico del especialista. Todo resultado debe ser validado por un profesional de salud calificado antes de tomar decisiones terapéuticas."
+            />
         </PageContainer>
     );
 }

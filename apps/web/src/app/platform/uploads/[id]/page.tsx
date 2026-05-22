@@ -42,6 +42,10 @@ export default async function UploadDetailPage({ params }: PageProps) {
 
     if (error || !upload) notFound();
 
+    const patient = upload.patient_id
+        ? (await supabase.from("patients").select("external_id, display_alias").eq("id", upload.patient_id).single()).data
+        : null;
+
     const isAnalyzed = upload.upload_status === "analyzed" || upload.upload_status === "ai_completed";
     const hasError = upload.upload_status === "error" || upload.upload_status === "ai_failed";
     const caseRef = upload.metadata_json?.case_ref;
@@ -175,7 +179,17 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         />
                         <InfoItem label="Modalidad" value={upload.modality} />
                         <InfoItem label="Fecha estudio" value={upload.study_date} />
-                        <InfoItem label="Patient ID" value={upload.patient_id_dicom} />
+                        <InfoItem label="Patient ID DICOM" value={upload.patient_id_dicom} />
+                        <InfoItem
+                            label="Paciente registrado"
+                            value={
+                                patient
+                                    ? <Link href={`/platform/pacientes/${upload.patient_id}`} className="text-brand-primary hover:underline font-medium">
+                                        {patient.display_alias ?? patient.external_id}
+                                      </Link>
+                                    : <span className="text-slate-400 text-xs italic">No asociado</span>
+                            }
+                        />
                         <InfoItem
                             label="Creado"
                             value={new Date(upload.created_at).toLocaleString()}

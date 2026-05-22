@@ -1,0 +1,216 @@
+{
+  "info": {
+    "name": "OncoScan API",
+    "_postman_id": "oncoscan-collection-v1",
+    "description": "Colección de endpoints clave de la API OncoScan (FastAPI). Ver docs/postman/README.md para instrucciones de uso.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "description": "URL base de la API FastAPI (local o producción)"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "description": "JWT de Supabase Auth. Obtener desde DevTools del browser (cookie sb-*-auth-token → access_token)"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Health Check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{base_url}}/api/v1/health",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "health"]
+        },
+        "description": "Verifica que el servidor FastAPI está activo. No requiere autenticación."
+      },
+      "response": []
+    },
+    {
+      "name": "2. Subir DICOM (upload)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "file",
+              "type": "file",
+              "src": [],
+              "description": "Archivo DICOM (.dcm), PNG o JPG"
+            },
+            {
+              "key": "case_ref",
+              "value": "TEST-001",
+              "type": "text",
+              "description": "Referencia interna del caso (opcional)"
+            },
+            {
+              "key": "patient_id",
+              "value": "",
+              "type": "text",
+              "description": "UUID del paciente registrado en OncoScan (opcional)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/dicom/upload",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "dicom", "upload"]
+        },
+        "description": "Sube un archivo DICOM, PNG o JPG. Requiere JWT en Authorization header. Devuelve dicom_id para el siguiente paso."
+      },
+      "response": []
+    },
+    {
+      "name": "3. Analizar DICOM (predict)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"subtlety\": 3,\n  \"calcification\": 6,\n  \"sphericity\": 4,\n  \"margin\": 4,\n  \"lobulation\": 1,\n  \"spiculation\": 1,\n  \"texture\": 5,\n  \"malignancy\": 3\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/dicom/analyze/:dicom_id",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "dicom", "analyze", ":dicom_id"],
+          "variable": [
+            {
+              "key": "dicom_id",
+              "value": "",
+              "description": "UUID del dicom_uploads. Se obtiene del response de /dicom/upload"
+            }
+          ]
+        },
+        "description": "Ejecuta el análisis IA sobre un DICOM ya subido. Requiere el dicom_id del paso anterior y las 8 features clínicas en el body JSON."
+      },
+      "response": []
+    },
+    {
+      "name": "4. Análisis con imagen (predict directo)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "imagen",
+              "type": "file",
+              "src": [],
+              "description": "Imagen PNG o JPG"
+            },
+            { "key": "subtlety",      "value": "3", "type": "text" },
+            { "key": "calcification", "value": "6", "type": "text" },
+            { "key": "sphericity",    "value": "4", "type": "text" },
+            { "key": "margin",        "value": "4", "type": "text" },
+            { "key": "lobulation",    "value": "1", "type": "text" },
+            { "key": "spiculation",   "value": "1", "type": "text" },
+            { "key": "texture",       "value": "5", "type": "text" },
+            { "key": "malignancy",    "value": "3", "type": "text" }
+          ]
+        },
+        "url": {
+          "raw": "{{base_url}}/api/v1/analysis/predict",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "analysis", "predict"]
+        },
+        "description": "Predicción directa enviando imagen + features en form-data. Equivalente al flujo del form de análisis IA en la web."
+      },
+      "response": []
+    },
+    {
+      "name": "5. Obtener resultado de análisis",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{access_token}}",
+            "type": "text"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/v1/analysis/:upload_id",
+          "host": ["{{base_url}}"],
+          "path": ["api", "v1", "analysis", ":upload_id"],
+          "variable": [
+            {
+              "key": "upload_id",
+              "value": "",
+              "description": "UUID del upload retornado por /analysis/predict"
+            }
+          ]
+        },
+        "description": "Obtiene el resultado de un análisis IA por su upload_id."
+      },
+      "response": []
+    },
+    {
+      "name": "6. Descargar reporte CSV (alto riesgo)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Cookie",
+            "value": "sb-access-token={{access_token}}",
+            "type": "text",
+            "description": "Autenticación via cookie de Supabase. Alternativa: usar el browser directamente."
+          }
+        ],
+        "url": {
+          "raw": "http://localhost:3000/platform/reportes/download?tipo=alto_riesgo",
+          "protocol": "http",
+          "host": ["localhost"],
+          "port": "3000",
+          "path": ["platform", "reportes", "download"],
+          "query": [
+            {
+              "key": "tipo",
+              "value": "alto_riesgo",
+              "description": "Opciones: completo, alto_riesgo, estadistico, con_referencia"
+            }
+          ]
+        },
+        "description": "Descarga CSV de reportes filtrado por alto riesgo. Llama a la ruta Next.js (puerto 3000). Requiere cookie de sesión — mejor testearlo directamente en el browser."
+      },
+      "response": []
+    }
+  ]
+}

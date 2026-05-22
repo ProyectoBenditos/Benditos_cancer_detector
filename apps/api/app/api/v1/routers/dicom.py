@@ -2,6 +2,7 @@ import io
 import os
 import tempfile
 from datetime import datetime, timezone
+from typing import Optional
 from uuid import uuid4
 
 import httpx
@@ -58,6 +59,7 @@ def dicom_to_png_bytes(file_bytes: bytes) -> bytes:
 async def upload_dicom(
     file: UploadFile = File(...),
     case_ref: str = Form(""),
+    patient_id: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
 ):
     if not file.filename:
@@ -117,6 +119,7 @@ async def upload_dicom(
             "modality":         modality,
             "study_date":       study_date,
             "patient_id_dicom": patient_id_dicom,
+            "patient_id":       patient_id or None,
             "upload_status":    "uploaded",
             "file_type":        "dicom" if is_dicom else "image",
             "metadata_json": {
