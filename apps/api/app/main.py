@@ -1,14 +1,22 @@
+import os
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api.v1.routers.health import router as health_router
-from app.api.v1.routers.dicom import router as dicom_router
+
 from app.api.v1.routers.analysis import router as analysis_router
+from app.api.v1.routers.dicom import router as dicom_router
+from app.api.v1.routers.health import router as health_router
+from app.core.logging import configure_logging, log_event
+
+configure_logging(level=os.getenv("LOG_LEVEL", "INFO"))
 
 app = FastAPI(
     title="OncaScan API",
     description="Backend inicial para OncaScan Platform",
     version="0.1.0",
 )
+
+log_event("api_boot", app_name="OncaScan API", app_version="0.1.0")
 
 app.add_middleware(
     CORSMiddleware,
