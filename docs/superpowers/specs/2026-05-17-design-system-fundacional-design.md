@@ -349,3 +349,11 @@ Si después del audit `brand-danger` falla en algún uso legítimo de texto pequ
   - PhantomButton / PhantomLink convirtiéndose en features reales (con confirmación previa al usuario)
   - `error.tsx` y `loading.tsx` por ruta
   - Cualquier otra deuda técnica en `apps/web/`
+
+---
+
+## Issues cubiertos
+
+- **KAN-45** — Sistema de diseño fundacional (tokens Deep Space Blue + Raspberry Red, componentes `Button` / `AlertBanner` / `RiskBadge`, sweep WCAG AA, escala tipográfica).
+
+Trazabilidad complementaria en [`docs/psp/traceability-matrix.md`](../../psp/traceability-matrix.md).

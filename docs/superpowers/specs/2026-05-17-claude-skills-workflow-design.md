@@ -215,3 +215,9 @@ Va en `.gitignore`.
 
 - **Sub-proyecto B** — design system fundacional: refactor `globals.css`, escala tipográfica, componentes con variantes, patrón de jerarquía de alertas, contraste WCAG AA en toda la plataforma.
 - **Sub-proyecto C** — patrones de código + arreglar features rotas (PhantomButtons que deben ser reales, refactor de páginas a server actions, error boundaries por ruta).
+
+---
+
+## Issues cubiertos
+
+n/a — este spec describe infraestructura de proceso (uso de skills Claude para el flujo de trabajo del repo), no entrega producto. No tiene KAN-XX asociado en el board.

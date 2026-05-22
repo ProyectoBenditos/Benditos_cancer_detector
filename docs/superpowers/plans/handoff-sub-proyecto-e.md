@@ -162,3 +162,11 @@ CREATE POLICY profiles_admin_update ON public.profiles FOR UPDATE USING (public.
 ### Nota sobre proxy.ts vs middleware.ts
 
 Next.js 16 deprecó `middleware.ts` a favor de `proxy.ts`. El proyecto ya usa `apps/web/src/proxy.ts` que invoca `updateSession()` correctamente. **No crear `middleware.ts`** — coexistir ambos archivos rompe el dev server.
+
+---
+
+## Issues cubiertos
+
+Handoff operativo del sub-proyecto E. Sin issues Jira nominales; entregables referenciados por commit en [`2026-05-21-sub-proyecto-e.md`](2026-05-21-sub-proyecto-e.md) y post-mortem en [`docs/psp/postmortems/sub-proyecto-e.md`](../../psp/postmortems/sub-proyecto-e.md).
+
+Desde el sub-proyecto F en adelante, cada handoff debe abrir issue(s) Jira antes del primer commit (regla de KAN-70 + DoR en [`docs/psp/definition-of-ready.md`](../../psp/definition-of-ready.md)).
