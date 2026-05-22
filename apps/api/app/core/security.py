@@ -3,6 +3,7 @@ from typing import Any, Dict
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.core.logging import log_event
 from app.db.supabase_client import supabase
 
 bearer_scheme = HTTPBearer(auto_error=False)
@@ -67,9 +68,15 @@ async def get_current_user(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"DEBUG EXCEPTION IN get_current_user: {repr(e)}")
+        log_event(
+            "auth_token_validation_failed",
+            level="ERROR",
+            exc_info=True,
+            error_type=type(e).__name__,
+            http_status=401,
+        )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=f"No se pudo validar el token: {str(e)}",
+            detail="No se pudo validar el token",
             headers={"WWW-Authenticate": "Bearer"},
         )

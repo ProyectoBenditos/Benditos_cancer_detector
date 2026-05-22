@@ -17,6 +17,7 @@ from fastapi import (
 )
 
 from app.core.config import SUPABASE_BUCKET_NAME
+from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
 from app.services.hf_client import HFInferenceError, predict as hf_predict
@@ -91,8 +92,14 @@ async def create_analysis(
             file_options={"content-type": content_type or "image/png"},
         )
     except Exception as e:
-        print(f"DEBUG EXCEPTION uploading analysis image: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Error subiendo imagen: {str(e)}")
+        log_event(
+            "storage_upload_failed",
+            level="ERROR",
+            exc_info=True,
+            error_type=type(e).__name__,
+            http_status=500,
+        )
+        raise HTTPException(status_code=500, detail="Error subiendo imagen")
 
     try:
         insert_response = supabase.table("dicom_uploads").insert({
@@ -113,8 +120,14 @@ async def create_analysis(
             },
         }).execute()
     except Exception as e:
-        print(f"DEBUG EXCEPTION inserting analysis row: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Error registrando analisis: {str(e)}")
+        log_event(
+            "dicom_uploads_insert_failed",
+            level="ERROR",
+            exc_info=True,
+            error_type=type(e).__name__,
+            http_status=500,
+        )
+        raise HTTPException(status_code=500, detail="Error registrando análisis")
 
     rows = getattr(insert_response, "data", None) or []
     if not rows:
@@ -160,8 +173,14 @@ async def get_analysis(
             .execute()
         )
     except Exception as e:
-        print(f"DEBUG EXCEPTION reading analysis row: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Error consultando registro: {str(e)}")
+        log_event(
+            "dicom_uploads_read_failed",
+            level="ERROR",
+            exc_info=True,
+            error_type=type(e).__name__,
+            http_status=500,
+        )
+        raise HTTPException(status_code=500, detail="Error consultando registro")
 
     rows = getattr(response, "data", None) or []
     if not rows:
@@ -189,12 +208,23 @@ def _run_inference(
             )
         )
         _persist_success(upload_id, payload)
-        print(f"DEBUG analysis {upload_id} completed with score={payload.get('score')}")
+        log_event("analysis_completed", upload_id_hash=hash_id(upload_id))
     except HFInferenceError as e:
-        print(f"DEBUG HFInferenceError for {upload_id}: {e}")
+        log_event(
+            "hf_inference_failed",
+            level="ERROR",
+            upload_id_hash=hash_id(upload_id),
+            error_type=type(e).__name__,
+        )
         _persist_failure(upload_id, str(e))
     except Exception as e:
-        print(f"DEBUG unexpected error in inference for {upload_id}: {repr(e)}")
+        log_event(
+            "inference_unexpected_error",
+            level="ERROR",
+            exc_info=True,
+            upload_id_hash=hash_id(upload_id),
+            error_type=type(e).__name__,
+        )
         _persist_failure(upload_id, f"Error inesperado: {str(e)}")
 
 
@@ -211,7 +241,13 @@ def _persist_success(upload_id: str, payload: Dict[str, Any]) -> None:
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()
     except Exception as e:
-        print(f"DEBUG persist_success failed for {upload_id}: {repr(e)}")
+        log_event(
+            "persist_success_failed",
+            level="ERROR",
+            exc_info=True,
+            upload_id_hash=hash_id(upload_id),
+            error_type=type(e).__name__,
+        )
 
 
 def _persist_failure(upload_id: str, message: str) -> None:
@@ -223,7 +259,13 @@ def _persist_failure(upload_id: str, message: str) -> None:
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()
     except Exception as e:
-        print(f"DEBUG persist_failure failed for {upload_id}: {repr(e)}")
+        log_event(
+            "persist_failure_failed",
+            level="ERROR",
+            exc_info=True,
+            upload_id_hash=hash_id(upload_id),
+            error_type=type(e).__name__,
+        )
 
 
 def _safe_float(value: Any) -> Optional[float]:
