@@ -119,3 +119,24 @@ Son botones/links de features no implementadas que muestran un toast informativo
 - CSS-in-JS
 - UI kits (shadcn/ui, MUI, Ant Design, etc.)
 - Nuevas librerías de estado (Zustand, Jotai, etc.)
+
+## Política `console.*`
+
+`console.log`, `console.warn`, `console.error` están **prohibidos** en código productivo del frontend, con dos excepciones puntuales:
+
+1. **Error boundaries** (`apps/web/src/app/**/error.tsx`): pueden invocar `console.error` solo con identificadores opacos como `error.digest`. Nunca con `error.message`, `stack`, ni con datos del usuario.
+2. **Scripts puntuales** bajo `apps/web/scripts/` (si los hay): permitidos con `// eslint-disable-next-line no-console`.
+
+Para el resto, cualquier necesidad de observabilidad va a telemetría server-side cuando se implemente. Mientras tanto, los errores transitorios se muestran al usuario con `toast.error()` (sin leak de detalle interno) y los errores persistentes con `<AlertBanner variant="error">`.
+
+**Nunca** loguear desde el cliente:
+
+- `email` del usuario, `fullName`, `cedula_profesional`, `institucion`, `especialidad`.
+- `score` de IA, `nivel_riesgo`, `recomendacion`, `result_json`, `Case_Ref`.
+- Rutas de Supabase Storage, `storage_path`, URLs firmadas.
+- Tokens de auth (`access_token`, `refresh_token`, JWT).
+- `patient_id`, `patient_id_dicom`, `display_alias`, `external_id`.
+
+Esta lista refleja `PHI_KEYS` definido en [`apps/api/app/core/logging.py`](../api/app/core/logging.py) y debe mantenerse en paralelo si el backend la amplía.
+
+Auditoría del repo: `git grep -n "console\." apps/web/src` debe devolver únicamente la línea de `platform/error.tsx` con `error.digest`.
