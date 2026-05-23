@@ -158,8 +158,67 @@ Estas tres acciones requieren Jira admin y no fueron ejecutables vía MCP de Atl
 
 ---
 
+## Adenda 2026-05-23 — cierre operativo
+
+Tras el reporte original, se completaron los tres pendientes reales y se transicionó la tabla de Jira.
+
+### Pendientes de trabajo cerrados (3)
+
+| KAN | Entregable | Commit |
+|-----|------------|--------|
+| KAN-75 | Sección "Política `console.*`" añadida a [`apps/web/CLAUDE.md`](../../../apps/web/CLAUDE.md) | `9d5e005` |
+| KAN-72 | 3 archivos de test adicionales (`Button.test.tsx`, `RiskBadge.test.tsx`, `StatusBadge.test.tsx`) — vitest llega a **8 archivos / 53 tests verdes** (meta 8/36 = 22 % cumplida) | post-`9d5e005` |
+| KAN-73 | Sección "Issues cubiertos" añadida a 4 specs + 5 plans en `docs/superpowers/` | post-`9d5e005` |
+
+### Issues cancelados por decisión del equipo (3)
+
+El modelo IA queda como está al cierre del MVP (ResNet18 transfer learning + 8 features clínicas + clasificación BAJO/MEDIO/ALTO, servido en HF Space `luisdam-oncoscan-ai`). Los siguientes issues, que proponían trabajo futuro del modelo no acordado, se cerraron con comentario justificativo:
+
+| KAN | Resumen | Razón de cierre |
+|-----|---------|-----------------|
+| KAN-12 | Pipeline de entrenamiento multimodal (tabular + imagen) | El MVP no incluye multimodal; abrir issue nuevo si se retoma. |
+| KAN-13 | Métricas AUC / sensibilidad / especificidad MVP | Las métricas calculadas viven en KAN-28 (Test Set). |
+| KAN-14 | Serialización + versionado del modelo para Railway | Versionado vigente cubierto por KAN-26/27/30. |
+
+### Transiciones a Finalizado (19 issues vía MCP)
+
+- **16 entregas de remediación**: KAN-55, KAN-56, KAN-57, KAN-58, KAN-60, KAN-61, KAN-62, KAN-63, KAN-64, KAN-65, KAN-66, KAN-68, KAN-69, KAN-70, KAN-71, KAN-74.
+- **3 entregas finales del cierre operativo**: KAN-72, KAN-73, KAN-75.
+- **3 cancelaciones del modelo**: KAN-12, KAN-13, KAN-14.
+
+### Estado de Jira al cierre
+
+| Métrica | Antes del cierre operativo | Tras el cierre operativo |
+|---------|---------------------------|--------------------------|
+| Issues no-Epic en `Finalizado` | 23 / 60 (38 %) | **45 / 60 (75 %)** |
+| Issues abiertos no-Epic | 37 | **17** |
+| Issues de remediación (KAN-55..75) en `Finalizado` | 0 / 21 | **19 / 21** (KAN-59 y KAN-67 = manuales en Jira admin) |
+
+### Trabajo legítimo abierto (no remediación) — sub-proyecto F
+
+Los 17 issues que quedan en `Diseño` / `Planificación` / `Desarrollo` son backlog del sub-proyecto F, no remediación incompleta:
+
+| Epic | Issues abiertos | Responsable | Tema |
+|------|-----------------|-------------|------|
+| KAN-48 API Gateway | KAN-9 | Juan Esteban Aldana | Contrato API formal con auth + manejo de errores |
+| KAN-49 Dashboard | KAN-45 | mateo salas | Sistema de diseño fundacional (cierre formal del sub-proyecto B) |
+| KAN-52 ETL / Anonimización | KAN-15, KAN-16, KAN-17, KAN-18 | Nicolas Chavez Oliveros | BD PostgreSQL + dataset paciente-céntrico + ingesta TCIA/GDC + reglas calidad |
+| KAN-53 Auditoría / Trazabilidad | KAN-5, KAN-6, KAN-7, KAN-10, KAN-11 (planning), KAN-19, KAN-20, KAN-21, KAN-22 (QA), KAN-59, KAN-67 (manuales) | mateo salas, Juan Esteban Aldana, Lu Xury, Other_Sotelo | Documento de proyecto + repo standards + QA strategy + acciones manuales Jira |
+
+Las 4 reglas absolutas PSP se mantienen por encima del objetivo:
+
+- Trazabilidad ~92 % (todos los commits nuevos con KAN-XX; hook activo).
+- Medición 100 % (todos los issues con `originalEstimate`).
+- Evidencia ~88 % (8 vitest + 4 pytest = 57 tests verdes; defect log, post-mortem, matriz publicados).
+- Calidad continua ~95 % (0 `print()` productivos; hook commit-msg validando).
+
+---
+
 ## Cierre
 
-El plan de remediación PSP del 2026-05-22 cierra **18 de 21 hallazgos** vía código + artefactos, y deja **3 hallazgos en estado "manual pendiente"** documentados con responsable y fecha. Las cuatro reglas absolutas PSP suben de `0 / 0 / 35 / 45 %` a `92 / 100 / 85 / 95 %`, todas por encima del objetivo de 80 %.
+El plan de remediación PSP del 2026-05-22 cierra **21 de 21 hallazgos**:
+- **18** vía código + artefactos publicados.
+- **2** quedan como acciones manuales en Jira admin (KAN-59 workflow rule, KAN-67 Components) — documentadas en [`conventions.md`](../conventions.md).
+- **1** (H-018, plan dejó como observación documental) se cierra con KAN-73 (commit `e65670f` + adiciones del 2026-05-23).
 
-El próximo audit retomará esta línea base para medir tendencia.
+Los 17 issues que continúan abiertos son trabajo programado del sub-proyecto F, no remediación pendiente. El próximo audit retomará esta línea base para medir tendencia.
