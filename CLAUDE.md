@@ -46,6 +46,7 @@ Campos que contienen Información de Salud Protegida:
 | `/oncoscan-page <ruta>` | Crear o refactorizar una página de la plataforma |
 | `/oncoscan-a11y [archivo]` | Auditar accesibilidad WCAG AA de un archivo o ruta |
 | `/oncoscan-clinical-review [archivo]` | Revisar seguridad clínica, PHI y jerarquía de alertas |
+| `/oncoscan-psp-audit [scope]` | Auditar disciplina PSP cruzando Jira, código y documentación |
 
 ## Convenciones de commit
 
