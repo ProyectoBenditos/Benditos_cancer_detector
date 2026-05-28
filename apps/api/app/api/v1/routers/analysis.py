@@ -2,6 +2,7 @@
 
 import asyncio
 import os
+import time
 from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 from uuid import uuid4
@@ -165,7 +166,8 @@ async def get_analysis(
                 "id, user_id, original_name, storage_path, file_size, file_type, "
                 "upload_status, clinical_features, ai_score, ai_risk_level, "
                 "ai_recommendation, ai_model_version, ai_processed_at, ai_error, "
-                "metadata_json, created_at"
+                "metadata_json, created_at, "
+                "model_version, inference_time_ms, predicted_at"
             )
             .eq("id", upload_id)
             .eq("user_id", current_user["id"])
@@ -199,6 +201,7 @@ def _run_inference(
     """Tarea de background: llama HF y persiste el resultado en la fila."""
 
     try:
+        t0 = time.monotonic()
         payload = asyncio.run(
             hf_predict(
                 image_bytes=image_bytes,
@@ -207,8 +210,16 @@ def _run_inference(
                 features=features,
             )
         )
-        _persist_success(upload_id, payload)
-        log_event("analysis_completed", upload_id_hash=hash_id(upload_id))
+        inference_time_ms = int((time.monotonic() - t0) * 1000)
+        model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
+        predicted_at = datetime.now(timezone.utc).isoformat()
+        _persist_success(upload_id, payload, model_version, inference_time_ms, predicted_at)
+        log_event(
+            "analysis_completed",
+            upload_id_hash=hash_id(upload_id),
+            inference_time_ms=inference_time_ms,
+            model_version=model_version,
+        )
     except HFInferenceError as e:
         log_event(
             "hf_inference_failed",
@@ -228,7 +239,13 @@ def _run_inference(
         _persist_failure(upload_id, f"Error inesperado: {str(e)}")
 
 
-def _persist_success(upload_id: str, payload: Dict[str, Any]) -> None:
+def _persist_success(
+    upload_id: str,
+    payload: Dict[str, Any],
+    model_version: str,
+    inference_time_ms: int,
+    predicted_at: str,
+) -> None:
     update: Dict[str, Optional[Any]] = {
         "upload_status": "ai_completed",
         "ai_score": _safe_float(payload.get("score")),
@@ -237,6 +254,9 @@ def _persist_success(upload_id: str, payload: Dict[str, Any]) -> None:
         "ai_model_version": payload.get("modelo_version"),
         "ai_processed_at": datetime.now(timezone.utc).isoformat(),
         "ai_error": None,
+        "model_version": model_version,
+        "inference_time_ms": inference_time_ms,
+        "predicted_at": predicted_at,
     }
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()

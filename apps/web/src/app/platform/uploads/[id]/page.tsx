@@ -124,6 +124,28 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 </Card>
             )}
 
+            {/* Metadata de inferencia */}
+            {isAnalyzed && (upload.model_version || upload.inference_time_ms != null || upload.predicted_at) && (
+                <Card className="mb-6">
+                    <CardContent className="p-6">
+                        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
+                            Metadata de inferencia
+                        </h2>
+                        <dl className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <InfoItem label="Versión del modelo" value={upload.model_version} />
+                            <InfoItem
+                                label="Tiempo de inferencia"
+                                value={upload.inference_time_ms != null ? `${upload.inference_time_ms} ms` : null}
+                            />
+                            <InfoItem
+                                label="Ejecutado en"
+                                value={upload.predicted_at ? new Date(upload.predicted_at).toLocaleString() : null}
+                            />
+                        </dl>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* Error de análisis */}
             {hasError && upload.ai_error && (
                 <AlertBanner
