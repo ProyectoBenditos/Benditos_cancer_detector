@@ -37,3 +37,10 @@ Thumbs.db
 
 # Superpowers brainstorming sessions
 .superpowers/
+
+# Entregables binarios generados localmente (regenerables desde .md)
+docs/*.docx
+docs/_build_docx.py
+
+# Scripts locales no portables (rutas hardcoded a D:\Descargas)
+scripts/
