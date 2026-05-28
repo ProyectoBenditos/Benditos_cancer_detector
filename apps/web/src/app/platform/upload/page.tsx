@@ -234,6 +234,13 @@ export default function UploadDicomPage() {
                 }
             />
 
+            <AlertBanner
+                variant="warning"
+                title="OncoScan es una herramienta académica de apoyo."
+                description="No es un dispositivo médico certificado y su resultado no reemplaza el juicio del especialista."
+                className="mb-6"
+            />
+
             {/* PASO 1: Upload */}
             <Card>
                 <CardContent className="p-8">

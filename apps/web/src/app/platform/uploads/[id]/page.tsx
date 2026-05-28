@@ -65,6 +65,13 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 }
             />
 
+            <AlertBanner
+                variant="warning"
+                title="OncoScan es una herramienta académica de apoyo."
+                description="No es un dispositivo médico certificado y su resultado no reemplaza el juicio del especialista."
+                className="mb-6"
+            />
+
             {/* Resultado IA */}
             {isAnalyzed && (
                 <Card className="mb-6">
