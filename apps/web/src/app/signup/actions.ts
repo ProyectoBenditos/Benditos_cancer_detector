@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { CONSENT_VERSION } from "@/lib/consent";
 
 export type SignupState = {
   error?: string;
@@ -41,6 +42,11 @@ export async function signupAction(
     return { error: "Ingresa tu institución." };
   }
 
+  const consent = formData.get("consent");
+  if (consent !== "on") {
+    return { error: "Debes aceptar el consentimiento informado para continuar." };
+  }
+
   const supabase = await createClient();
 
   // Los datos del perfil se pasan como metadata — el trigger on_auth_user_created
@@ -55,6 +61,8 @@ export async function signupAction(
         cedula_profesional: cedulaProfesional,
         especialidad,
         institucion,
+        consent_version: CONSENT_VERSION,
+        consent_at: new Date().toISOString(),
       },
     },
   });
