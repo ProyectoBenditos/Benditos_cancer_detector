@@ -222,8 +222,8 @@ export default function UploadDicomPage() {
     return (
         <PageContainer maxWidth="4xl">
             <SectionHeader
-                title="Subida de archivo DICOM"
-                description="Carga un estudio DICOM para validación y análisis con IA."
+                title="Subir estudio para análisis IA"
+                description="Carga un archivo DICOM (.dcm) o imagen (.png/.jpg). El modelo evaluará el estudio y devolverá score y nivel de riesgo oncológico."
                 action={
                     <Link
                         href="/platform"
