@@ -9,9 +9,9 @@ Registro estructurado de defectos detectados durante revisiones, testing o produ
 | D-001 | Trazabilidad / Seguridad | Coding (sub-proyecto B) | Code Review (auditoría PSP 2026-05-22) | Crítica | 12 | Juan Esteban Aldana | `cbe0fec` | KAN-56 |
 | D-002 | Seguridad / Secretos | Coding (sub-proyecto B) | Code Review (auditoría PSP 2026-05-22) | Crítica | 3 | Juan Esteban Aldana | `77570e0` | KAN-57 |
 | D-003 | Calidad / Observabilidad | Coding (sub-proyectos A-E) | Code Review (auditoría PSP 2026-05-22) | Crítica | 60 | Juan Esteban Aldana | `de8569f` `cbe0fec` | KAN-55 KAN-56 |
-| D-004 | Trazabilidad | Planning (sub-proyecto A) | Auditoría PSP 2026-05-22 | Crítica | (en curso) | mateo salas | pendiente | pendiente (H-003) |
-| D-005 | Medición | Planning (sub-proyecto A) | Auditoría PSP 2026-05-22 | Crítica | (en curso) | Other_Sotelo | n/a | pendiente (H-005) |
-| D-006 | Evidencia / Testing | Coding (sub-proyectos A-E) | Auditoría PSP 2026-05-22 | Alta | (en curso) | Juan Esteban Aldana / mateo salas | pendiente | pendiente (H-006, H-011) |
+| D-004 | Trazabilidad | Planning (sub-proyecto A) | Auditoría PSP 2026-05-22 | Crítica | ~120 | mateo salas | `aa2e13c` `0ee72a3` | KAN-53 — **Cerrado 2026-05-22**: traceability-matrix.md + milestones.md + matriz de requisitos publicados como evidencia. |
+| D-005 | Medición | Planning (sub-proyecto A) | Auditoría PSP 2026-05-22 | Crítica | ~60 | Other_Sotelo | n/a | KAN-53 — **Cerrado 2026-05-22**: 100% issues con `originalEstimate` verificado en reporte post-remediación (60/60). |
+| D-006 | Evidencia / Testing | Coding (sub-proyectos A-E) | Auditoría PSP 2026-05-22 | Alta | ~90 | Juan Esteban Aldana / mateo salas | `d478f3e` `7159485` | KAN-72 — **Cerrado 2026-05-22**: 24 pytest + 7 vitest archivos, 57+ tests verdes. Deuda residual: 7 features KAN-77..KAN-85 sin tests (registrado como H-001 en auditoría 2026-05-30-audit-pre-defensa). |
 
 ## Campos
 
