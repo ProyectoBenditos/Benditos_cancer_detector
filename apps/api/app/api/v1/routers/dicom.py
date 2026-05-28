@@ -22,6 +22,15 @@ router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".dcm", ".png", ".jpg", ".jpeg"}
 
+REQUIRED_DICOM_TAGS = [
+    "Modality",
+    "PatientID",
+    "StudyInstanceUID",
+    "SOPInstanceUID",
+    "Rows",
+    "Columns",
+]
+
 
 class ClinicalFeatures(BaseModel):
     subtlety:      float = 3.0
@@ -90,8 +99,42 @@ async def upload_dicom(
                 tmp.write(contents)
                 temp_path = tmp.name
 
-            dataset          = pydicom.dcmread(temp_path, stop_before_pixels=True)
-            modality         = str(getattr(dataset, "Modality",  "")) or None
+            try:
+                dataset = pydicom.dcmread(temp_path, stop_before_pixels=True)
+            except Exception:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Archivo DICOM inválido o corrupto. "
+                        "Verifica que el estudio sea una tomografía de tórax exportada correctamente."
+                    ),
+                )
+
+            for tag_name in REQUIRED_DICOM_TAGS:
+                try:
+                    val = getattr(dataset, tag_name)
+                except AttributeError:
+                    val = None
+                if val is None or str(val).strip() == "":
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"DICOM incompleto: falta el tag {tag_name}. "
+                            "Verifica que el estudio sea una tomografía de tórax exportada correctamente."
+                        ),
+                    )
+
+            modality_val = str(dataset.Modality).strip()
+            if modality_val != "CT":
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Modalidad {modality_val} no soportada. "
+                        "OncoScan procesa únicamente tomografías de tórax (CT)."
+                    ),
+                )
+
+            modality         = modality_val
             study_date       = str(getattr(dataset, "StudyDate", "")) or None
             patient_id_dicom = str(getattr(dataset, "PatientID", "")) or None
         else:
