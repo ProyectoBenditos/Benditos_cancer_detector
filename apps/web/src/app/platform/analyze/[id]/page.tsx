@@ -116,10 +116,10 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                 description="Inferencia ejecutada por el modelo OncaScan AI desplegado en Hugging Face Spaces."
                 action={
                     <Link
-                        href="/platform/analyze"
+                        href="/platform/upload"
                         className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors shadow-sm font-medium"
                     >
-                        Nuevo analisis
+                        Nuevo análisis
                     </Link>
                 }
             />
@@ -244,7 +244,7 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                                     {row.ai_error ?? "Error desconocido"}
                                 </p>
                                 <Link
-                                    href="/platform/analyze"
+                                    href="/platform/upload"
                                     className="inline-flex rounded-lg bg-brand-primary px-4 py-2 text-sm font-medium text-white hover:bg-brand-primary-hover transition-colors shadow-sm"
                                 >
                                     Reintentar

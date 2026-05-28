@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, Users, Bell, Brain, Cpu, FileText, Settings, Upload, FileStack, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, Bell, Cpu, FileText, Settings, Upload, FileStack, ShieldCheck } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface SidebarProps {
@@ -67,14 +67,6 @@ export function Sidebar({ userRole }: SidebarProps) {
         >
           <FileStack className="w-5 h-5" aria-hidden="true" />
           Historial DICOM
-        </Link>
-
-        <Link
-          href="/platform/analyze"
-          className={`${linkBase} ${isActive("/platform/analyze") ? linkActive : linkInactive}`}
-        >
-          <Brain className="w-5 h-5" aria-hidden="true" />
-          Análisis IA
         </Link>
 
         <Link
