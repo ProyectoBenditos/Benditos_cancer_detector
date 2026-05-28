@@ -9,13 +9,13 @@ export default function ModeloPage() {
         <PageContainer>
             <SectionHeader
                 title="Modelo IA — Información Técnica"
-                description="Cómo funciona el sistema de detección, con qué datos fue entrenado y cuáles son sus limitaciones."
+                description="Cómo funciona el sistema de detección de nódulos pulmonares, con qué datos fue entrenado y cuáles son sus limitaciones."
             />
 
             <AlertBanner
                 variant="warning"
-                title="Contenido pendiente de validación clínica"
-                description="Información técnica pendiente de validación por el AI Engineer del proyecto. No usar como referencia para decisiones clínicas reales."
+                title="Herramienta de apoyo diagnóstico"
+                description="Este sistema es una herramienta de apoyo. Los resultados no constituyen diagnóstico médico definitivo y deben ser validados por un profesional de salud calificado."
                 className="mb-6"
             />
 
@@ -26,9 +26,12 @@ export default function ModeloPage() {
                 </div>
                 <div>
                     <p className="text-xs text-white/80 font-bold uppercase tracking-widest mb-1">Versión activa</p>
-                    <h2 className="text-2xl font-extrabold text-white">multimodal-v1.0</h2>
+                    <h2 className="text-2xl font-extrabold text-white">multimodal-v1.1</h2>
                     <p className="text-white/80 text-sm mt-2 max-w-2xl">
-                        Modelo de clasificación binaria desplegado en Hugging Face Spaces. Combina features clínicas estructuradas con inferencia sobre imágenes médicas (PNG/DICOM) para estimar la probabilidad de malignidad de una lesión.
+                        Modelo de clasificación de nódulos pulmonares desplegado en Hugging Face Spaces.
+                        Combina análisis de imagen CT con features clínicas radiológicas estructuradas
+                        para estimar la probabilidad de malignidad de un nódulo pulmonar.
+                        Soporta imágenes PNG, JPG y archivos DICOM (.dcm) nativos.
                     </p>
                 </div>
             </div>
@@ -45,10 +48,29 @@ export default function ModeloPage() {
                             <h3 className="font-bold text-slate-800">Datos de Entrenamiento</h3>
                         </div>
                         <ul className="space-y-2.5 text-sm text-slate-600">
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> Dataset público <strong>ISIC Archive</strong> (International Skin Imaging Collaboration) — imágenes dermatoscópicas etiquetadas</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> Features clínicas estructuradas: diámetro, asimetría, bordes, color, evolución (modelo ABCDe)</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> Split de entrenamiento/validación: 80% / 20%</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> Balanceo de clases con oversampling en casos positivos (malignos)</li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                Dataset público <strong>LIDC-IDRI</strong> (Lung Image Database Consortium) —
+                                1,018 CT pulmonares del Instituto Nacional del Cáncer de EE.UU.
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <strong>4,918 imágenes</strong> filtradas por consenso de 4 radiólogos independientes —
+                                solo casos con acuerdo clínico claro
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                Features clínicas reales: sutileza, calcificación, esfericidad, margen,
+                                lobulación, espiculación, textura y malignidad visual
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                Split: 70% entrenamiento / 15% validación / 15% test
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                Entrenado con <strong>45 épocas</strong> en GPU NVIDIA Tesla T4 (Kaggle)
+                            </li>
                         </ul>
                     </CardContent>
                 </Card>
@@ -63,10 +85,31 @@ export default function ModeloPage() {
                             <h3 className="font-bold text-slate-800">Arquitectura del Modelo</h3>
                         </div>
                         <ul className="space-y-2.5 text-sm text-slate-600">
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> <strong>Rama visual:</strong> EfficientNet-B0 fine-tuneada para clasificación de imágenes médicas</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> <strong>Rama clínica:</strong> Red densa (MLP) sobre features numéricas normalizadas</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> <strong>Fusión:</strong> Concatenación de embeddings + capa de clasificación final (sigmoid)</li>
-                            <li className="flex gap-2"><span className="text-brand-primary font-bold shrink-0">•</span> Framework: PyTorch — desplegado en Hugging Face Spaces (CPU)</li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <strong>Rama visual:</strong> ResNet18 con transfer learning desde
+                                ImageNet (1.2M imágenes). Solo se re-entrenaron las capas finales
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <strong>Rama clínica:</strong> MLP de 2 capas sobre 8 features
+                                radiológicas normalizadas (escala 1–5 según criterios Lung-RADS)
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <strong>Fusión:</strong> Concatenación de embeddings (512D imagen +
+                                32D clínico) + capas densas + activación sigmoid
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <strong>Estrategia 2.5D:</strong> cortes axiales centrales como
+                                canales 2D — viable en hardware de consumo
+                            </li>
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                Framework: <strong>PyTorch + MONAI</strong> — desplegado en
+                                Hugging Face Spaces (CPU)
+                            </li>
                         </ul>
                     </CardContent>
                 </Card>
@@ -82,10 +125,10 @@ export default function ModeloPage() {
                         </div>
                         <div className="grid grid-cols-2 gap-3">
                             {[
-                                { label: "Accuracy", value: "94.2%" },
-                                { label: "AUC-ROC", value: "0.97" },
-                                { label: "Sensibilidad", value: "91.8%" },
-                                { label: "Especificidad", value: "96.1%" },
+                                { label: "Accuracy", value: "85.2%" },
+                                { label: "AUC-ROC", value: "0.916" },
+                                { label: "Casos test", value: "738" },
+                                { label: "Épocas", value: "45" },
                             ].map(({ label, value }) => (
                                 <div key={label} className="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
                                     <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{label}</p>
@@ -93,6 +136,11 @@ export default function ModeloPage() {
                                 </div>
                             ))}
                         </div>
+                        <p className="text-xs text-slate-500 mt-4">
+                            AUC-ROC de 0.5 = modelo aleatorio · 1.0 = modelo perfecto.
+                            Nuestro 0.916 es comparable con literatura académica publicada
+                            usando el mismo dataset LIDC-IDRI.
+                        </p>
                     </CardContent>
                 </Card>
 
@@ -108,23 +156,50 @@ export default function ModeloPage() {
                         <div className="space-y-2.5">
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
                                 <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider w-16 shrink-0">BAJO</span>
-                                <div className="h-2 flex-1 rounded-full bg-emerald-200 overflow-hidden"><div className="h-full bg-emerald-500 w-[30%]"/></div>
-                                <span className="text-xs text-emerald-700 font-semibold shrink-0">0% – 30%</span>
+                                <div className="h-2 flex-1 rounded-full bg-emerald-200 overflow-hidden">
+                                    <div className="h-full bg-emerald-500 w-[33%]"/>
+                                </div>
+                                <span className="text-xs text-emerald-700 font-semibold shrink-0">0 – 0.33</span>
                             </div>
+                            <p className="text-xs text-slate-500 px-1 -mt-1">Control rutinario recomendado</p>
+
                             <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
                                 <span className="text-xs font-bold text-amber-700 uppercase tracking-wider w-16 shrink-0">MEDIO</span>
-                                <div className="h-2 flex-1 rounded-full bg-amber-200 overflow-hidden"><div className="h-full bg-amber-500 w-[65%]"/></div>
-                                <span className="text-xs text-amber-700 font-semibold shrink-0">30% – 70%</span>
+                                <div className="h-2 flex-1 rounded-full bg-amber-200 overflow-hidden">
+                                    <div className="h-full bg-amber-500 w-[66%]"/>
+                                </div>
+                                <span className="text-xs text-amber-700 font-semibold shrink-0">0.33 – 0.66</span>
                             </div>
-                            <div className="flex items-center gap-3 p-3 rounded-xl bg-brand-danger/5 border border-brand-danger/20">
-                                <span className="text-xs font-bold text-brand-danger uppercase tracking-wider w-16 shrink-0">ALTO</span>
-                                <div className="h-2 flex-1 rounded-full bg-brand-danger/20 overflow-hidden"><div className="h-full bg-brand-danger w-[90%]"/></div>
-                                <span className="text-xs text-brand-danger font-semibold shrink-0">70% – 100%</span>
+                            <p className="text-xs text-slate-500 px-1 -mt-1">Seguimiento recomendado</p>
+
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
+                                <span className="text-xs font-bold text-red-700 uppercase tracking-wider w-16 shrink-0">ALTO</span>
+                                <div className="h-2 flex-1 rounded-full bg-red-200 overflow-hidden">
+                                    <div className="h-full bg-red-500 w-[90%]"/>
+                                </div>
+                                <span className="text-xs text-red-700 font-semibold shrink-0">0.66 – 1.0</span>
                             </div>
+                            <p className="text-xs text-slate-500 px-1 -mt-1">Evaluación urgente recomendada</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Endpoint de la API */}
+            <Card className="mb-6">
+                <CardContent className="p-6">
+                    <h3 className="font-bold text-slate-800 mb-3">Endpoint del Microservicio IA</h3>
+                    <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300">
+                        <p className="text-emerald-400">POST</p>
+                        <p className="text-white mt-1">https://luisdam-oncoscan-ai.hf.space/predict</p>
+                        <p className="text-slate-500 mt-3 text-xs">Parámetros (form-data):</p>
+                        <p className="text-slate-400 text-xs">imagen · subtlety · calcification · sphericity</p>
+                        <p className="text-slate-400 text-xs">margin · lobulation · spiculation · texture · malignancy</p>
+                        <p className="text-slate-500 mt-3 text-xs">Respuesta:</p>
+                        <p className="text-amber-400 text-xs">{"{ score, nivel_riesgo, recomendacion, modelo_version }"}</p>
+                    </div>
+                </CardContent>
+            </Card>
 
             {/* Aviso clínico */}
             <AlertBanner

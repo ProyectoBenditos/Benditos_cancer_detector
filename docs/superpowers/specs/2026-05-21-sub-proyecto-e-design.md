@@ -71,3 +71,17 @@
 4. **Tests en FastAPI** — `pytest` con fixtures de Supabase test para endpoints `/dicom/upload`, `/dicom/analyze`, `/analysis/predict`.
 5. **Accesibilidad del panel admin** — aplicar `/oncoscan-a11y` al panel de médicos y signup.
 6. **Búsqueda de pacientes** — filtro en `/platform/pacientes` por `external_id` o `display_alias`.
+
+---
+
+## Issues cubiertos
+
+El sub-proyecto E se ejecutó sin issues Jira nominales (hallazgo H-018 del audit 2026-05-22). Entregables trazables por commit y post-mortem retroactivo en [`docs/psp/postmortems/sub-proyecto-e.md`](../../psp/postmortems/sub-proyecto-e.md):
+
+- `bb83b40` — asociación opcional paciente ↔ upload DICOM.
+- `dac55d0` — signup vía trigger `on_auth_user_created` (fix bypass RLS).
+- `4944908` — fix recursión RLS en `profiles` + race condition de login.
+- `5d014e9` — cierre + bootstrap admin + roadmap F.
+- `5691d20` — colección Postman + test plan manual.
+
+Convención de issue-por-feature aplica desde el sub-proyecto F (KAN-70 + KAN-73 + DoR en [`docs/psp/definition-of-ready.md`](../../psp/definition-of-ready.md)).

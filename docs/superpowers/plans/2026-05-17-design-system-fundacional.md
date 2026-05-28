@@ -1767,3 +1767,11 @@ Expected: ver la secuencia de commits del sub-proyecto B (tokens → Button → 
 - No se hizo test manual de teclado documentado (requiere interacción del usuario en el navegador con el dev server arriba).
 
 Si el `/oncoscan-a11y` posterior flagea contraste de `brand-danger` (#EE005A, ~4.1:1 sobre blanco en texto pequeño): el fix recomendado en la spec es ajustar el token global a `#D4004F` (~4.6:1). Propagación automática vía el token.
+
+---
+
+## Issues cubiertos
+
+- **KAN-45** — Sistema de diseño fundacional.
+
+Trazabilidad complementaria en [`docs/psp/traceability-matrix.md`](../../psp/traceability-matrix.md).

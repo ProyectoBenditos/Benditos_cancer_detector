@@ -13,6 +13,7 @@ from PIL import Image
 from pydantic import BaseModel
 
 from app.core.config import SUPABASE_BUCKET_NAME
+from app.core.logging import log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
 
@@ -149,8 +150,14 @@ async def upload_dicom(
     except HTTPException:
         raise
     except Exception as e:
-        print(f"DEBUG EXCEPTION IN dicom.py upload: {repr(e)}")
-        raise HTTPException(status_code=500, detail=f"Error procesando archivo: {str(e)}")
+        log_event(
+            "dicom_upload_failed",
+            level="ERROR",
+            exc_info=True,
+            error_type=type(e).__name__,
+            http_status=500,
+        )
+        raise HTTPException(status_code=500, detail="Error procesando archivo")
 
     finally:
         if temp_path and os.path.exists(temp_path):

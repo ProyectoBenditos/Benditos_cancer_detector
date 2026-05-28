@@ -86,6 +86,25 @@ export default function UploadDicomPage() {
             .then(({ data }) => { if (data) setPatients(data); });
     }, []);
 
+    const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), timeoutMs);
+        try {
+            return await fetch(url, { ...options, signal: controller.signal });
+        } finally {
+            clearTimeout(timer);
+        }
+    };
+
+    const parseErrorResponse = async (response: Response, fallback: string): Promise<string> => {
+        try {
+            const data = await response.json();
+            return typeof data?.detail === "string" ? data.detail : fallback;
+        } catch {
+            return fallback;
+        }
+    };
+
     const handleUpload = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrorMsg("");
@@ -94,6 +113,12 @@ export default function UploadDicomPage() {
 
         if (!file) {
             setErrorMsg("Debes seleccionar un archivo.");
+            return;
+        }
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl) {
+            setErrorMsg("La URL del backend no está configurada. Contacta al equipo de operaciones.");
             return;
         }
 
@@ -115,26 +140,30 @@ export default function UploadDicomPage() {
                 formData.append("patient_id", patientId);
             }
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/dicom/upload`,
+            const response = await fetchWithTimeout(
+                `${apiUrl}/api/v1/dicom/upload`,
                 {
                     method: "POST",
                     headers: { Authorization: `Bearer ${data.session.access_token}` },
                     body: formData,
-                }
+                },
+                60_000,
             );
 
-            const result = await response.json();
-
             if (!response.ok) {
-                setErrorMsg(result.detail || "Error subiendo el archivo.");
+                setErrorMsg(await parseErrorResponse(response, `Error ${response.status} subiendo el archivo.`));
                 return;
             }
 
+            const result = await response.json();
             setSuccessData(result);
             setFile(null);
-        } catch {
-            setErrorMsg("Ocurrió un error inesperado durante la carga.");
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") {
+                setErrorMsg("El servidor no respondió a tiempo. Verifica tu conexión o intenta más tarde.");
+            } else {
+                setErrorMsg("No se pudo conectar con el servidor. Revisa tu conexión e intenta de nuevo.");
+            }
         } finally {
             setLoading(false);
         }
@@ -142,6 +171,12 @@ export default function UploadDicomPage() {
 
     const handleAnalyze = async () => {
         if (!successData?.dicom_id) return;
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+        if (!apiUrl) {
+            setErrorMsg("La URL del backend no está configurada. Contacta al equipo de operaciones.");
+            return;
+        }
 
         setAnalyzing(true);
         setErrorMsg("");
@@ -153,8 +188,8 @@ export default function UploadDicomPage() {
                 return;
             }
 
-            const response = await fetch(
-                `${process.env.NEXT_PUBLIC_API_URL}/api/v1/dicom/analyze/${successData.dicom_id}`,
+            const response = await fetchWithTimeout(
+                `${apiUrl}/api/v1/dicom/analyze/${successData.dicom_id}`,
                 {
                     method: "POST",
                     headers: {
@@ -162,19 +197,23 @@ export default function UploadDicomPage() {
                         "Content-Type": "application/json",
                     },
                     body: JSON.stringify(features),
-                }
+                },
+                150_000,
             );
 
-            const result = await response.json();
-
             if (!response.ok) {
-                setErrorMsg(result.detail || "Error al analizar el DICOM.");
+                setErrorMsg(await parseErrorResponse(response, `Error ${response.status} al analizar el DICOM.`));
                 return;
             }
 
+            const result = await response.json();
             setAnalysisResult(result);
-        } catch {
-            setErrorMsg("Error de conexión al analizar. Intenta de nuevo.");
+        } catch (err) {
+            if (err instanceof DOMException && err.name === "AbortError") {
+                setErrorMsg("El análisis tomó demasiado tiempo. El modelo puede estar en cold-start, intenta de nuevo en un minuto.");
+            } else {
+                setErrorMsg("Error de conexión al analizar. Intenta de nuevo.");
+            }
         } finally {
             setAnalyzing(false);
         }

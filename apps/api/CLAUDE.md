@@ -26,8 +26,15 @@ Nunca loguear en `print()`, `logger.*`, ni en mensajes de error al cliente:
 - `file_path` o nombre de archivo DICOM
 - `Case_Ref`
 - `result_json` (predicción IA completa)
+- `score`, `patient_id`, `external_id`, `display_alias` (`PHI_KEYS` completas — ver `app/core/logging.py`)
 
 Ante error, loguear solo el tipo de error y el código HTTP. Sin stack traces al cliente.
+
+### Logger oficial
+
+Toda emisión de logs en código productivo pasa por `log_event` o `logger.exception` definidos en [`app/core/logging.py`](app/core/logging.py). `log_event` rechaza en runtime cualquier kwarg listado en `PHI_KEYS` (eleva `ValueError`). Identificadores que pueden derivarse a PHI se enmascaran con `hash_id(upload_id)` antes de loguear.
+
+`print()` está **prohibido** en código productivo. Excepción única: scripts puntuales bajo `scripts/` que pueden marcarse con `# noqa: T201`. Si una validación de configuración falla al boot, eleva `RuntimeError` desde `app/core/config.py` en lugar de imprimir.
 
 ## HF Space (modelo IA)
 
