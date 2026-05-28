@@ -22,16 +22,17 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 
 ### Frontend
 - Plataforma: Vercel
-- Framework: Next.js
+- Framework: Next.js 16
 - Root Directory: `apps/web`
-- URL pública: `PEGAR_URL_FRONTEND`
+- URL pública: `https://benditos-cancer-detector.vercel.app`
 
 ### Backend
 - Plataforma: Railway
 - Framework: FastAPI
 - Root Directory: `apps/api`
 - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- URL pública: `PEGAR_URL_BACKEND`
+- URL pública: `https://benditoscancerdetector-production.up.railway.app`
+- Proyecto Railway real: `ideal-strength` (el segundo proyecto visible con el mismo repo, `endearing-education`, es un duplicado huérfano sin dominio expuesto — candidato a archivar).
 
 ### Servicios externos
 - Base de datos: Supabase PostgreSQL
@@ -45,7 +46,10 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_API_URL`
+- `NEXT_PUBLIC_API_URL` — URL pública del backend Railway, sin `/` al final.
+- `API_URL` — mismo valor que `NEXT_PUBLIC_API_URL`. Lo usa la server action de `/platform/analyze` (server-only, no se hornea al bundle del cliente).
+
+**Importante:** las 4 variables deben estar marcadas en los tres environments (**Production + Preview + Development**). Si solo están en Production, los deploys Preview de cualquier PR fallan en el build de Next.js al prerenderizar `/login` (`@supabase/ssr` lanza "Your project's URL and API key are required"). Las `NEXT_PUBLIC_*` se hornean al bundle al momento del build, así que cualquier cambio requiere un **redeploy** (no basta con guardar la variable).
 
 ### 4.2 Backend (Railway)
 
@@ -80,6 +84,24 @@ Configuración de URLs de autenticación:
 - Endpoint: `POST /predict` (multipart/form-data — imagen PNG/JPG + 8 features clínicas)
 - Health: `GET /health`
 - Comportamiento: cold-start posible de 30–60s; el backend procesa la inferencia en background y el frontend hace polling al endpoint `GET /api/v1/analysis/{id}`.
+
+### 5.5 Next.js — límite de body de Server Actions
+La page `/platform/analyze` envía imágenes hasta 10 MB a través de una Server Action. Next.js limita el body de Server Actions a **1 MB por defecto**; sin override, el framework rechaza la request antes de ejecutar la action y el cliente recibe "Body exceeded 1 MB limit". El override está en `apps/web/next.config.ts`:
+
+```ts
+experimental: { serverActions: { bodySizeLimit: "10mb" } }
+```
+
+No subir más allá de 10 MB sin revisar el límite de body de funciones serverless de Vercel (4.5 MB en Hobby).
+
+### 5.6 Backend — encoding de `requirements.txt`
+`apps/api/requirements.txt` debe estar en **UTF-8 (ASCII compatible)**, sin BOM. Si se regenera desde PowerShell 5.1 con `>` o `Out-File`, el archivo queda en UTF-16 LE y Railway falla el build con `Invalid requirement: 'f\x00a\x00s\x00t...'` porque pip lo lee carácter por carácter con bytes null intercalados.
+
+Para regenerar desde PowerShell, usar siempre `-Encoding utf8`:
+```powershell
+pip freeze | Out-File -Encoding utf8 apps/api/requirements.txt
+```
+Mejor: regenerar desde Git Bash o WSL (`pip freeze > requirements.txt`).
 
 ## 6. Flujo operativo validado
 
@@ -135,6 +157,33 @@ El flujo desplegado y validado es el siguiente:
 **Causa:** `NEXT_PUBLIC_API_URL` apuntaba incorrectamente al backend local o sin protocolo correcto.
 
 **Acción correctiva:** actualización de `NEXT_PUBLIC_API_URL` con la URL pública HTTPS del backend en Railway y redeploy del frontend.
+
+---
+
+### Incidencia 5: builds de Railway congelados por encoding de `requirements.txt`
+**Síntoma:** Railway marcaba los últimos deploys como `FAILED` con error `ERROR: Invalid requirement: 'f\x00a\x00s\x00t\x00a\x00p\x00i==0.115.12'`. El deploy `ACTIVE` se quedó congelado dos semanas en una versión vieja porque ningún push posterior buildeaba; en runtime el backend seguía respondiendo pero contra código desactualizado.
+
+**Causa:** `apps/api/requirements.txt` quedó codificado en UTF-16 LE con BOM (probablemente regenerado con `pip freeze > requirements.txt` desde PowerShell 5.1, que usa UTF-16 por defecto). pip en Linux lo lee carácter por carácter con bytes null intercalados.
+
+**Acción correctiva:** reconvertir el archivo a UTF-8 (`iconv -f UTF-16LE -t UTF-8`). Ver §5.6 para la regla preventiva.
+
+---
+
+### Incidencia 6: payload too large en `/platform/analyze`
+**Síntoma:** subir cualquier imagen >1 MB al formulario de análisis IA devolvía error "payload muy largo" antes de llegar al backend.
+
+**Causa:** la page usa una Server Action de Next.js, y Server Actions tienen un límite de body de 1 MB por defecto; la validación interna de la action permitía hasta 10 MB, pero el framework rechazaba la request antes de ejecutarla.
+
+**Acción correctiva:** añadir `experimental.serverActions.bodySizeLimit: "10mb"` en `apps/web/next.config.ts`. Ver §5.5.
+
+---
+
+### Incidencia 7: builds Preview de Vercel fallaban al prerenderizar `/login`
+**Síntoma:** cada PR abierto disparaba un build Preview en Vercel que fallaba con `@supabase/ssr: Your project's URL and API key are required to create a Supabase client!` durante la generación estática de `/login`. Producción seguía funcionando.
+
+**Causa:** las variables `NEXT_PUBLIC_*` y `API_URL` estaban marcadas solo para el environment **Production** en Vercel. Los deploys Preview no las heredaban; al hornearse el bundle con `process.env.NEXT_PUBLIC_SUPABASE_URL === undefined`, el cliente Supabase lanzaba el error durante el prerender.
+
+**Acción correctiva:** habilitar las 4 variables (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`, `API_URL`) en **Production + Preview + Development** y redesplegar. Ver §4.1.
 
 ## 8. Validación funcional del despliegue
 
