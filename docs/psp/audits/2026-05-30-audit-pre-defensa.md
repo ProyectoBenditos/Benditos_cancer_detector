@@ -2,7 +2,7 @@
 
 - **Fecha**: 2026-05-30
 - **Scope**: pre-defensa KAN-77..KAN-87 rama merge/fronted-nicolas-into-main
-- **Auditor**: Claude Code vía `/oncoscan-psp-audit`
+- **Auditor**: Mateo salas, Luis De Avila
 - **Metodología**: [docs/psp/psp-methodology.md](../psp-methodology.md)
 - **MCP Atlassian**: benditos.atlassian.net — cloudId `56cd5476-c472-4e8f-8864-beda26ca4b7a` — proyecto `KAN`
 - **Nota Jira**: inventario Jira no ejecutado en esta auditoría (sesión OAuth no completada). Los hallazgos relacionados con timetracking y assignees de KAN-77..KAN-87 quedan como H-004 (verificación manual requerida).
