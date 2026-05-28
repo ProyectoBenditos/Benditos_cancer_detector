@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/server";
 import {
-    Upload, FileStack, Brain, FileText, CheckCircle2, ShieldAlert
+    Upload, FileStack, Brain, FileText, CheckCircle2, ShieldAlert, Users
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { AlertBanner } from "@/components/ui/AlertBanner";
+import { buttonVariants } from "@/components/ui/Button";
 
 type RecentUpload = {
     id: string;
@@ -25,6 +27,25 @@ function asRiskLevel(level: string | null): RiskLevel | null {
 
 export default async function PlatformPage() {
     const supabase = await createClient();
+
+    const { data: { user } } = await supabase.auth.getUser();
+
+    const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user?.id ?? "")
+        .single();
+
+    const isAdmin = userProfile?.role === "admin";
+
+    let pendingCount: number | null = null;
+    if (isAdmin) {
+        const { count } = await supabase
+            .from("profiles")
+            .select("*", { count: "exact", head: true })
+            .eq("status", "pending");
+        pendingCount = count;
+    }
 
     const { count: totalUploads } = await supabase
         .from("dicom_uploads")
@@ -59,6 +80,42 @@ export default async function PlatformPage() {
                     Plataforma de apoyo diagnóstico oncológico mediante inteligencia artificial. Los resultados son referenciales y no sustituyen el criterio médico.
                 </p>
             </div>
+
+            {isAdmin && (
+                <div className="mb-8">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-4">
+                        Administración
+                    </h2>
+                    <Card>
+                        <CardContent className="p-5">
+                            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div className="flex-1">
+                                    <AlertBanner
+                                        variant={pendingCount && pendingCount > 0 ? "warning" : "info"}
+                                        title={
+                                            pendingCount && pendingCount > 0
+                                                ? `${pendingCount} médico${pendingCount !== 1 ? "s" : ""} pendiente${pendingCount !== 1 ? "s" : ""} de aprobación`
+                                                : "No hay médicos pendientes de aprobación"
+                                        }
+                                        description={
+                                            pendingCount && pendingCount > 0
+                                                ? "Revisa y aprueba las solicitudes de acceso a la plataforma."
+                                                : undefined
+                                        }
+                                    />
+                                </div>
+                                <Link
+                                    href="/platform/admin/medicos"
+                                    className={buttonVariants({ variant: "secondary", size: "md" })}
+                                >
+                                    <Users className="w-4 h-4 mr-2" aria-hidden="true" />
+                                    Ir a aprobaciones
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <div className="space-y-8">
                 {/* KPIs reales */}
@@ -98,16 +155,14 @@ export default async function PlatformPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-brand-primary text-white border-brand-primary-hover">
-                            <CardContent className="p-5 flex flex-col gap-2">
-                                <div className="flex items-center justify-between">
-                                    <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">Modelo Activo</p>
-                                    <Brain className="w-4 h-4 text-white/80" aria-hidden="true" />
-                                </div>
-                                <p className="text-base font-bold text-white mt-1">multimodal-v1.0</p>
-                                <Link href="/platform/modelo" className="text-xs text-white/80 font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Ver detalles →</Link>
-                            </CardContent>
-                        </Card>
+                        <div className="rounded-2xl border border-brand-primary-hover bg-brand-primary shadow-sm p-5 flex flex-col gap-2">
+                            <div className="flex items-center justify-between">
+                                <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">Modelo Activo</p>
+                                <Brain className="w-4 h-4 text-white/80" aria-hidden="true" />
+                            </div>
+                            <p className="text-base font-bold text-white mt-1">multimodal-v1.0</p>
+                            <Link href="/platform/modelo" className="text-xs text-white/80 font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Ver detalles →</Link>
+                        </div>
                     </div>
                 </div>
 

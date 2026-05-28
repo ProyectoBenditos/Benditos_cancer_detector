@@ -12,6 +12,14 @@ export default async function AjustesPage() {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
+    const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+    const rolLabel = profile?.role === "admin" ? "Administrador" : profile ? "Médico" : "—";
+
     return (
         <PageContainer maxWidth="3xl">
             <SectionHeader
@@ -34,7 +42,7 @@ export default async function AjustesPage() {
                             <ShieldCheck className="w-5 h-5 text-slate-400 mt-0.5 shrink-0" aria-hidden="true" />
                             <div className="flex-1 min-w-0">
                                 <dt className="text-xs font-medium text-slate-500 uppercase tracking-wider">Rol</dt>
-                                <dd className="text-sm font-medium text-slate-800 mt-0.5">Médico</dd>
+                                <dd className="text-sm font-medium text-slate-800 mt-0.5">{rolLabel}</dd>
                             </div>
                         </div>
                     </dl>

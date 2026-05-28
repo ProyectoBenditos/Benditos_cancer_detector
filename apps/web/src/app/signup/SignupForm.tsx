@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { signupAction } from "./actions";
 import { Button } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { CONSENT_VERSION, CONSENT_TEXT } from "@/lib/consent";
 
 export function SignupForm() {
   const [state, formAction, pending] = useActionState(signupAction, {});
@@ -120,6 +121,28 @@ export function SignupForm() {
           className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 outline-none focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary transition-all text-slate-700"
           placeholder="••••••••"
         />
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+        <details className="group">
+          <summary className="cursor-pointer text-sm font-medium text-slate-700 select-none list-none flex items-center justify-between">
+            <span>Consentimiento informado (versión {CONSENT_VERSION})</span>
+            <span className="text-xs text-slate-400 group-open:hidden">Ver texto completo ▼</span>
+            <span className="text-xs text-slate-400 hidden group-open:inline">Ocultar ▲</span>
+          </summary>
+          <p className="mt-3 text-xs text-slate-600 leading-relaxed">{CONSENT_TEXT}</p>
+        </details>
+        <label className="mt-3 flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            name="consent"
+            required
+            className="mt-0.5 h-4 w-4 flex-shrink-0 rounded border-slate-300 text-brand-primary focus:ring-brand-primary"
+          />
+          <span className="text-sm text-slate-700">
+            He leído y acepto el consentimiento informado (versión {CONSENT_VERSION})
+          </span>
+        </label>
       </div>
 
       {state?.error ? (

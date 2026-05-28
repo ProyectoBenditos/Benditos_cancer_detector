@@ -52,12 +52,6 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                             Subir DICOM
                         </Link>
                         <Link
-                            href="/platform/analyze"
-                            className={buttonVariants({ variant: "secondary", size: "md" })}
-                        >
-                            Análisis IA
-                        </Link>
-                        <Link
                             href="/platform"
                             className={buttonVariants({ variant: "secondary", size: "md" })}
                         >

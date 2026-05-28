@@ -1,6 +1,7 @@
 import io
 import os
 import tempfile
+import time
 from datetime import datetime, timezone
 from typing import Optional
 from uuid import uuid4
@@ -13,13 +14,22 @@ from PIL import Image
 from pydantic import BaseModel
 
 from app.core.config import SUPABASE_BUCKET_NAME
-from app.core.logging import log_event
+from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
 
 router = APIRouter()
 
 ALLOWED_EXTENSIONS = {".dcm", ".png", ".jpg", ".jpeg"}
+
+REQUIRED_DICOM_TAGS = [
+    "Modality",
+    "PatientID",
+    "StudyInstanceUID",
+    "SOPInstanceUID",
+    "Rows",
+    "Columns",
+]
 
 
 class ClinicalFeatures(BaseModel):
@@ -89,8 +99,42 @@ async def upload_dicom(
                 tmp.write(contents)
                 temp_path = tmp.name
 
-            dataset          = pydicom.dcmread(temp_path, stop_before_pixels=True)
-            modality         = str(getattr(dataset, "Modality",  "")) or None
+            try:
+                dataset = pydicom.dcmread(temp_path, stop_before_pixels=True)
+            except Exception:
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        "Archivo DICOM inválido o corrupto. "
+                        "Verifica que el estudio sea una tomografía de tórax exportada correctamente."
+                    ),
+                )
+
+            for tag_name in REQUIRED_DICOM_TAGS:
+                try:
+                    val = getattr(dataset, tag_name)
+                except AttributeError:
+                    val = None
+                if val is None or str(val).strip() == "":
+                    raise HTTPException(
+                        status_code=400,
+                        detail=(
+                            f"DICOM incompleto: falta el tag {tag_name}. "
+                            "Verifica que el estudio sea una tomografía de tórax exportada correctamente."
+                        ),
+                    )
+
+            modality_val = str(dataset.Modality).strip()
+            if modality_val != "CT":
+                raise HTTPException(
+                    status_code=400,
+                    detail=(
+                        f"Modalidad {modality_val} no soportada. "
+                        "OncoScan procesa únicamente tomografías de tórax (CT)."
+                    ),
+                )
+
+            modality         = modality_val
             study_date       = str(getattr(dataset, "StudyDate", "")) or None
             patient_id_dicom = str(getattr(dataset, "PatientID", "")) or None
         else:
@@ -215,10 +259,14 @@ async def analyze_dicom(
             "malignancy":    str(features.malignancy),
         }
 
+        t0 = time.monotonic()
         async with httpx.AsyncClient(timeout=timeout) as client:
             response = await client.post(hf_url, files=files, data=data)
             response.raise_for_status()
             ai_result = response.json()
+        inference_time_ms = int((time.monotonic() - t0) * 1000)
+        model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
+        predicted_at  = datetime.now(timezone.utc).isoformat()
 
         # 5. Guardar resultado en Supabase
         supabase.table("dicom_uploads").update({
@@ -230,15 +278,27 @@ async def analyze_dicom(
             "ai_error":          None,
             "upload_status":     "analyzed",
             "clinical_features": features.model_dump(),
+            "model_version":     model_version,
+            "inference_time_ms": inference_time_ms,
+            "predicted_at":      predicted_at,
         }).eq("id", dicom_id).execute()
+        log_event(
+            "dicom_analysis_completed",
+            upload_id_hash=hash_id(dicom_id),
+            inference_time_ms=inference_time_ms,
+            model_version=model_version,
+        )
 
         # 6. Devolver resultado al frontend
         return {
-            "dicom_id":       dicom_id,
-            "score":          ai_result.get("score"),
-            "nivel_riesgo":   ai_result.get("nivel_riesgo"),
-            "recomendacion":  ai_result.get("recomendacion"),
-            "modelo_version": ai_result.get("modelo_version"),
+            "dicom_id":          dicom_id,
+            "score":             ai_result.get("score"),
+            "nivel_riesgo":      ai_result.get("nivel_riesgo"),
+            "recomendacion":     ai_result.get("recomendacion"),
+            "modelo_version":    ai_result.get("modelo_version"),
+            "model_version":     model_version,
+            "inference_time_ms": inference_time_ms,
+            "predicted_at":      predicted_at,
         }
 
     except httpx.HTTPError as e:
