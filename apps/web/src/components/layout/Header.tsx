@@ -9,7 +9,7 @@ export function Header({ userEmail = "Usuario" }: { userEmail?: string }) {
           <User className="w-4 h-4" aria-hidden="true" />
         </div>
         <div className="hidden md:block text-right">
-          <p className="text-sm font-medium text-slate-700 truncate max-w-[160px]">{userEmail}</p>
+          <p className="text-sm font-medium text-slate-700 truncate max-w-[220px]">{userEmail}</p>
           <p className="text-xs text-slate-500">Médico</p>
         </div>
       </div>
