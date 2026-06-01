@@ -275,7 +275,7 @@ export default function UploadDicomPage() {
                                 </label>
                                 <button
                                     type="button"
-                                    onClick={() => setModalOpen(true)}
+                                    onClick={() => { processedPatientId.current = null; setModalOpen(true); }}
                                     className="text-sm font-medium text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
                                 >
                                     + Registrar paciente
