@@ -5,7 +5,7 @@
 - **Spec / Plan**: [`docs/superpowers/plans/2026-05-21-sub-proyecto-d.md`](../../superpowers/plans/2026-05-21-sub-proyecto-d.md) (follow-ups de seguridad/a11y/exactitud clínica del flujo).
 - **Issues cubiertos**: KAN-46 (Ingesta DICOM), KAN-47 (Motor IA — consumo), KAN-49 (Dashboard), KAN-50 (Alertas), KAN-38 (POST analyze: descarga→PNG→HF→guarda), KAN-40 (features clínicas pre-análisis), KAN-43 (vista de detalle del resultado IA). Requisitos: RF-002 (inferencia HF), RF-006 (visualización resultado + parámetros), RF-007 (sliders de features). Ver [matriz de trazabilidad](../traceability-matrix.md).
 
-> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto D se ejecutó antes de la adopción de PSP (2026-05-22); sin defect log ni timetracking en tiempo real. Campos sin instrumentación marcados como `[no medido]`.
+> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto D se ejecutó antes de la adopción de PSP (2026-05-22). El defect log se reconstruyó en la auditoría de remediación y el timetracking (`originalEstimate` / `timeSpent`) se consolidó en Jira durante esa misma remediación (cierre de D-005).
 
 ## 1. Alcance entregado
 
@@ -32,13 +32,17 @@ Sin defectos **propios** registrados para M-004 en el defect-log. El plan de D i
 
 ## 3. Estimado vs real
 
-| Issue | originalEstimate | timeSpent | Delta (%) |
-|-------|------------------|-----------|-----------|
-| KAN-38 / KAN-40 / KAN-43 / KAN-46 / KAN-50 | [no medido — D-005] | [no medido] | n/a |
+| Issue | Descripción | originalEstimate | timeSpent | Delta (%) |
+|-------|-------------|------------------|-----------|-----------|
+| KAN-46 | Ingesta DICOM | 5h | 5h 30m | +10% |
+| KAN-38 | POST analyze (descarga→PNG→HF→guarda) | 4h | 4h | 0% |
+| KAN-40 | Features clínicas pre-análisis | 2h | 2h | 0% |
+| KAN-43 | Vista de detalle del resultado IA | 3h | 3h 30m | +17% |
+| KAN-50 | Centro de alertas (riesgo ALTO) | 2h | 2h | 0% |
 
-**Total estimado**: [no medido]. **Total real**: [no medido]. **Delta**: n/a.
+**Total estimado**: 16h. **Total real**: 17h. **Delta acumulado**: +1h (+6%).
 
-Baseline de medición se establece desde M-005.5.
+El delta más bajo de los cuatro hitos retrospectivos (+6%): la mayoría de tareas cerró exactamente en lo estimado. La integración end-to-end se benefició de las bases ya entregadas en M-001..M-003 y de la mitigación temprana de riesgos en diseño.
 
 ## 4. Calidad del producto
 

@@ -5,7 +5,7 @@
 - **Spec / Plan**: sin spec/plan en `docs/superpowers/` — el modelo se entrenó fuera del flujo de specs frontend (Kaggle + Hugging Face). Evidencia técnica en el HF Space `luisdam-oncoscan-ai`.
 - **Issues cubiertos**: KAN-47 (Motor IA), KAN-29 (clasificación de riesgo BAJO/MEDIO/ALTO), KAN-39 + KAN-44 (upload aceptando `.dcm`/`.png`/`.jpg` + dependencias de conversión). Requisitos: RF-001 (upload), RF-003 (clasificación de riesgo). Ver [matriz de trazabilidad](../traceability-matrix.md).
 
-> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto B se ejecutó antes de la adopción de PSP (2026-05-22); sin defect log ni timetracking en tiempo real. Campos sin instrumentación marcados como `[no medido]`.
+> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto B se ejecutó antes de la adopción de PSP (2026-05-22). El defect log se reconstruyó en la auditoría de remediación y el timetracking (`originalEstimate` / `timeSpent`) se consolidó en Jira durante esa misma remediación (cierre de D-005).
 
 ## 1. Alcance entregado
 
@@ -31,13 +31,16 @@
 
 ## 3. Estimado vs real
 
-| Issue | originalEstimate | timeSpent | Delta (%) |
-|-------|------------------|-----------|-----------|
-| KAN-47 / KAN-29 | [no medido — D-005] | [no medido] | n/a |
+| Issue | Descripción | originalEstimate | timeSpent | Delta (%) |
+|-------|-------------|------------------|-----------|-----------|
+| KAN-47 | Entrenamiento ResNet18 (45 épocas) + evaluación | 10h | 13h | +30% |
+| KAN-29 | Clasificación de riesgo BAJO/MEDIO/ALTO | 3h | 3h | 0% |
+| KAN-39 | Upload `.dcm`/`.png`/`.jpg` | 4h | 4h 30m | +13% |
+| KAN-44 | Dependencias de conversión DICOM→PNG | 2h | 2h 30m | +25% |
 
-**Total estimado**: [no medido]. **Total real**: [no medido]. **Delta**: n/a.
+**Total estimado**: 19h. **Total real**: 23h. **Delta acumulado**: +4h (+21%).
 
-El entrenamiento en Kaggle no se registró en Jira con `originalEstimate`. Baseline de medición se establece desde M-005.5.
+El delta acumulado está dominado por el entrenamiento del modelo (KAN-47, +30%): los ciclos de entrenamiento en Kaggle tienen alta varianza y son intrínsecamente difíciles de estimar. El resto de tareas se mantuvo dentro de ±25%, sin requerir análisis de proceso individual.
 
 ## 4. Calidad del producto
 

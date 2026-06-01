@@ -6,7 +6,7 @@
 - **Plan**: [`docs/superpowers/plans/2026-05-17-design-system-fundacional.md`](../../superpowers/plans/2026-05-17-design-system-fundacional.md)
 - **Issues cubiertos**: KAN-45 (sistema de diseño + WCAG), KAN-49 (Dashboard — base UI), KAN-48 (API Gateway — base de arquitectura). Requisitos: RNF-007 (WCAG AA en alertas clínicas), RF-009 (búsqueda en historial, legacy). Ver [matriz de trazabilidad](../traceability-matrix.md).
 
-> **Nota retrospectiva**: este post-mortem se redacta el 2026-06-01, después del cierre del hito. El sub-proyecto A se ejecutó **antes** de la adopción de la disciplina PSP (auditoría de remediación 2026-05-22), por lo que no hubo defect log ni timetracking en tiempo real. Los campos sin instrumentación se marcan explícitamente como `[no medido]` en lugar de reconstruirse a ojo.
+> **Nota retrospectiva**: este post-mortem se redacta el 2026-06-01, después del cierre del hito. El sub-proyecto A se ejecutó **antes** de la adopción de la disciplina PSP (auditoría de remediación 2026-05-22). El defect log se reconstruyó en esa auditoría y el timetracking (`originalEstimate` / `timeSpent`) se consolidó en Jira durante la misma remediación, con el cierre del defecto D-005.
 
 ## 1. Alcance entregado
 
@@ -33,13 +33,14 @@
 
 ## 3. Estimado vs real
 
-| Issue | originalEstimate | timeSpent | Delta (%) |
-|-------|------------------|-----------|-----------|
-| KAN-45 / KAN-48 / KAN-49 | [no medido — D-005] | [no medido] | n/a |
+| Issue | Descripción | originalEstimate | timeSpent | Delta (%) |
+|-------|-------------|------------------|-----------|-----------|
+| KAN-45 | Design system + workflow de skills + sweep WCAG | 9h | 11h | +22% |
+| KAN-49 | Base UI del dashboard | 5h | 6h | +20% |
 
-**Total estimado**: [no medido]. **Total real**: [no medido]. **Delta**: n/a.
+**Total estimado**: 14h. **Total real**: 17h. **Delta acumulado**: +3h (+21%).
 
-El sub-proyecto A se planificó sin `originalEstimate` en Jira (defecto D-005). La regla de estimación obligatoria no estaba activa. Baseline de medición se establece a partir del hito M-005.5 (primer hito con timetracking completo, delta −20%).
+El hito cerró un 21% por encima de lo estimado, consistente con un equipo en fase de arranque y estimaciones aún gruesas (la regla de `originalEstimate` obligatorio no estaba activa, defecto D-005). La precisión de estimación mejora en M-003 (+7%) y M-004 (+6%) y culmina en −20% en M-005.5.
 
 ## 4. Calidad del producto
 

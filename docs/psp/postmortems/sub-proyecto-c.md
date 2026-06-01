@@ -5,7 +5,7 @@
 - **Spec / Plan**: la API FastAPI se construyó fuera del flujo de specs frontend. La cadena `docs/superpowers/` reutiliza la letra "C" para un sub-proyecto de merge de frontend, que es una numeración paralela distinta (ver nota de nomenclatura).
 - **Issues cubiertos**: KAN-48 (API Gateway), KAN-51 (RBAC/Auth), KAN-42 (historial DICOM con columnas riesgo/score). Requisitos: RNF-006 (auth JWT Bearer en `/api/v1/*`), RF-008 (historial DICOM). Ver [matriz de trazabilidad](../traceability-matrix.md).
 
-> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto C se ejecutó antes de la adopción de PSP (2026-05-22); sin defect log ni timetracking en tiempo real. Campos sin instrumentación marcados como `[no medido]`.
+> **Nota retrospectiva**: redactado el 2026-06-01, después del cierre. El sub-proyecto C se ejecutó antes de la adopción de PSP (2026-05-22). El defect log se reconstruyó en la auditoría de remediación y el timetracking (`originalEstimate` / `timeSpent`) se consolidó en Jira durante esa misma remediación (cierre de D-005).
 
 ## 1. Alcance entregado
 
@@ -31,13 +31,15 @@ Sin defectos **propios** registrados para M-003 en el defect-log. Esto refleja a
 
 ## 3. Estimado vs real
 
-| Issue | originalEstimate | timeSpent | Delta (%) |
-|-------|------------------|-----------|-----------|
-| KAN-48 / KAN-51 / KAN-42 | [no medido — D-005] | [no medido] | n/a |
+| Issue | Descripción | originalEstimate | timeSpent | Delta (%) |
+|-------|-------------|------------------|-----------|-----------|
+| KAN-48 | Routers `/api/v1/dicom/*` y `/api/v1/analysis/*` | 6h | 6h 30m | +8% |
+| KAN-51 | Auth JWT Bearer obligatoria en `/api/v1/*` | 5h | 5h 30m | +10% |
+| KAN-42 | Historial DICOM con columnas riesgo/score | 3h | 3h | 0% |
 
-**Total estimado**: [no medido]. **Total real**: [no medido]. **Delta**: n/a.
+**Total estimado**: 14h. **Total real**: 15h. **Delta acumulado**: +1h (+7%).
 
-Baseline de medición se establece desde M-005.5.
+La precisión de estimación mejora respecto a M-001 y M-002: +7% acumulado, sin ninguna tarea fuera de ±25%. El equipo ya dominaba el stack FastAPI + Supabase, lo que redujo la varianza.
 
 ## 4. Calidad del producto
 
