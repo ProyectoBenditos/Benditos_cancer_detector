@@ -144,12 +144,12 @@ export default function LandingPage() {
 
         <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[
-            { icon: <Upload className="w-6 h-6" aria-hidden="true" />, title: "Carga DICOM Segura", desc: "Subida robusta de tomografías de tórax en formato estándar." },
-            { icon: <Users className="w-6 h-6" aria-hidden="true" />, title: "Gestión de Pacientes", desc: "Perfiles anónimos para proteger la PHI según normativas." },
-            { icon: <Activity className="w-6 h-6" aria-hidden="true" />, title: "Análisis con IA (Próx.)", desc: "Inferencia automática usando redes neuronales profundas." },
-            { icon: <FileText className="w-6 h-6" aria-hidden="true" />, title: "Historial Clínico", desc: "Trazabilidad completa de estudios y reportes subidos." },
-            { icon: <ShieldCheck className="w-6 h-6" aria-hidden="true" />, title: "Autenticación JWT", desc: "Acceso protegido exclusivo para investigadores autorizados." },
-            { icon: <Stethoscope className="w-6 h-6" aria-hidden="true" />, title: "Interfaz Médica", desc: "UI orientada a radiología, reduciendo la fatiga visual." },
+            { icon: <Upload className="w-6 h-6" aria-hidden="true" />, title: "Carga DICOM Segura", desc: "Subida de tomografías de tórax en formato estándar con extracción de metadatos." },
+            { icon: <Users className="w-6 h-6" aria-hidden="true" />, title: "Gestión de Pacientes", desc: "Registro y seguimiento de pacientes vinculados a sus estudios clínicos." },
+            { icon: <Activity className="w-6 h-6" aria-hidden="true" />, title: "Análisis con IA", desc: "Inferencia automática sobre imágenes: score de riesgo, nivel y recomendación clínica." },
+            { icon: <FileText className="w-6 h-6" aria-hidden="true" />, title: "Historial y Reportes", desc: "Trazabilidad completa de estudios, análisis y reportes exportables." },
+            { icon: <ShieldCheck className="w-6 h-6" aria-hidden="true" />, title: "Autenticación JWT", desc: "Acceso protegido exclusivo para médicos autorizados, con panel de administración." },
+            { icon: <Stethoscope className="w-6 h-6" aria-hidden="true" />, title: "Dashboard de Alertas", desc: "Panel clínico con clasificación de riesgo y priorización de casos para el especialista." },
           ].map((feature, i) => (
             <Card key={i} className="bg-white/5 border-white/10 hover:bg-white/10 hover:border-brand-danger/50 transition duration-300">
               <CardContent className="p-6 flex flex-col items-start gap-4">
@@ -202,7 +202,7 @@ export default function LandingPage() {
             Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej. LIDC-IDRI).
           </p>
           <div className="inline-block px-4 py-2 bg-brand-danger/10 text-brand-danger rounded-lg text-sm border border-brand-danger/30">
-            Fase de Desarrollo Universitario
+            Proyecto Universitario — Versión Final
           </div>
         </div>
       </section>
@@ -242,7 +242,7 @@ export default function LandingPage() {
           <Code className="w-16 h-16 mx-auto mb-6 text-slate-300" aria-hidden="true" />
           <h2 className="text-3xl font-bold mb-4">Iniciativa Open Source</h2>
           <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto">
-            Creemos que la tecnología médica debe ser transparente y auditable. El código base de la plataforma OncaScan estará disponible en el repositorio de la organización.
+            Creemos que la tecnología médica debe ser transparente y auditable. El código base de la plataforma OncaScan está disponible en el repositorio de la organización.
           </p>
           <a href="https://github.com/ProyectoBenditos/Benditos_cancer_detector" target="_blank" rel="noopener noreferrer" className="inline-flex items-center px-6 py-3 bg-white text-brand-primary font-medium rounded-lg hover:bg-slate-200 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-2">
             Ver Repositorio <ArrowRight className="ml-2 w-4 h-4" aria-hidden="true" />
@@ -258,10 +258,10 @@ export default function LandingPage() {
 
         <div className="max-w-3xl mx-auto space-y-6">
           {[
-            { phase: "Fase 1", title: "MVP Funcional (Actual)", status: "Completado", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
-            { phase: "Fase 2", title: "Integración de Modelos de Predicción", status: "En Proceso", color: "text-brand-danger bg-brand-danger/10 border-brand-danger/20" },
-            { phase: "Fase 3", title: "Visor DICOM Interactivo Base", status: "Planificado", color: "text-slate-400 bg-slate-800/50 border-white/10" },
-            { phase: "Fase 4", title: "Entrenamiento de modelo", status: "Futuro", color: "text-slate-400 bg-slate-800/50 border-white/10" },
+            { phase: "Fase 1", title: "MVP Funcional — Autenticación, DICOM y plataforma base", status: "Completado", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+            { phase: "Fase 2", title: "Integración de Modelos de Predicción con IA (HF Space)", status: "Completado", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+            { phase: "Fase 3", title: "Gestión de Pacientes, Reportes y Panel Admin", status: "Completado", color: "text-emerald-400 bg-emerald-400/10 border-emerald-400/20" },
+            { phase: "Fase 4", title: "Visor DICOM Interactivo y métricas del modelo", status: "Próxima entrega", color: "text-amber-400 bg-amber-400/10 border-amber-400/20" },
           ].map((item, i) => (
             <div key={i} className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-white/5 border border-white/10 rounded-xl">
               <div className="mb-4 md:mb-0">
