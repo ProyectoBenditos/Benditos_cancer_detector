@@ -506,7 +506,7 @@ export default function UploadDicomPage() {
                 title="Registrar paciente"
                 description="Crea un nuevo paciente para asociarlo a este estudio."
             >
-                <form action={modalAction} className="space-y-4">
+                <form key={String(modalOpen)} action={modalAction} className="space-y-4">
                     <div>
                         <label htmlFor="modal-external-id" className="mb-1.5 block text-sm font-medium text-slate-700">
                             Código de paciente <span className="text-brand-danger">*</span>
