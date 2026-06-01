@@ -3,9 +3,11 @@ import React from "react";
 export function TableWrapper({ children, className = "" }: { children: React.ReactNode, className?: string }) {
   return (
     <div className={`overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm ${className}`}>
-      <table className="w-full text-sm text-left">
-        {children}
-      </table>
+      <div className="overflow-x-auto">
+        <table className="min-w-full text-sm text-left">
+          {children}
+        </table>
+      </div>
     </div>
   );
 }
