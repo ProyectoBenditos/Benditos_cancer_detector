@@ -94,3 +94,5 @@ Campos considerados Información de Salud Protegida:
 - Trazabilidad requisito → prueba → evidencia
 - Plan B de inferencia (contenedor propio o caché de resultados)
 - Alta disponibilidad y monitoreo de producción
+
+Release Version 1.3: Con features de pacientes, Modelo conectado al backend e historial de subida de DICOM completado
