@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useActionState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { PageContainer } from "@/components/ui/PageContainer";
@@ -8,6 +8,9 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { toast } from "sonner";
+import { Modal } from "@/components/ui/Modal";
+import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 
 type UploadResponse = {
     message: string;
@@ -81,10 +84,28 @@ export default function UploadDicomPage() {
     const [features, setFeatures]       = useState<ClinicalFeatures>(DEFAULT_FEATURES);
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
+    const [modalOpen, setModalOpen]       = useState(false);
+    const processedPatientId              = useRef<string | null>(null);
+    const [modalState, modalAction, modalPending] = useActionState<PatientInlineState, FormData>(
+        createPatientInline,
+        {},
+    );
+
     useEffect(() => {
         supabase.from("patients").select("id, external_id, display_alias").order("created_at", { ascending: false })
             .then(({ data }) => { if (data) setPatients(data); });
     }, []);
+
+    useEffect(() => {
+        if (!modalState.patient) return;
+        if (processedPatientId.current === modalState.patient.id) return;
+        processedPatientId.current = modalState.patient.id;
+        const p = modalState.patient;
+        setPatients((prev) => (prev.some((x) => x.id === p.id) ? prev : [p, ...prev]));
+        setPatientId(p.id);
+        setModalOpen(false);
+        toast.success("Paciente registrado y seleccionado.");
+    }, [modalState.patient]);
 
     const fetchWithTimeout = async (url: string, options: RequestInit, timeoutMs: number) => {
         const controller = new AbortController();
@@ -247,28 +268,35 @@ export default function UploadDicomPage() {
                     <form onSubmit={handleUpload} className="space-y-6">
 
                         {/* Paciente asociado */}
-                        {patients.length > 0 && (
-                            <div>
-                                <label className="mb-2 block text-sm font-medium text-slate-700">
+                        <div>
+                            <div className="mb-2 flex items-center justify-between">
+                                <label className="text-sm font-medium text-slate-700">
                                     Paciente <span className="text-slate-400 font-normal">(opcional)</span>
                                 </label>
-                                <select
-                                    value={patientId}
-                                    onChange={(e) => setPatientId(e.target.value)}
-                                    className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+                                <button
+                                    type="button"
+                                    onClick={() => { processedPatientId.current = null; setModalOpen(true); }}
+                                    className="text-sm font-medium text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
                                 >
-                                    <option value="">Sin paciente asociado</option>
-                                    {patients.map((p) => (
-                                        <option key={p.id} value={p.id}>
-                                            {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
-                                        </option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-slate-400 mt-1">
-                                    Asociar el estudio a un paciente para agrupar sus análisis.
-                                </p>
+                                    + Registrar paciente
+                                </button>
                             </div>
-                        )}
+                            <select
+                                value={patientId}
+                                onChange={(e) => setPatientId(e.target.value)}
+                                className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all"
+                            >
+                                <option value="">Sin paciente asociado</option>
+                                {patients.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-400 mt-1">
+                                Asociar el estudio a un paciente para agrupar sus análisis.
+                            </p>
+                        </div>
 
                         {/* Referencia del caso */}
                         <div>
@@ -470,6 +498,87 @@ export default function UploadDicomPage() {
                     </CardContent>
                 </Card>
             )}
+
+            {/* Modal: registrar paciente */}
+            <Modal
+                open={modalOpen}
+                onClose={() => setModalOpen(false)}
+                title="Registrar paciente"
+                description="Crea un nuevo paciente para asociarlo a este estudio."
+            >
+                <form key={String(modalOpen)} action={modalAction} className="space-y-4">
+                    <div>
+                        <label htmlFor="modal-external-id" className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Código de paciente <span className="text-brand-danger">*</span>
+                        </label>
+                        <input
+                            id="modal-external-id"
+                            name="external_id"
+                            type="text"
+                            required
+                            maxLength={100}
+                            placeholder="Ej: CT-001, PAC-2026-001"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                        />
+                        <p className="mt-1 text-xs text-slate-400">
+                            Código interno único para identificar a este paciente.
+                        </p>
+                    </div>
+                    <div>
+                        <label htmlFor="modal-display-alias" className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Alias o descripción <span className="text-slate-400 font-normal">(opcional)</span>
+                        </label>
+                        <input
+                            id="modal-display-alias"
+                            name="display_alias"
+                            type="text"
+                            maxLength={200}
+                            placeholder="Ej: Paciente Tórax Estudio 2026"
+                            className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="modal-notes" className="mb-1.5 block text-sm font-medium text-slate-700">
+                            Notas clínicas <span className="text-slate-400 font-normal">(opcional)</span>
+                        </label>
+                        <textarea
+                            id="modal-notes"
+                            name="notes"
+                            rows={3}
+                            maxLength={1000}
+                            placeholder="Notas adicionales sobre el caso..."
+                            className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                        />
+                    </div>
+
+                    {modalState.error && (
+                        <AlertBanner
+                            variant="error"
+                            title="No se pudo registrar el paciente"
+                            description={modalState.error}
+                        />
+                    )}
+
+                    <div className="flex justify-end gap-3 pt-2">
+                        <Button
+                            type="button"
+                            variant="secondary"
+                            size="md"
+                            onClick={() => setModalOpen(false)}
+                        >
+                            Cancelar
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            size="md"
+                            loading={modalPending}
+                        >
+                            {modalPending ? "Registrando..." : "Registrar"}
+                        </Button>
+                    </div>
+                </form>
+            </Modal>
         </PageContainer>
     );
 }
