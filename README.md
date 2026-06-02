@@ -91,3 +91,5 @@ HF_PREDICT_TIMEOUT=120                                  # opcional, segundos
 ## Nota de uso
 
 OncaScan Platform es una herramienta de apoyo a la decisión clínica en un entorno académico controlado y no sustituye el criterio profesional del especialista.
+
+Verson realease 1.3 
