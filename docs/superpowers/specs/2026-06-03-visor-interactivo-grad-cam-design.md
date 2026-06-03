@@ -2,7 +2,7 @@
 
 - **Fecha**: 2026-06-03
 - **Autor(es)**: Equipo OncoScan
-- **Estado**: `Aprobado`
+- **Estado**: `Implementado`
 - **Issues cubiertos**: KAN-98 (continuación)
 
 ## 1. Contexto
