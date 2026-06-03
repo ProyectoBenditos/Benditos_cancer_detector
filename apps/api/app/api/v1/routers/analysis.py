@@ -167,7 +167,8 @@ async def get_analysis(
                 "upload_status, clinical_features, ai_score, ai_risk_level, "
                 "ai_recommendation, ai_model_version, ai_processed_at, ai_error, "
                 "metadata_json, created_at, "
-                "model_version, inference_time_ms, predicted_at"
+                "model_version, inference_time_ms, predicted_at, "
+                "ai_heatmap_base64, preview_storage_path"
             )
             .eq("id", upload_id)
             .eq("user_id", current_user["id"])
@@ -188,7 +189,27 @@ async def get_analysis(
     if not rows:
         raise HTTPException(status_code=404, detail="Analisis no encontrado")
 
-    return rows[0]
+    row = rows[0]
+
+    # Firmar server-side la imagen "antes" para que el cliente la renderice sin
+    # exponer el storage_path. Este flujo es siempre PNG/JPG (preview_storage_path
+    # es null), por lo que se firma el original.
+    if row.get("upload_status") == "ai_completed":
+        path = row.get("preview_storage_path") or row.get("storage_path")
+        if path:
+            try:
+                signed = supabase.storage.from_(SUPABASE_BUCKET_NAME).create_signed_url(path, 3600)
+                row["original_signed_url"] = signed.get("signedURL") or signed.get("signedUrl")
+            except Exception as e:
+                log_event(
+                    "signed_url_failed",
+                    level="ERROR",
+                    error_type=type(e).__name__,
+                    http_status=500,
+                )
+                row["original_signed_url"] = None
+
+    return row
 
 
 def _run_inference(
@@ -257,6 +278,7 @@ def _persist_success(
         "model_version": model_version,
         "inference_time_ms": inference_time_ms,
         "predicted_at": predicted_at,
+        "ai_heatmap_base64": payload.get("heatmap_base64"),
     }
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()

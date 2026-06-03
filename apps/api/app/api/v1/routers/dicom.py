@@ -268,6 +268,18 @@ async def analyze_dicom(
         model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
         predicted_at  = datetime.now(timezone.utc).isoformat()
 
+        # 4b. Para DICOM, guardar un preview PNG renderable como imagen "antes".
+        #     PNG/JPG ya son renderables desde su storage_path original.
+        if is_dicom:
+            preview_path = f"{storage_path}.preview.png"
+            supabase.storage.from_(SUPABASE_BUCKET_NAME).upload(
+                path=preview_path,
+                file=png_bytes,
+                file_options={"content-type": "image/png", "upsert": "true"},
+            )
+        else:
+            preview_path = None
+
         # 5. Guardar resultado en Supabase
         supabase.table("dicom_uploads").update({
             "ai_score":          ai_result.get("score"),
@@ -281,6 +293,8 @@ async def analyze_dicom(
             "model_version":     model_version,
             "inference_time_ms": inference_time_ms,
             "predicted_at":      predicted_at,
+            "ai_heatmap_base64":    ai_result.get("heatmap_base64"),
+            "preview_storage_path": preview_path,
         }).eq("id", dicom_id).execute()
         log_event(
             "dicom_analysis_completed",
@@ -288,6 +302,21 @@ async def analyze_dicom(
             inference_time_ms=inference_time_ms,
             model_version=model_version,
         )
+
+        # 6b. Firmar la imagen "antes" con service role para mostrarla inline en la
+        #     pantalla de subida (preview PNG para DICOM, original para PNG/JPG).
+        before_path = preview_path if is_dicom else storage_path
+        original_signed_url = None
+        try:
+            signed = supabase.storage.from_(SUPABASE_BUCKET_NAME).create_signed_url(before_path, 3600)
+            original_signed_url = signed.get("signedURL") or signed.get("signedUrl")
+        except Exception as e:
+            log_event(
+                "signed_url_failed",
+                level="ERROR",
+                error_type=type(e).__name__,
+                http_status=500,
+            )
 
         # 6. Devolver resultado al frontend
         return {
@@ -299,6 +328,8 @@ async def analyze_dicom(
             "model_version":     model_version,
             "inference_time_ms": inference_time_ms,
             "predicted_at":      predicted_at,
+            "heatmap_base64":      ai_result.get("heatmap_base64"),
+            "original_signed_url": original_signed_url,
         }
 
     except httpx.HTTPError as e:

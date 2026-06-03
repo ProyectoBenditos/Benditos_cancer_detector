@@ -6,6 +6,7 @@ import { createClient } from "@/utils/supabase/client";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
+import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 
 type RiskLevel = "BAJO" | "MEDIO" | "ALTO";
 
@@ -24,6 +25,8 @@ type AnalysisRow = {
     ai_model_version: string | null;
     ai_processed_at: string | null;
     ai_error: string | null;
+    ai_heatmap_base64: string | null;
+    original_signed_url?: string | null;
     metadata_json: Record<string, unknown> | null;
     created_at: string;
 };
@@ -234,6 +237,13 @@ export default function AnalysisResultPage({ params }: { params: Promise<{ id: s
                                 </p>
                             </CardContent>
                         </Card>
+                    )}
+
+                    {isCompleted && (
+                        <BeforeAfterViewer
+                            beforeUrl={row.original_signed_url ?? null}
+                            heatmapBase64={row.ai_heatmap_base64}
+                        />
                     )}
 
                     {isFailed && (

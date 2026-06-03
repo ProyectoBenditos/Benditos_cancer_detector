@@ -8,6 +8,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -49,6 +50,17 @@ export default async function UploadDetailPage({ params }: PageProps) {
     const isAnalyzed = upload.upload_status === "analyzed" || upload.upload_status === "ai_completed";
     const hasError = upload.upload_status === "error" || upload.upload_status === "ai_failed";
     const caseRef = upload.metadata_json?.case_ref;
+
+    // Firmar server-side la imagen "antes" (preview PNG para DICOM, original para
+    // PNG/JPG). Requiere policy SELECT en storage.objects para el dueño del archivo.
+    let beforeUrl: string | null = null;
+    if (isAnalyzed && upload.ai_heatmap_base64) {
+        const path = upload.preview_storage_path ?? upload.storage_path;
+        const { data: signed } = await supabase.storage
+            .from("dicom-files")
+            .createSignedUrl(path, 3600);
+        beforeUrl = signed?.signedUrl ?? null;
+    }
 
     return (
         <PageContainer maxWidth="4xl">
@@ -129,6 +141,13 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         </p>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* Visualizador antes / después (Grad-CAM) */}
+            {isAnalyzed && upload.ai_heatmap_base64 && (
+                <div className="mb-6">
+                    <BeforeAfterViewer beforeUrl={beforeUrl} heatmapBase64={upload.ai_heatmap_base64} />
+                </div>
             )}
 
             {/* Metadata de inferencia */}
