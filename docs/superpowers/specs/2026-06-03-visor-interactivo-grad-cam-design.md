@@ -120,13 +120,14 @@ N/A — no se tocan tablas, RLS ni Storage de Supabase.
 
 ## 6. Plan de verificación
 
-- [ ] Test unitario de `panZoomMath.ts` (`apps/web/src/components/ui/panZoomMath.test.ts`):
+- [x] Test unitario de `panZoomMath.ts` (`apps/web/src/components/ui/panZoomMath.test.ts`):
       `nextScale` respeta clamp; `clampTranslate` no deja bordes vacíos; `zoomToCursor` mantiene
-      el punto bajo el cursor.
-- [ ] Verificación manual en las 3 rutas: `upload`, `analyze/[id]`, `uploads/[id]` — zoom con
+      el punto bajo el cursor. (10/10 en verde.)
+- [x] Verificación manual en las 3 rutas: `upload`, `analyze/[id]`, `uploads/[id]` — zoom con
       rueda, pan arrastrando, toggle de modo, slider de opacidad, fullscreen, atajos de teclado.
-- [ ] `/oncoscan-a11y` ejecutado sobre `BeforeAfterViewer.tsx` (UI clínica).
-- [ ] `git grep -n "console\." apps/web/src` sigue devolviendo solo la línea esperada de `error.tsx`.
+- [x] `/oncoscan-a11y` ejecutado sobre `BeforeAfterViewer.tsx` (UI clínica): corregido el
+      contraste del placeholder (`slate-400` → `slate-500`) para cumplir WCAG AA; sin hallazgos críticos.
+- [x] `git grep -n "console\." apps/web/src` sigue devolviendo solo la línea esperada de `error.tsx`.
 
 ## 7. Issues cubiertos
 

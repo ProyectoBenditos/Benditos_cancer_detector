@@ -88,7 +88,7 @@ Campos considerados Información de Salud Protegida:
 
 ## Mejoras futuras
 
-- Visor DICOM interactivo en el navegador
+- Visor DICOM clínico avanzado (ventaneo, multi-corte, mediciones) — ya existe un visor interactivo básico de la imagen + mapa de calor Grad-CAM (zoom, pan, superpuesto/lado a lado, opacidad, pantalla completa)
 - Pipeline de reintentos con cola de jobs para inferencia IA
 - Métricas de evaluación del modelo (AUC, sensibilidad, especificidad)
 - Trazabilidad requisito → prueba → evidencia
