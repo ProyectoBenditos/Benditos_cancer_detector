@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
+import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 
 type UploadResponse = {
@@ -29,6 +30,8 @@ type AnalysisResult = {
     nivel_riesgo: string;
     recomendacion: string;
     modelo_version: string;
+    heatmap_base64?: string | null;
+    original_signed_url?: string | null;
 };
 
 type ClinicalFeatures = {
@@ -475,6 +478,15 @@ export default function UploadDicomPage() {
                             </p>
                             <p className="text-slate-700 font-medium">{analysisResult.recomendacion}</p>
                         </div>
+
+                        {analysisResult.heatmap_base64 && (
+                            <div className="mt-6">
+                                <BeforeAfterViewer
+                                    beforeUrl={analysisResult.original_signed_url ?? null}
+                                    heatmapBase64={analysisResult.heatmap_base64}
+                                />
+                            </div>
+                        )}
 
                         <p className="mt-4 text-xs text-slate-400">
                             ⚠️ Este resultado es de apoyo diagnóstico y no reemplaza el criterio del especialista.

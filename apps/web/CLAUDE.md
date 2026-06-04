@@ -32,6 +32,7 @@ Antes de crear un componente nuevo, revisar esta tabla:
 | `SectionHeader` | `src/components/ui/SectionHeader.tsx` | Título + descripción de sección |
 | `StatusBadge` | `src/components/ui/StatusBadge.tsx` | Badge de estado IA (`processing`, `ai_completed`, `ai_failed`, etc.) |
 | `Table` | `src/components/ui/Table.tsx` | Tabla de datos con estilos consistentes |
+| `BeforeAfterViewer` | `src/components/ui/BeforeAfterViewer.tsx` | Visor interactivo de la imagen original + mapa de calor Grad-CAM: zoom hacia el cursor (rueda), pan (arrastre), modos superpuesto/lado a lado sincronizados, opacidad del heatmap y pantalla completa. Client Component; props `beforeUrl` y `heatmapBase64`. Apoyado por `usePanZoom.ts` (estado de transform) y `panZoomMath.ts` (matemática pura testeada). Controles en `brand-primary`/`slate`; el rojo es dato del heatmap, no UI. |
 
 **Regla:** Si el componente que necesitas no está aquí, pregunta antes de inventar uno nuevo.
 

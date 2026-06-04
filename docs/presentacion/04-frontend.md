@@ -80,6 +80,7 @@ Una vez dentro del layout, no se re-valida en cada página individual — el aut
 | `SectionHeader` | Título + descripción de sección |
 | `StatusBadge` | Estado del análisis (`processing`, `ai_completed`, `ai_failed`) |
 | `Table` | Tabla de datos |
+| `BeforeAfterViewer` | Visor interactivo de imagen original + mapa de calor Grad-CAM: zoom hacia el cursor, pan, modos superpuesto/lado a lado, opacidad y pantalla completa. Hecho a mano (CSS transforms), sin dependencias nuevas |
 
 ---
 
@@ -135,6 +136,9 @@ No se usa React Query, SWR ni Zustand — se mantiene el stack mínimo.
 
 **¿Qué pasa cuando el médico no está aprobado?**
 > El `platform/layout.tsx` detecta `status !== "approved"` y redirige a `/cuenta-pendiente`. El médico ve una página informativa hasta que el admin lo apruebe.
+
+**¿Cómo funciona el visor del mapa de calor (Grad-CAM)?**
+> `BeforeAfterViewer` es un visor interactivo construido a mano con CSS transforms (sin librerías externas): zoom hacia el cursor con la rueda, pan arrastrando, dos modos (superpuesto con control de opacidad y lado a lado sincronizado) y pantalla completa. La matemática de zoom/pan se aisló en `panZoomMath.ts` con tests unitarios, y el estado vive en el hook `usePanZoom.ts`. Es operable por teclado (`+`/`−`/`0`/`F` y flechas) y cumple WCAG AA. El rojo del heatmap es dato del modelo (mayor activación), no color de UI.
 
 ---
 
