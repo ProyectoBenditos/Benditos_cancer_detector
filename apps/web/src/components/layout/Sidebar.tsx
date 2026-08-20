@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutDashboard, Users, Bell, Cpu, FileText, Settings, Upload, FileStack, ShieldCheck } from "lucide-react";
+import { LayoutDashboard, Users, Bell, Cpu, FileText, Settings, Upload, FileStack, ShieldCheck, Layers } from "lucide-react";
 import { usePathname } from "next/navigation";
 
 interface SidebarProps {
@@ -83,6 +83,14 @@ export function Sidebar({ userRole }: SidebarProps) {
         >
           <Cpu className="w-5 h-5" aria-hidden="true" />
           Modelo IA
+        </Link>
+
+        <Link
+          href="/platform/analyze/batch"
+          className={`${linkBase} ${isActive("/platform/analyze/batch") ? linkActive : linkInactive}`}
+        >
+          <Layers className="w-5 h-5" aria-hidden="true" />
+          Análisis por Lote
         </Link>
 
         <div className="my-6 border-t border-white/10"></div>
