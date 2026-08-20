@@ -946,7 +946,7 @@ export default function BatchUploadPage() {
                   Mapa Térmico (Grad-CAM) vs Original
                 </p>
                 <BeforeAfterViewer
-                  originalUrl={selectedItemDetail.original_signed_url}
+                  beforeUrl={selectedItemDetail.original_signed_url}
                   heatmapBase64={selectedItemDetail.ai_heatmap_base64}
                 />
               </div>
