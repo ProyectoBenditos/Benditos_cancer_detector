@@ -10,7 +10,6 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { Modal } from "@/components/ui/Modal";
-import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { createPatientInline, type PatientInlineState } from "../../pacientes/actions";
 import { toast } from "sonner";
 import {
@@ -173,9 +172,6 @@ export default function BatchUploadPage() {
     createPatientInline,
     {}
   );
-
-  // Detail modal state
-  const [selectedItemDetail, setSelectedItemDetail] = useState<BatchItem | null>(null);
 
   // Polling state
   const [batchId, setBatchId] = useState<string | null>(null);
@@ -834,16 +830,13 @@ export default function BatchUploadPage() {
                           <RiskBadge level={item.ai_risk_level as RiskLevel | null} />
                         )}
                         {isCompleted && (
-                          <Button
-                            type="button"
-                            variant="secondary"
-                            size="sm"
-                            onClick={() => setSelectedItemDetail(item)}
-                            className="flex items-center gap-1 py-1 px-2.5 text-xs"
+                          <Link
+                            href={`/platform/analyze/${item.id}`}
+                            className="flex items-center gap-1 py-1 px-2.5 text-xs rounded-xl bg-brand-primary/10 text-brand-primary font-semibold hover:bg-brand-primary/20 transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
                             Ver detalle
-                          </Button>
+                          </Link>
                         )}
                         {!isCompleted && (
                           <span className="text-xs text-slate-400">
@@ -904,65 +897,6 @@ export default function BatchUploadPage() {
             )}
           </CardContent>
         </Card>
-      )}
-
-      {/* ── Modal de Detalle por Ítem ── */}
-      {selectedItemDetail && (
-        <Modal
-          open={!!selectedItemDetail}
-          onClose={() => setSelectedItemDetail(null)}
-          title={`Detalle de Análisis — ${selectedItemDetail.original_name}`}
-        >
-          <div className="space-y-4 pt-2">
-            <div className="flex items-center justify-between border-b pb-3">
-              <div>
-                <p className="text-xs text-slate-400">Paciente / Ref</p>
-                <p className="text-sm font-bold text-slate-700 font-mono">
-                  {selectedItemDetail.patient_id_dicom || "N/A"}
-                </p>
-              </div>
-              <RiskBadge level={selectedItemDetail.ai_risk_level as RiskLevel | null} />
-            </div>
-
-            {selectedItemDetail.ai_score !== null && (
-              <div className="bg-slate-50 border p-3 rounded-xl flex items-center justify-between">
-                <span className="text-sm text-slate-600 font-medium">Probabilidad de Sospecha:</span>
-                <span className="text-lg font-bold text-slate-800">
-                  {(selectedItemDetail.ai_score * 100).toFixed(1)}%
-                </span>
-              </div>
-            )}
-
-            {selectedItemDetail.ai_recommendation && (
-              <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl text-xs text-blue-900">
-                <p className="font-bold mb-0.5">Recomendación Clínica:</p>
-                <p>{selectedItemDetail.ai_recommendation}</p>
-              </div>
-            )}
-
-            {selectedItemDetail.ai_heatmap_base64 && selectedItemDetail.original_signed_url && (
-              <div className="pt-2">
-                <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
-                  Mapa Térmico (Grad-CAM) vs Original
-                </p>
-                <BeforeAfterViewer
-                  beforeUrl={selectedItemDetail.original_signed_url}
-                  heatmapBase64={selectedItemDetail.ai_heatmap_base64}
-                />
-              </div>
-            )}
-
-            <div className="flex justify-end pt-3">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedItemDetail(null)}
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </Modal>
       )}
     </PageContainer>
   );
