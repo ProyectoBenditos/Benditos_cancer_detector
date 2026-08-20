@@ -192,7 +192,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                     href={detailHref}
                     className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded text-xs font-semibold"
                   >
-                    {isAnalysis ? "Ver IA" : "Ver detalle"}
+                    Ver detalle
                   </Link>
                 </TableCell>
               </TableRow>
@@ -263,7 +263,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                     onClick={() => toggleBatch(group.batch_id)}
                     className="text-brand-primary hover:text-brand-primary-hover font-semibold text-xs inline-flex items-center gap-1 focus:outline-none"
                   >
-                    {isExpanded ? "Ocultar" : "Ver IA"}
+                    {isExpanded ? "Ocultar" : "Ver detalle"}
                     <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                   </button>
                 </TableCell>
@@ -281,7 +281,9 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                       </div>
                       <div className="space-y-1.5">
                         {group.items.map((subItem) => {
-                          const subDetailHref = `/platform/analyze/${subItem.id}`;
+                          const subDetailHref = subItem.file_type === "dicom"
+                            ? `/platform/uploads/${subItem.id}`
+                            : `/platform/analyze/${subItem.id}`;
                           return (
                             <div
                               key={subItem.id}
@@ -309,7 +311,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                                   href={subDetailHref}
                                   className="text-brand-primary hover:underline font-semibold"
                                 >
-                                  Ver IA
+                                  Ver detalle
                                 </Link>
                               </div>
                             </div>
