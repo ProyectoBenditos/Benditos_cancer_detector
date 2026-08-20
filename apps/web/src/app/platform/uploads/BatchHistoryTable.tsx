@@ -281,9 +281,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                       </div>
                       <div className="space-y-1.5">
                         {group.items.map((subItem) => {
-                          const subDetailHref = subItem.file_type === "dicom"
-                            ? `/platform/uploads/${subItem.id}`
-                            : `/platform/analyze/${subItem.id}`;
+                          const subDetailHref = `/platform/uploads/${subItem.id}`;
                           return (
                             <div
                               key={subItem.id}
