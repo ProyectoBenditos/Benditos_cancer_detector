@@ -507,51 +507,80 @@ export default function BatchUploadPage() {
 
           {/* Modal para Registrar Paciente */}
           <Modal
-            isOpen={newPatientModalOpen}
+            open={newPatientModalOpen}
             onClose={() => setNewPatientModalOpen(false)}
-            title="Registrar nuevo paciente"
+            title="Registrar paciente"
+            description="Crea un nuevo paciente para asociarlo a este estudio."
           >
-            <form action={modalAction} className="space-y-4 pt-2">
+            <form key={String(newPatientModalOpen)} action={modalAction} className="space-y-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  ID Externo / Código Paciente <span className="text-brand-danger">*</span>
+                <label htmlFor="batch-modal-external-id" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Código de paciente <span className="text-brand-danger">*</span>
                 </label>
                 <input
-                  type="text"
+                  id="batch-modal-external-id"
                   name="external_id"
+                  type="text"
                   required
-                  placeholder="ej. PAC-2026-001"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-brand-primary"
+                  maxLength={100}
+                  placeholder="Ej: CT-001, PAC-2026-001"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
+                />
+                <p className="mt-1 text-xs text-slate-400">
+                  Código interno único para identificar a este paciente.
+                </p>
+              </div>
+              <div>
+                <label htmlFor="batch-modal-display-alias" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Alias o descripción <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  id="batch-modal-display-alias"
+                  name="display_alias"
+                  type="text"
+                  maxLength={200}
+                  placeholder="Ej: Paciente Tórax Estudio 2026"
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
                 />
               </div>
-
               <div>
-                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
-                  Alias / Identificador Clínico (Opcional)
+                <label htmlFor="batch-modal-notes" className="mb-1.5 block text-sm font-medium text-slate-700">
+                  Notas clínicas <span className="text-slate-400 font-normal">(opcional)</span>
                 </label>
-                <input
-                  type="text"
-                  name="display_alias"
-                  placeholder="ej. Paciente A - Tórax"
-                  className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-brand-primary"
+                <textarea
+                  id="batch-modal-notes"
+                  name="notes"
+                  rows={3}
+                  maxLength={1000}
+                  placeholder="Notas adicionales sobre el caso..."
+                  className="w-full resize-none rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none focus:border-brand-primary focus:ring-1 focus:ring-brand-primary transition-all"
                 />
               </div>
 
               {modalState.error && (
-                <p className="text-xs text-brand-danger font-medium">{modalState.error}</p>
+                <AlertBanner
+                  variant="error"
+                  title="No se pudo registrar el paciente"
+                  description={modalState.error}
+                />
               )}
 
-              <div className="flex justify-end gap-3 pt-4 border-t">
+              <div className="flex justify-end gap-3 pt-2">
                 <Button
                   type="button"
                   variant="secondary"
-                  size="sm"
+                  size="md"
                   onClick={() => setNewPatientModalOpen(false)}
                 >
                   Cancelar
                 </Button>
-                <Button type="submit" variant="primary" size="sm" loading={modalPending}>
-                  Guardar Paciente
+                <Button
+                  type="submit"
+                  variant="primary"
+                  size="md"
+                  loading={modalPending}
+                >
+                  {modalPending ? "Registrando..." : "Registrar"}
                 </Button>
               </div>
             </form>
@@ -880,7 +909,7 @@ export default function BatchUploadPage() {
       {/* ── Modal de Detalle por Ítem ── */}
       {selectedItemDetail && (
         <Modal
-          isOpen={!!selectedItemDetail}
+          open={!!selectedItemDetail}
           onClose={() => setSelectedItemDetail(null)}
           title={`Detalle de Análisis — ${selectedItemDetail.original_name}`}
         >
