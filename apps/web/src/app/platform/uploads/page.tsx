@@ -3,11 +3,9 @@ import { createClient } from "@/utils/supabase/server";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
-import { TableWrapper, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "@/components/ui/Table";
-import { StatusBadge } from "@/components/ui/StatusBadge";
-import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
+import { BatchHistoryTable, type UploadRecord } from "./BatchHistoryTable";
 
 type PageProps = {
     searchParams: Promise<{ q?: string }>;
@@ -19,12 +17,10 @@ export default async function UploadsPage({ searchParams }: PageProps) {
 
     let query = supabase
         .from("dicom_uploads")
-        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, file_type, ai_score, ai_risk_level, metadata_json")
+        .select("id, original_name, modality, study_date, patient_id_dicom, upload_status, created_at, file_type, ai_score, ai_risk_level, batch_id, metadata_json")
         .order("created_at", { ascending: false });
 
     if (q && q.trim()) {
-        // Escapar caracteres que Supabase interpreta como separadores/wildcards en .or() filters.
-        // % y _ son wildcards en ilike; comas/paréntesis/comillas pueden romper la sintaxis del filtro.
         const escaped = q
             .trim()
             .replace(/\\/g, "\\\\")
@@ -36,13 +32,13 @@ export default async function UploadsPage({ searchParams }: PageProps) {
     }
 
     const { data: uploads, error } = await query;
-    const filtered = uploads;
+    const filtered = (uploads as unknown as UploadRecord[]) || [];
 
     return (
         <PageContainer>
             <SectionHeader
                 title="Historial de cargas y análisis"
-                description="Listado centralizado de estudios DICOM y análisis IA."
+                description="Listado centralizado de estudios DICOM, cargas individuales y lotes de análisis IA."
                 action={
                     <>
                         <Link
@@ -52,10 +48,10 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                             Subir DICOM
                         </Link>
                         <Link
-                            href="/platform"
+                            href="/platform/analyze/batch"
                             className={buttonVariants({ variant: "secondary", size: "md" })}
                         >
-                            Volver
+                            Análisis por Lote
                         </Link>
                     </>
                 }
@@ -87,7 +83,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                 </div>
                 {q && (
                     <p className="text-xs text-slate-500 mt-2">
-                        {filtered?.length ?? 0} resultado(s) para &quot;{q}&quot;
+                        {filtered.length} resultado(s) para &quot;{q}&quot;
                     </p>
                 )}
             </form>
@@ -127,77 +123,7 @@ export default async function UploadsPage({ searchParams }: PageProps) {
                     </CardContent>
                 </Card>
             ) : (
-                <TableWrapper>
-                    <TableHead>
-                        <tr>
-                            <TableHeaderCell>Archivo</TableHeaderCell>
-                            <TableHeaderCell>Tipo</TableHeaderCell>
-                            <TableHeaderCell>Referencia</TableHeaderCell>
-                            <TableHeaderCell>Modalidad</TableHeaderCell>
-                            <TableHeaderCell>Fecha Estudio</TableHeaderCell>
-                            <TableHeaderCell>Riesgo IA</TableHeaderCell>
-                            <TableHeaderCell>Score IA</TableHeaderCell>
-                            <TableHeaderCell>Estado</TableHeaderCell>
-                            <TableHeaderCell>Ingresado</TableHeaderCell>
-                            <TableHeaderCell className="text-right">Acción</TableHeaderCell>
-                        </tr>
-                    </TableHead>
-                    <TableBody>
-                        {filtered.map((upload) => {
-                            const isAnalysis = upload.file_type === "png_analysis";
-                            const detailHref = isAnalysis
-                                ? `/platform/analyze/${upload.id}`
-                                : `/platform/uploads/${upload.id}`;
-                            return (
-                                <TableRow key={upload.id}>
-                                    <TableCell className="font-bold text-slate-800 truncate max-w-[150px]" title={upload.original_name}>
-                                        {upload.original_name}
-                                    </TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
-                                            isAnalysis
-                                                ? "bg-brand-primary/10 text-brand-primary border-brand-primary/20"
-                                                : "bg-slate-100 text-slate-700 border-slate-200"
-                                        }`}>
-                                            {isAnalysis ? "IA" : "DICOM"}
-                                        </span>
-                                    </TableCell>
-                                    <TableCell className="text-slate-600 truncate max-w-[120px]" title={upload.metadata_json?.case_ref ?? ""}>
-                                        {upload.metadata_json?.case_ref
-                                            ? <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium">{upload.metadata_json.case_ref}</span>
-                                            : <span className="text-slate-400 text-xs">—</span>
-                                        }
-                                    </TableCell>
-                                    <TableCell>{upload.modality ?? "N/D"}</TableCell>
-                                    <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
-                                    <TableCell>
-                                        <RiskBadge level={upload.ai_risk_level as RiskLevel | null} />
-                                    </TableCell>
-                                    <TableCell className="text-slate-700 font-medium">
-                                        {upload.ai_score != null
-                                            ? `${(upload.ai_score * 100).toFixed(1)}%`
-                                            : <span className="text-slate-400 text-xs">—</span>
-                                        }
-                                    </TableCell>
-                                    <TableCell>
-                                        <StatusBadge status={upload.upload_status} />
-                                    </TableCell>
-                                    <TableCell className="text-slate-500 text-xs">
-                                        {new Date(upload.created_at).toLocaleDateString()}
-                                    </TableCell>
-                                    <TableCell className="text-right font-medium">
-                                        <Link
-                                            href={detailHref}
-                                            className="text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary focus-visible:ring-offset-1 rounded"
-                                        >
-                                            {isAnalysis ? "Ver IA" : "Ver detalle"}
-                                        </Link>
-                                    </TableCell>
-                                </TableRow>
-                            );
-                        })}
-                    </TableBody>
-                </TableWrapper>
+                <BatchHistoryTable uploads={filtered} />
             )}
         </PageContainer>
     );

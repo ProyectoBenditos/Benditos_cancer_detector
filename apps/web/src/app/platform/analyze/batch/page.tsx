@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useActionState } from "react";
 import Link from "next/link";
 import { createClient } from "@/utils/supabase/client";
 import { PageContainer } from "@/components/ui/PageContainer";
@@ -9,16 +9,23 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { Modal } from "@/components/ui/Modal";
+import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { createPatientInline, type PatientInlineState } from "../../pacientes/actions";
 import { toast } from "sonner";
 import {
   Upload,
   X,
-  ImagePlus,
+  FileSpreadsheet,
   CheckCircle2,
   XCircle,
   Loader2,
   Clock,
   Layers,
+  User,
+  Users,
+  Eye,
+  Plus,
 } from "lucide-react";
 
 type ClinicalFeatures = {
@@ -70,7 +77,12 @@ type BatchItem = {
   ai_score: number | null;
   ai_risk_level: string | null;
   ai_recommendation: string | null;
+  ai_heatmap_base64?: string | null;
+  original_signed_url?: string | null;
   ai_error: string | null;
+  modality?: string | null;
+  study_date?: string | null;
+  patient_id_dicom?: string | null;
   created_at: string;
 };
 
@@ -80,6 +92,8 @@ type BatchJob = {
   total_items: number;
   completed_items: number;
   failed_items: number;
+  patient_mode?: string;
+  batch_sequence?: number;
   created_at: string;
   completed_at: string | null;
 };
@@ -92,13 +106,14 @@ type BatchResponse = {
 const statusIcon = (status: string) => {
   switch (status) {
     case "ai_completed":
+    case "analyzed":
       return <CheckCircle2 className="w-4 h-4 text-emerald-500" aria-hidden="true" />;
     case "ai_failed":
+    case "error":
       return <XCircle className="w-4 h-4 text-slate-400" aria-hidden="true" />;
     case "processing":
       return <Loader2 className="w-4 h-4 text-brand-primary animate-spin" aria-hidden="true" />;
     case "queued":
-      return <Clock className="w-4 h-4 text-slate-300" aria-hidden="true" />;
     default:
       return <Clock className="w-4 h-4 text-slate-300" aria-hidden="true" />;
   }
@@ -106,8 +121,10 @@ const statusIcon = (status: string) => {
 
 const statusLabel = (status: string) => {
   switch (status) {
-    case "ai_completed": return "Completado";
-    case "ai_failed": return "Fallido";
+    case "ai_completed":
+    case "analyzed": return "Completado";
+    case "ai_failed":
+    case "error": return "Fallido";
     case "processing": return "Analizando...";
     case "queued": return "En cola";
     default: return status;
@@ -141,9 +158,23 @@ export default function BatchUploadPage() {
 
   // ── State ───────────────────────────────────────────
   const [files, setFiles] = useState<File[]>([]);
-  const [features, setFeatures] = useState<ClinicalFeatures>(DEFAULT_FEATURES);
+  const [patientMode, setPatientMode] = useState<"single" | "multi">("single");
+  const [patientId, setPatientId] = useState<string>("");
+  const [patients, setPatients] = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
+  const [features, setFeatures] = useState<ClinicalFeatures>(DEFAULT_DEFAULT_FEATURES());
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
+
+  // Modal para nuevo paciente
+  const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
+  const processedPatientId = useRef<string | null>(null);
+  const [modalState, modalAction, modalPending] = useActionState<PatientInlineState, FormData>(
+    createPatientInline,
+    {}
+  );
+
+  // Detail modal state
+  const [selectedItemDetail, setSelectedItemDetail] = useState<BatchItem | null>(null);
 
   // Polling state
   const [batchId, setBatchId] = useState<string | null>(null);
@@ -152,12 +183,39 @@ export default function BatchUploadPage() {
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
 
+  function DEFAULT_DEFAULT_FEATURES() {
+    return DEFAULT_FEATURES;
+  }
+
+  // ── Cargar Pacientes ──────────────────────────────────
+  useEffect(() => {
+    supabase
+      .from("patients")
+      .select("id, external_id, display_alias")
+      .order("created_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setPatients(data);
+      });
+  }, []);
+
+  // ── Efecto Paciente Creado ────────────────────────────
+  useEffect(() => {
+    if (!modalState.patient) return;
+    if (processedPatientId.current === modalState.patient.id) return;
+    processedPatientId.current = modalState.patient.id;
+    const p = modalState.patient;
+    setPatients((prev) => (prev.some((x) => x.id === p.id) ? prev : [p, ...prev]));
+    setPatientId(p.id);
+    setNewPatientModalOpen(false);
+    toast.success("Paciente registrado y seleccionado.");
+  }, [modalState.patient]);
+
   // ── Handlers ──────────────────────────────────────────
 
   const handleFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files || []);
     if (selected.length + files.length > MAX_FILES) {
-      toast.error(`Máximo ${MAX_FILES} imágenes por lote.`);
+      toast.error(`Máximo ${MAX_FILES} archivos por lote.`);
       return;
     }
     setFiles((prev) => [...prev, ...selected]);
@@ -166,10 +224,10 @@ export default function BatchUploadPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     const dropped = Array.from(e.dataTransfer.files).filter((f) =>
-      /\.(png|jpe?g)$/i.test(f.name)
+      /\.(dcm|png|jpe?g)$/i.test(f.name)
     );
     if (dropped.length + files.length > MAX_FILES) {
-      toast.error(`Máximo ${MAX_FILES} imágenes por lote.`);
+      toast.error(`Máximo ${MAX_FILES} archivos por lote.`);
       return;
     }
     setFiles((prev) => [...prev, ...dropped]);
@@ -195,31 +253,31 @@ export default function BatchUploadPage() {
       const result: BatchResponse = await resp.json();
       setBatchData(result);
 
-      // Detener polling si ya terminó
       if (["completed", "failed", "partial"].includes(result.batch.status)) {
         stopPolling();
       }
     } catch {
-      // Silent — el polling reintentará
+      // Silent retry
     }
   }, []);
 
-  const startPolling = useCallback((id: string) => {
-    setPolling(true);
-    pollStartRef.current = Date.now();
-
-    // Fetch inmediato
-    fetchBatchStatus(id);
-
-    pollRef.current = setInterval(() => {
-      if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
-        stopPolling();
-        toast.error("El análisis del lote tomó demasiado tiempo. Recarga la página para verificar el estado.");
-        return;
-      }
+  const startPolling = useCallback(
+    (id: string) => {
+      setPolling(true);
+      pollStartRef.current = Date.now();
       fetchBatchStatus(id);
-    }, POLL_INTERVAL_MS);
-  }, [fetchBatchStatus]);
+
+      pollRef.current = setInterval(() => {
+        if (Date.now() - pollStartRef.current > POLL_TIMEOUT_MS) {
+          stopPolling();
+          toast.error("El análisis del lote tomó demasiado tiempo.");
+          return;
+        }
+        fetchBatchStatus(id);
+      }, POLL_INTERVAL_MS);
+    },
+    [fetchBatchStatus]
+  );
 
   const stopPolling = () => {
     setPolling(false);
@@ -229,7 +287,6 @@ export default function BatchUploadPage() {
     }
   };
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
@@ -238,7 +295,12 @@ export default function BatchUploadPage() {
 
   const handleSubmit = async () => {
     if (files.length === 0) {
-      setErrorMsg("Selecciona al menos una imagen.");
+      setErrorMsg("Selecciona al menos un archivo.");
+      return;
+    }
+
+    if (patientMode === "single" && !patientId) {
+      setErrorMsg("Selecciona o registra un paciente para el lote.");
       return;
     }
 
@@ -260,6 +322,10 @@ export default function BatchUploadPage() {
 
       const formData = new FormData();
       files.forEach((file) => formData.append("imagenes", file));
+      formData.append("patient_mode", patientMode);
+      if (patientMode === "single" && patientId) {
+        formData.append("patient_id", patientId);
+      }
 
       // Append features
       Object.entries(features).forEach(([key, val]) => {
@@ -280,7 +346,7 @@ export default function BatchUploadPage() {
 
       const result = await resp.json();
       setBatchId(result.batch_id);
-      toast.success(`Lote creado: ${result.total_items} imágenes en cola.`);
+      toast.success(`Lote creado: ${result.total_items} archivos en cola.`);
       startPolling(result.batch_id);
     } catch {
       setErrorMsg("Error de conexión con el servidor.");
@@ -311,13 +377,11 @@ export default function BatchUploadPage() {
       )
     : 0;
 
-  // ── Render ────────────────────────────────────────────
-
   return (
     <PageContainer maxWidth="4xl">
       <SectionHeader
         title="Análisis por lote"
-        description="Sube hasta 20 imágenes CT para analizar con el modelo IA. Las features clínicas se aplican a todo el lote."
+        description="Sube hasta 20 tomografías (.dcm, .png, .jpg) para procesar secuencialmente con la IA."
         action={
           <Link
             href="/platform"
@@ -338,14 +402,151 @@ export default function BatchUploadPage() {
       {/* ── Formulario de subida ── */}
       {!batchId && (
         <>
+          {/* Estrategia de Paciente */}
+          <Card className="mb-6">
+            <CardContent className="p-8">
+              <h2 className="text-lg font-bold text-slate-800 mb-1 flex items-center gap-2">
+                <User className="w-5 h-5 text-brand-primary" />
+                Atribución de Pacientes
+              </h2>
+              <p className="text-sm text-slate-500 mb-6">
+                Selecciona si todos los cortes del lote corresponden a un único paciente o a pacientes diferentes.
+              </p>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                <button
+                  type="button"
+                  onClick={() => setPatientMode("single")}
+                  className={`p-4 rounded-xl border-2 text-left transition-all flex items-start gap-3 ${
+                    patientMode === "single"
+                      ? "border-brand-primary bg-brand-primary/5 text-slate-800"
+                      : "border-slate-200 bg-white hover:border-slate-300 text-slate-600"
+                  }`}
+                >
+                  <User className={`w-5 h-5 mt-0.5 ${patientMode === "single" ? "text-brand-primary" : "text-slate-400"}`} />
+                  <div>
+                    <p className="font-bold text-sm">Un solo paciente</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Todas las imágenes pertenecen al mismo paciente/estudio.
+                    </p>
+                  </div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setPatientMode("multi")}
+                  className={`p-4 rounded-xl border-2 text-left transition-all flex items-start gap-3 ${
+                    patientMode === "multi"
+                      ? "border-brand-primary bg-brand-primary/5 text-slate-800"
+                      : "border-slate-200 bg-white hover:border-slate-300 text-slate-600"
+                  }`}
+                >
+                  <Users className={`w-5 h-5 mt-0.5 ${patientMode === "multi" ? "text-brand-primary" : "text-slate-400"}`} />
+                  <div>
+                    <p className="font-bold text-sm">Pacientes diferentes / Múltiples</p>
+                    <p className="text-xs text-slate-500 mt-1">
+                      Se asignará un código secuencial (ej. <code>batch_001_1</code>, <code>batch_001_2</code>).
+                    </p>
+                  </div>
+                </button>
+              </div>
+
+              {/* Selector de Paciente si es Single Mode */}
+              {patientMode === "single" && (
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    Seleccionar Paciente <span className="text-brand-danger">*</span>
+                  </label>
+                  <div className="flex gap-3">
+                    <select
+                      value={patientId}
+                      onChange={(e) => setPatientId(e.target.value)}
+                      className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 focus:border-brand-primary outline-none"
+                    >
+                      <option value="">-- Selecciona un paciente --</option>
+                      {patients.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
+                        </option>
+                      ))}
+                    </select>
+
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      size="sm"
+                      onClick={() => setNewPatientModalOpen(true)}
+                      className="flex items-center gap-1.5"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Registrar paciente
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Modal para Registrar Paciente */}
+          <Modal
+            isOpen={newPatientModalOpen}
+            onClose={() => setNewPatientModalOpen(false)}
+            title="Registrar nuevo paciente"
+          >
+            <form action={modalAction} className="space-y-4 pt-2">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  ID Externo / Código Paciente <span className="text-brand-danger">*</span>
+                </label>
+                <input
+                  type="text"
+                  name="external_id"
+                  required
+                  placeholder="ej. PAC-2026-001"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-brand-primary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">
+                  Alias / Identificador Clínico (Opcional)
+                </label>
+                <input
+                  type="text"
+                  name="display_alias"
+                  placeholder="ej. Paciente A - Tórax"
+                  className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm outline-none focus:border-brand-primary"
+                />
+              </div>
+
+              {modalState.error && (
+                <p className="text-xs text-brand-danger font-medium">{modalState.error}</p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-4 border-t">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setNewPatientModalOpen(false)}
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" variant="primary" size="sm" loading={modalPending}>
+                  Guardar Paciente
+                </Button>
+              </div>
+            </form>
+          </Modal>
+
           {/* Drop zone */}
           <Card>
             <CardContent className="p-8">
               <h2 className="text-lg font-bold text-slate-800 mb-1">
-                Imágenes CT
+                Archivos DICOM / Imágenes CT
               </h2>
               <p className="text-sm text-slate-500 mb-6">
-                Arrastra o selecciona hasta {MAX_FILES} imágenes PNG/JPG de tomografías de tórax.
+                Arrastra o selecciona hasta {MAX_FILES} archivos DICOM (<code>.dcm</code>) o imágenes (<code>.png</code>, <code>.jpg</code>).
               </p>
 
               <div
@@ -353,21 +554,21 @@ export default function BatchUploadPage() {
                 onDragOver={(e) => e.preventDefault()}
                 className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:border-brand-primary/50 transition-colors cursor-pointer"
               >
-                <ImagePlus className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
+                <FileSpreadsheet className="w-10 h-10 text-slate-300 mx-auto mb-3" aria-hidden="true" />
                 <p className="text-sm text-slate-500 mb-3">
-                  Arrastra imágenes aquí o haz clic para seleccionar
+                  Arrastra archivos DICOM o imágenes aquí
                 </p>
                 <label className="inline-block">
                   <input
                     type="file"
-                    accept=".png,.jpg,.jpeg"
+                    accept=".dcm,.png,.jpg,.jpeg"
                     multiple
                     onChange={handleFilesChange}
                     className="sr-only"
                   />
                   <span className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-brand-primary/10 text-brand-primary text-sm font-semibold hover:bg-brand-primary/20 transition-colors cursor-pointer">
                     <Upload className="w-4 h-4" aria-hidden="true" />
-                    Seleccionar archivos
+                    Seleccionar archivos (.dcm, .png, .jpg)
                   </span>
                 </label>
               </div>
@@ -377,7 +578,7 @@ export default function BatchUploadPage() {
                 <div className="mt-6">
                   <div className="flex items-center justify-between mb-3">
                     <p className="text-sm font-semibold text-slate-700">
-                      {files.length} imagen{files.length !== 1 ? "es" : ""} seleccionada{files.length !== 1 ? "s" : ""}
+                      {files.length} archivo{files.length !== 1 ? "s" : ""} seleccionado{files.length !== 1 ? "s" : ""}
                     </p>
                     <button
                       type="button"
@@ -393,9 +594,14 @@ export default function BatchUploadPage() {
                         key={`${file.name}-${i}`}
                         className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-2.5 text-sm"
                       >
-                        <span className="truncate text-slate-700 font-medium max-w-[70%]">
-                          {file.name}
-                        </span>
+                        <div className="flex items-center gap-2 truncate max-w-[70%]">
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-slate-200 text-slate-700">
+                            {file.name.endsWith(".dcm") ? "DICOM" : "IMG"}
+                          </span>
+                          <span className="truncate text-slate-700 font-medium">
+                            {file.name}
+                          </span>
+                        </div>
                         <div className="flex items-center gap-3">
                           <span className="text-xs text-slate-400">
                             {(file.size / 1024).toFixed(0)} KB
@@ -429,7 +635,6 @@ export default function BatchUploadPage() {
               </h2>
               <p className="text-sm text-slate-500 mb-6">
                 Estas features se aplicarán a <strong>todas</strong> las imágenes del lote.
-                Ideales cuando son cortes del mismo nódulo/paciente.
               </p>
 
               <div className="grid gap-6 md:grid-cols-2">
@@ -483,7 +688,7 @@ export default function BatchUploadPage() {
           >
             {submitting
               ? "Creando lote..."
-              : `Analizar ${files.length} imagen${files.length !== 1 ? "es" : ""} con IA`}
+              : `Analizar ${files.length} archivo${files.length !== 1 ? "s" : ""} con IA`}
           </Button>
         </>
       )}
@@ -497,7 +702,7 @@ export default function BatchUploadPage() {
                 <Layers className="w-6 h-6 text-brand-primary" aria-hidden="true" />
                 <div>
                   <h2 className="text-lg font-bold text-slate-800">
-                    Lote en progreso
+                    Lote {batchData?.batch.batch_sequence ? `#${String(batchData.batch.batch_sequence).padStart(3, "0")}` : ""} en progreso
                   </h2>
                   {batchData?.batch && (
                     <p className="text-sm text-slate-500">
@@ -535,40 +740,57 @@ export default function BatchUploadPage() {
 
             {/* Items list */}
             {batchData?.items && batchData.items.length > 0 && (
-              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-1">
-                {batchData.items.map((item) => (
-                  <div
-                    key={item.id}
-                    className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-3"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      {statusIcon(item.upload_status)}
-                      <span className="text-sm font-medium text-slate-700 truncate max-w-[200px]">
-                        {item.original_name}
-                      </span>
+              <div className="space-y-2 max-h-[450px] overflow-y-auto pr-1">
+                {batchData.items.map((item) => {
+                  const isCompleted = item.upload_status === "ai_completed" || item.upload_status === "analyzed";
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 px-4 py-3"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        {statusIcon(item.upload_status)}
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-slate-700 truncate max-w-[200px]">
+                            {item.original_name}
+                          </p>
+                          {item.patient_id_dicom && (
+                            <p className="text-xs text-slate-400 font-mono">
+                              {item.patient_id_dicom}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {isCompleted && item.ai_score !== null && (
+                          <span className="text-sm font-bold text-slate-700">
+                            {(item.ai_score * 100).toFixed(1)}%
+                          </span>
+                        )}
+                        {isCompleted && (
+                          <RiskBadge level={item.ai_risk_level as RiskLevel | null} />
+                        )}
+                        {isCompleted && (
+                          <Button
+                            type="button"
+                            variant="secondary"
+                            size="sm"
+                            onClick={() => setSelectedItemDetail(item)}
+                            className="flex items-center gap-1 py-1 px-2.5 text-xs"
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            Ver detalle
+                          </Button>
+                        )}
+                        {!isCompleted && (
+                          <span className="text-xs text-slate-400">
+                            {statusLabel(item.upload_status)}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {item.upload_status === "ai_completed" && item.ai_score !== null && (
-                        <span className="text-sm font-bold text-slate-700">
-                          {(item.ai_score * 100).toFixed(1)}%
-                        </span>
-                      )}
-                      {item.upload_status === "ai_completed" && (
-                        <RiskBadge level={item.ai_risk_level as RiskLevel | null} />
-                      )}
-                      {item.upload_status === "ai_failed" && (
-                        <span className="text-xs text-slate-400">
-                          {statusLabel(item.upload_status)}
-                        </span>
-                      )}
-                      {(item.upload_status === "processing" || item.upload_status === "queued") && (
-                        <span className="text-xs text-slate-400">
-                          {statusLabel(item.upload_status)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
@@ -619,6 +841,65 @@ export default function BatchUploadPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Modal de Detalle por Ítem ── */}
+      {selectedItemDetail && (
+        <Modal
+          isOpen={!!selectedItemDetail}
+          onClose={() => setSelectedItemDetail(null)}
+          title={`Detalle de Análisis — ${selectedItemDetail.original_name}`}
+        >
+          <div className="space-y-4 pt-2">
+            <div className="flex items-center justify-between border-b pb-3">
+              <div>
+                <p className="text-xs text-slate-400">Paciente / Ref</p>
+                <p className="text-sm font-bold text-slate-700 font-mono">
+                  {selectedItemDetail.patient_id_dicom || "N/A"}
+                </p>
+              </div>
+              <RiskBadge level={selectedItemDetail.ai_risk_level as RiskLevel | null} />
+            </div>
+
+            {selectedItemDetail.ai_score !== null && (
+              <div className="bg-slate-50 border p-3 rounded-xl flex items-center justify-between">
+                <span className="text-sm text-slate-600 font-medium">Probabilidad de Sospecha:</span>
+                <span className="text-lg font-bold text-slate-800">
+                  {(selectedItemDetail.ai_score * 100).toFixed(1)}%
+                </span>
+              </div>
+            )}
+
+            {selectedItemDetail.ai_recommendation && (
+              <div className="bg-blue-50/50 border border-blue-100 p-3 rounded-xl text-xs text-blue-900">
+                <p className="font-bold mb-0.5">Recomendación Clínica:</p>
+                <p>{selectedItemDetail.ai_recommendation}</p>
+              </div>
+            )}
+
+            {selectedItemDetail.ai_heatmap_base64 && selectedItemDetail.original_signed_url && (
+              <div className="pt-2">
+                <p className="text-xs font-semibold text-slate-700 uppercase tracking-wider mb-2">
+                  Mapa Térmico (Grad-CAM) vs Original
+                </p>
+                <BeforeAfterViewer
+                  originalUrl={selectedItemDetail.original_signed_url}
+                  heatmapBase64={selectedItemDetail.ai_heatmap_base64}
+                />
+              </div>
+            )}
+
+            <div className="flex justify-end pt-3">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setSelectedItemDetail(null)}
+              >
+                Cerrar
+              </Button>
+            </div>
+          </div>
+        </Modal>
       )}
     </PageContainer>
   );
