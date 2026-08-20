@@ -831,7 +831,7 @@ export default function BatchUploadPage() {
                         )}
                         {isCompleted && (
                           <Link
-                            href={`/platform/analyze/${item.id}`}
+                            href={`/platform/uploads/${item.id}`}
                             className="flex items-center gap-1 py-1 px-2.5 text-xs rounded-xl bg-brand-primary/10 text-brand-primary font-semibold hover:bg-brand-primary/20 transition-colors"
                           >
                             <Eye className="w-3.5 h-3.5" />
