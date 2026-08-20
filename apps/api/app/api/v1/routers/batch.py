@@ -143,14 +143,15 @@ async def create_batch(
     imagenes: List[UploadFile] = File(...),
     patient_mode: str = Form("single"),
     patient_id: Optional[str] = Form(None),
-    subtlety: float = Form(..., ge=1, le=5),
-    calcification: float = Form(..., ge=1, le=6),
-    sphericity: float = Form(..., ge=1, le=5),
-    margin: float = Form(..., ge=1, le=5),
-    lobulation: float = Form(..., ge=1, le=5),
-    spiculation: float = Form(..., ge=1, le=5),
-    texture: float = Form(..., ge=1, le=5),
-    malignancy: float = Form(..., ge=1, le=5),
+    case_ref: Optional[str] = Form(None),
+    subtlety: float = Form(3.0, ge=1, le=5),
+    calcification: float = Form(6.0, ge=1, le=6),
+    sphericity: float = Form(4.0, ge=1, le=5),
+    margin: float = Form(4.0, ge=1, le=5),
+    lobulation: float = Form(1.0, ge=1, le=5),
+    spiculation: float = Form(1.0, ge=1, le=5),
+    texture: float = Form(5.0, ge=1, le=5),
+    malignancy: float = Form(3.0, ge=1, le=5),
     current_user: dict = Depends(get_current_user),
 ):
     """Crea un lote de análisis IA con soporte para imágenes y DICOMs."""
@@ -394,7 +395,7 @@ async def create_batch(
                         "uploaded_by_email": current_user["email"],
                         "batch_id": batch_id,
                         "batch_sequence": batch_seq,
-                        "case_ref": f"Batch #{batch_seq:03d}",
+                        "case_ref": case_ref.strip() if (case_ref and case_ref.strip()) else f"batch_{batch_seq:03d}",
                     },
                 })
                 .execute()

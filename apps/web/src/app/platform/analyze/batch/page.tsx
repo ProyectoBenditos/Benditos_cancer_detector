@@ -160,8 +160,9 @@ export default function BatchUploadPage() {
   const [files, setFiles] = useState<File[]>([]);
   const [patientMode, setPatientMode] = useState<"single" | "multi">("single");
   const [patientId, setPatientId] = useState<string>("");
+  const [caseRef, setCaseRef] = useState<string>("");
   const [patients, setPatients] = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
-  const [features, setFeatures] = useState<ClinicalFeatures>(DEFAULT_DEFAULT_FEATURES());
+  const [features, setFeatures] = useState<ClinicalFeatures>(DEFAULT_FEATURES);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -182,10 +183,6 @@ export default function BatchUploadPage() {
   const [polling, setPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
-
-  function DEFAULT_DEFAULT_FEATURES() {
-    return DEFAULT_FEATURES;
-  }
 
   // ── Cargar Pacientes ──────────────────────────────────
   useEffect(() => {
@@ -326,9 +323,13 @@ export default function BatchUploadPage() {
       if (patientMode === "single" && patientId) {
         formData.append("patient_id", patientId);
       }
+      if (caseRef.trim()) {
+        formData.append("case_ref", caseRef.trim());
+      }
 
-      // Append features
-      Object.entries(features).forEach(([key, val]) => {
+      // En modo multi se envían las features estándar por defecto
+      const activeFeatures = patientMode === "multi" ? DEFAULT_FEATURES : features;
+      Object.entries(activeFeatures).forEach(([key, val]) => {
         formData.append(key, String(val));
       });
 
@@ -358,6 +359,7 @@ export default function BatchUploadPage() {
   const handleReset = () => {
     stopPolling();
     setFiles([]);
+    setCaseRef("");
     setFeatures(DEFAULT_FEATURES);
     setBatchId(null);
     setBatchData(null);
@@ -410,7 +412,7 @@ export default function BatchUploadPage() {
                 Atribución de Pacientes
               </h2>
               <p className="text-sm text-slate-500 mb-6">
-                Selecciona si todos los cortes del lote corresponden a un único paciente o a pacientes diferentes.
+                Selecciona si los cortes del lote corresponden a un único paciente o a pacientes múltiples.
               </p>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -443,7 +445,7 @@ export default function BatchUploadPage() {
                 >
                   <Users className={`w-5 h-5 mt-0.5 ${patientMode === "multi" ? "text-brand-primary" : "text-slate-400"}`} />
                   <div>
-                    <p className="font-bold text-sm">Pacientes diferentes / Múltiples</p>
+                    <p className="font-bold text-sm">Pacientes Múltiples</p>
                     <p className="text-xs text-slate-500 mt-1">
                       Se asignará un código secuencial (ej. <code>batch_001_1</code>, <code>batch_001_2</code>).
                     </p>
@@ -453,37 +455,53 @@ export default function BatchUploadPage() {
 
               {/* Selector de Paciente si es Single Mode */}
               {patientMode === "single" && (
-                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl">
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">
-                    Seleccionar Paciente <span className="text-brand-danger">*</span>
-                  </label>
-                  <div className="flex gap-3">
-                    <select
-                      value={patientId}
-                      onChange={(e) => setPatientId(e.target.value)}
-                      className="flex-1 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-700 focus:border-brand-primary outline-none"
-                    >
-                      <option value="">-- Selecciona un paciente --</option>
-                      {patients.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
-                        </option>
-                      ))}
-                    </select>
-
-                    <Button
+                <div className="bg-slate-50 border border-slate-200 p-4 rounded-xl mb-4">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-sm font-semibold text-slate-700">
+                      Seleccionar Paciente <span className="text-brand-danger">*</span>
+                    </label>
+                    <button
                       type="button"
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setNewPatientModalOpen(true)}
-                      className="flex items-center gap-1.5"
+                      onClick={() => {
+                        processedPatientId.current = null;
+                        setNewPatientModalOpen(true);
+                      }}
+                      className="text-xs font-semibold text-brand-primary hover:text-brand-primary-hover hover:underline transition-colors"
                     >
-                      <Plus className="w-4 h-4" />
-                      Registrar paciente
-                    </Button>
+                      + Registrar paciente
+                    </button>
                   </div>
+                  <select
+                    value={patientId}
+                    onChange={(e) => setPatientId(e.target.value)}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm text-slate-700 focus:border-brand-primary outline-none"
+                  >
+                    <option value="">-- Selecciona un paciente --</option>
+                    {patients.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.display_alias ? `${p.display_alias} (${p.external_id})` : p.external_id}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               )}
+
+              {/* Referencia del caso */}
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">
+                  Referencia del caso <span className="text-slate-400 font-normal">(opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={caseRef}
+                  onChange={(e) => setCaseRef(e.target.value)}
+                  placeholder="Ej. Lote-Tórax-2026, Caso-Screening-01..."
+                  className="w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-2.5 text-sm text-slate-700 focus:border-brand-primary outline-none transition-all"
+                />
+                <p className="text-xs text-slate-400 mt-1">
+                  Referencia interna para identificar el lote en el historial.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
@@ -627,45 +645,61 @@ export default function BatchUploadPage() {
             </CardContent>
           </Card>
 
-          {/* Features clínicas */}
-          <Card className="mt-6">
-            <CardContent className="p-8">
-              <h2 className="text-lg font-bold text-slate-800 mb-1">
-                Parámetros radiológicos
-              </h2>
-              <p className="text-sm text-slate-500 mb-6">
-                Estas features se aplicarán a <strong>todas</strong> las imágenes del lote.
-              </p>
+          {/* Features clínicas (Solo para Un solo paciente) */}
+          {patientMode === "single" ? (
+            <Card className="mt-6">
+              <CardContent className="p-8">
+                <h2 className="text-lg font-bold text-slate-800 mb-1">
+                  Parámetros radiológicos
+                </h2>
+                <p className="text-sm text-slate-500 mb-6">
+                  Estas features se aplicarán a <strong>todas</strong> las imágenes del lote.
+                </p>
 
-              <div className="grid gap-6 md:grid-cols-2">
-                {FEATURE_LABELS.map(({ key, label, description, max }) => (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      {label}
-                      <span className="ml-2 text-xs font-normal text-slate-400">
-                        (valor: {features[key]})
-                      </span>
-                    </label>
-                    <input
-                      type="range"
-                      min={1}
-                      max={max}
-                      step={1}
-                      value={features[key]}
-                      onChange={(e) =>
-                        setFeatures((prev) => ({
-                          ...prev,
-                          [key]: Number(e.target.value),
-                        }))
-                      }
-                      className="w-full accent-brand-primary"
-                    />
-                    <p className="text-xs text-slate-400 mt-1">{description}</p>
-                  </div>
-                ))}
+                <div className="grid gap-6 md:grid-cols-2">
+                  {FEATURE_LABELS.map(({ key, label, description, max }) => (
+                    <div key={key}>
+                      <label className="block text-sm font-medium text-slate-700 mb-1">
+                        {label}
+                        <span className="ml-2 text-xs font-normal text-slate-400">
+                          (valor: {features[key]})
+                        </span>
+                      </label>
+                      <input
+                        type="range"
+                        min={1}
+                        max={max}
+                        step={1}
+                        value={features[key]}
+                        onChange={(e) =>
+                          setFeatures((prev) => ({
+                            ...prev,
+                            [key]: Number(e.target.value),
+                          }))
+                        }
+                        className="w-full accent-brand-primary"
+                      />
+                      <p className="text-xs text-slate-400 mt-1">{description}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="mt-6 rounded-2xl border border-slate-200 bg-slate-50 p-6 text-slate-600 text-xs flex items-center justify-between">
+              <div>
+                <p className="font-bold text-slate-700 text-sm mb-1">
+                  Parámetros Radiológicos Estándar
+                </p>
+                <p>
+                  En modo <strong>Pacientes Múltiples</strong> se aplican automáticamente los valores estándar de referencia clínica (LIDC-IDRI baseline) para cada estudio.
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <span className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[11px] font-semibold text-slate-600">
+                Baseline LIDC-IDRI
+              </span>
+            </div>
+          )}
 
           {/* Errors + Submit */}
           {errorMsg && (
@@ -702,7 +736,7 @@ export default function BatchUploadPage() {
                 <Layers className="w-6 h-6 text-brand-primary" aria-hidden="true" />
                 <div>
                   <h2 className="text-lg font-bold text-slate-800">
-                    Lote {batchData?.batch.batch_sequence ? `#${String(batchData.batch.batch_sequence).padStart(3, "0")}` : ""} en progreso
+                    Lote {batchData?.batch.batch_sequence ? `batch_${String(batchData.batch.batch_sequence).padStart(3, "0")}` : ""} en progreso
                   </h2>
                   {batchData?.batch && (
                     <p className="text-sm text-slate-500">

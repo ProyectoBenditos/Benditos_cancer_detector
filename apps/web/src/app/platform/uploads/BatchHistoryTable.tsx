@@ -202,7 +202,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
           // Render Grouped Batch Row (Accordion)
           const group = entry.group;
           const isExpanded = !!expandedBatches[group.batch_id];
-          const seqLabel = group.batch_sequence ? `Lote #${String(group.batch_sequence).padStart(3, "0")}` : "Lote";
+          const batchCode = group.batch_sequence ? `batch_${String(group.batch_sequence).padStart(3, "0")}` : `batch_001`;
 
           return (
             <React.Fragment key={`batch-${group.batch_id}`}>
@@ -219,7 +219,8 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                       <ChevronRight className="w-4 h-4 text-slate-400" />
                     )}
                     <Layers className="w-4 h-4 text-brand-primary" />
-                    <span>{seqLabel} ({group.items.length} imágenes)</span>
+                    <span className="font-mono">{batchCode}</span>
+                    <span className="text-xs font-normal text-slate-500">({group.items.length} imágenes)</span>
                   </button>
                 </TableCell>
                 <TableCell>
@@ -229,10 +230,14 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                 </TableCell>
                 <TableCell>
                   <span className="bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-md text-xs font-medium font-mono">
-                    {group.items[0]?.metadata_json?.case_ref || seqLabel}
+                    {group.items[0]?.metadata_json?.case_ref || batchCode}
                   </span>
                 </TableCell>
-                <TableCell>CT</TableCell>
+                <TableCell>
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase border bg-slate-200 text-slate-700">
+                    Lote
+                  </span>
+                </TableCell>
                 <TableCell className="text-slate-500">
                   {group.items[0]?.study_date ?? "N/D"}
                 </TableCell>
