@@ -24,7 +24,6 @@ import {
   User,
   Users,
   Eye,
-  Plus,
 } from "lucide-react";
 
 type ClinicalFeatures = {

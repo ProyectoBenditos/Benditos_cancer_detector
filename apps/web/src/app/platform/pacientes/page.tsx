@@ -70,12 +70,12 @@ export default async function PacientesPage({
           Buscar
         </button>
         {displayQ && (
-          <a
+          <Link
             href="/platform/pacientes"
             className={buttonVariants({ variant: "ghost", size: "md" })}
           >
             Limpiar
-          </a>
+          </Link>
         )}
       </form>
 
@@ -93,12 +93,12 @@ export default async function PacientesPage({
               <p className="text-sm text-slate-500 mb-6 max-w-sm">
                 No hay pacientes que coincidan con &ldquo;{displayQ}&rdquo;.
               </p>
-              <a
+              <Link
                 href="/platform/pacientes"
                 className={buttonVariants({ variant: "secondary", size: "md" })}
               >
                 Ver todos los pacientes
-              </a>
+              </Link>
             </CardContent>
           </Card>
         ) : (

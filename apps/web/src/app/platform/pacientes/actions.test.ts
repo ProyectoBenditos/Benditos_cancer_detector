@@ -61,6 +61,7 @@ describe("createPatientAction — validación pura", () => {
     }
     // El mock de redirect puede no lanzar o puede retornar undefined — en ambos casos no debe haber error de validación
     // Si llegamos aquí sin error, también es válido
-    expect(thrown ?? { error: undefined }).not.toMatchObject({ error: expect.stringMatching(/obligatorio|100|ya tienes/i) });
+    const result = (thrown ?? { error: undefined }) as { error?: string };
+    expect(result.error).toBeUndefined();
   });
 });

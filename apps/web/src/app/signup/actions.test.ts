@@ -23,6 +23,7 @@ function makeFormData(overrides: Record<string, string> = {}): FormData {
     cedula_profesional: "12345678",
     especialidad: "Radiología",
     institucion: "Hospital de Pruebas",
+    consent: "on",
     ...overrides,
   };
   const fd = new FormData();

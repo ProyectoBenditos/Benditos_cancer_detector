@@ -1,0 +1,33 @@
+name: Supabase Keep-Alive Ping
+
+on:
+  schedule:
+    # Se ejecuta cada 3 días a las 12:00 UTC (ej. lunes y jueves)
+    - cron: '0 12 */3 * *'
+  workflow_dispatch: # Permite dispararlo manualmente en cualquier momento desde GitHub
+
+jobs:
+  ping:
+    name: Ping Supabase Database
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send DB query to reset inactivity timer
+        run: |
+          SUPABASE_URL="${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'https://xxbymgefzoaaqmhaizde.supabase.co' }}"
+          SUPABASE_KEY="${{ secrets.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || 'sb_publishable_kpMLAd-J5jPxBDrJs0NUgw_OZap5P0T' }}"
+
+          echo "Enviando ping a Supabase para evitar suspensión por inactividad..."
+          HTTP_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            "${SUPABASE_URL}/rest/v1/profiles?select=id&limit=1" \
+            -H "apikey: ${SUPABASE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_KEY}")
+
+          echo "Código HTTP recibido: ${HTTP_STATUS}"
+
+          if [ "$HTTP_STATUS" -ge 200 ] && [ "$HTTP_STATUS" -lt 300 ]; then
+            echo "✅ Ping exitoso (HTTP $HTTP_STATUS). Base de datos activa y contador de inactividad reiniciado."
+          else
+            echo "❌ Falló el ping con código HTTP: $HTTP_STATUS"
+            exit 1
+          fi
+

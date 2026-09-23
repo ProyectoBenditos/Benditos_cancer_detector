@@ -22,7 +22,7 @@ export type UploadRecord = {
   metadata_json: {
     case_ref?: string;
     batch_sequence?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   } | null;
 };
 
