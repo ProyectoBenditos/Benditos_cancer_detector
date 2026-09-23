@@ -90,7 +90,11 @@ const DETAILS: Record<QuadrantKey, QuadrantDetail> = {
 
 export default function ConfusionMatrix() {
   const { tn, fp, fn, tp } = CONFUSION_MATRIX;
-  const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantKey | null>("FN");
+  const [selectedQuadrant, setSelectedQuadrant] = useState<QuadrantKey | null>(null);
+
+  const toggleQuadrant = (key: QuadrantKey) => {
+    setSelectedQuadrant((prev) => (prev === key ? null : key));
+  };
 
   const precision = ((tp / (tp + fp)) * 100).toFixed(1);
   const recall = ((tp / (tp + fn)) * 100).toFixed(1);
@@ -150,7 +154,7 @@ export default function ConfusionMatrix() {
               {/* Botón VN */}
               <button
                 type="button"
-                onClick={() => setSelectedQuadrant("TN")}
+                onClick={() => toggleQuadrant("TN")}
                 aria-pressed={selectedQuadrant === "TN"}
                 className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
                   selectedQuadrant === "TN"
@@ -167,7 +171,7 @@ export default function ConfusionMatrix() {
               {/* Botón FP */}
               <button
                 type="button"
-                onClick={() => setSelectedQuadrant("FP")}
+                onClick={() => toggleQuadrant("FP")}
                 aria-pressed={selectedQuadrant === "FP"}
                 className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 ${
                   selectedQuadrant === "FP"
@@ -191,7 +195,7 @@ export default function ConfusionMatrix() {
               {/* Botón FN */}
               <button
                 type="button"
-                onClick={() => setSelectedQuadrant("FN")}
+                onClick={() => toggleQuadrant("FN")}
                 aria-pressed={selectedQuadrant === "FN"}
                 className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 ${
                   selectedQuadrant === "FN"
@@ -208,7 +212,7 @@ export default function ConfusionMatrix() {
               {/* Botón VP */}
               <button
                 type="button"
-                onClick={() => setSelectedQuadrant("TP")}
+                onClick={() => toggleQuadrant("TP")}
                 aria-pressed={selectedQuadrant === "TP"}
                 className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
                   selectedQuadrant === "TP"
