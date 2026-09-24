@@ -1,3 +1,4 @@
+import asyncio
 import io
 import os
 import tempfile
@@ -260,10 +261,24 @@ async def analyze_dicom(
         }
 
         t0 = time.monotonic()
-        async with httpx.AsyncClient(timeout=timeout) as client:
-            response = await client.post(hf_url, files=files, data=data)
-            response.raise_for_status()
-            ai_result = response.json()
+        ai_result = None
+        max_retries = 2
+        for attempt in range(max_retries + 1):
+            try:
+                async with httpx.AsyncClient(timeout=timeout) as client:
+                    response = await client.post(hf_url, files=files, data=data)
+                    response.raise_for_status()
+                    ai_result = response.json()
+                    break
+            except (httpx.ConnectError, httpx.TimeoutException) as exc:
+                if attempt < max_retries:
+                    await asyncio.sleep(2.0)
+                    continue
+                raise
+
+        if not ai_result:
+            raise HTTPException(status_code=502, detail="No se obtuvo respuesta del modelo de IA")
+
         inference_time_ms = int((time.monotonic() - t0) * 1000)
         model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
         predicted_at  = datetime.now(timezone.utc).isoformat()
@@ -332,12 +347,45 @@ async def analyze_dicom(
             "original_signed_url": original_signed_url,
         }
 
-    except httpx.HTTPError as e:
+    except httpx.ConnectError as e:
+        error_msg = (
+            "No se pudo establecer conexión con el microservicio de IA en Hugging Face "
+            "(el servidor puede estar iniciando tras inactividad o hubo una pausa de red). "
+            "Por favor, intenta de nuevo en unos segundos."
+        )
         supabase.table("dicom_uploads").update({
-            "ai_error":      str(e),
+            "ai_error": f"ConnectError: {str(e)}",
             "upload_status": "error",
         }).eq("id", dicom_id).execute()
-        raise HTTPException(status_code=502, detail=f"Error llamando al modelo: {str(e)}")
+        raise HTTPException(status_code=503, detail=error_msg)
+
+    except httpx.TimeoutException as e:
+        error_msg = (
+            "El microservicio de IA tardó demasiado en responder "
+            "(posible arranque en frío de Hugging Face). Por favor, intenta de nuevo."
+        )
+        supabase.table("dicom_uploads").update({
+            "ai_error": f"TimeoutException: {str(e)}",
+            "upload_status": "error",
+        }).eq("id", dicom_id).execute()
+        raise HTTPException(status_code=504, detail=error_msg)
+
+    except httpx.HTTPStatusError as e:
+        supabase.table("dicom_uploads").update({
+            "ai_error": f"HTTPStatusError {e.response.status_code}: {e.response.text[:200]}",
+            "upload_status": "error",
+        }).eq("id", dicom_id).execute()
+        raise HTTPException(
+            status_code=502,
+            detail=f"El microservicio de IA respondió con error {e.response.status_code}. Intenta nuevamente.",
+        )
+
+    except httpx.HTTPError as e:
+        supabase.table("dicom_uploads").update({
+            "ai_error": str(e),
+            "upload_status": "error",
+        }).eq("id", dicom_id).execute()
+        raise HTTPException(status_code=502, detail=f"Error comunicando con el modelo: {str(e)}")
 
     except Exception as e:
         supabase.table("dicom_uploads").update({
