@@ -4,16 +4,17 @@ import { useEffect, useId, useMemo, useRef, useState, useCallback } from "react"
 import {
   Columns2,
   Download,
+  Eye,
+  EyeOff,
   Layers,
   Maximize2,
   Minimize2,
   RotateCcw,
   SlidersHorizontal,
   Split,
-  SunMedium,
+  Sparkles,
   ZoomIn,
   ZoomOut,
-  Filter,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
@@ -23,36 +24,9 @@ type BeforeAfterViewerProps = {
   heatmapBase64: string | null;
 };
 
-type Mode = "overlay" | "curtain" | "side";
-type WindowPreset = "standard" | "lung" | "mediastinum" | "invert";
+type Mode = "curtain" | "side" | "overlay";
 
 const PAN_STEP = 40;
-
-const WINDOW_PRESETS: Record<
-  WindowPreset,
-  { name: string; filter: string; description: string }
-> = {
-  standard: {
-    name: "Estándar",
-    filter: "contrast(100%) brightness(100%)",
-    description: "Corte tomográfico sin modificaciones",
-  },
-  lung: {
-    name: "Ventana Pulmonar",
-    filter: "contrast(175%) brightness(115%)",
-    description: "Realza parénquima alveolar y nódulos subpleurales",
-  },
-  mediastinum: {
-    name: "Ventana Mediastino",
-    filter: "contrast(140%) brightness(80%)",
-    description: "Optimizado para tejidos blandos y ganglios",
-  },
-  invert: {
-    name: "Negativo",
-    filter: "invert(100%) contrast(125%)",
-    description: "Inversión para microcalcificaciones",
-  },
-};
 
 type StageHandlers = ReturnType<typeof usePanZoom>["stageHandlers"];
 
@@ -98,10 +72,12 @@ function ToolbarButton({
   onClick,
   label,
   children,
+  active,
 }: {
   onClick: () => void;
   label: string;
   children: React.ReactNode;
+  active?: boolean;
 }) {
   return (
     <button
@@ -109,7 +85,11 @@ function ToolbarButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className="flex h-9 w-9 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer"
+      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer ${
+        active
+          ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
+          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-brand-primary"
+      }`}
     >
       {children}
     </button>
@@ -118,26 +98,24 @@ function ToolbarButton({
 
 export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewerProps) {
   const [mode, setMode] = useState<Mode>("curtain");
-  const [opacity, setOpacity] = useState(0.65);
+  const [opacity, setOpacity] = useState(0.7);
+  // splitPosition representa el % de Detección IA revelado de izquierda a derecha (0% = TAC Original, 100% = IA pura)
   const [splitPosition, setSplitPosition] = useState(50);
-  const [threshold, setThreshold] = useState(35);
-  const [windowPreset, setWindowPreset] = useState<WindowPreset>("standard");
+  const [cleanNoise, setCleanNoise] = useState(true);
+  const [showAi, setShowAi] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const opacityId = useId();
   const splitId = useId();
-  const thresholdId = useId();
 
   const { scale, canPan, layerStyle, stageHandlers, zoomIn, zoomOut, panBy, reset } =
     usePanZoom();
 
-  // Filtrado de umbral reactivo en Canvas: apaga el ruido residual (< threshold) de las esquinas
+  // Filtrado inteligente automático: atenúa el ruido difuso de esquinas para resaltar el foco principal
   useEffect(() => {
-    if (!heatmapBase64 || threshold === 0) {
-      return;
-    }
+    if (!heatmapBase64 || !cleanNoise) return;
 
     let active = true;
     const img = new Image();
@@ -156,7 +134,8 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
       const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
       const data = imgData.data;
 
-      const cutoff = (threshold / 100) * 255;
+      // Umbral óptimo del 35% para eliminar difusión en bordes sin perder el nódulo
+      const cutoff = 0.35 * 255;
 
       for (let i = 0; i < data.length; i += 4) {
         const r = data[i];
@@ -178,16 +157,32 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
     return () => {
       active = false;
     };
-  }, [heatmapBase64, threshold]);
+  }, [heatmapBase64, cleanNoise]);
 
   const rawHeatmapSrc = useMemo(
     () => (heatmapBase64 ? `data:image/png;base64,${heatmapBase64}` : null),
     [heatmapBase64]
   );
 
-  const activeHeatmapSrc = threshold > 0 && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
+  const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
-  const activeFilterStyle = WINDOW_PRESETS[windowPreset].filter;
+  // Interacción de parpadeo global con tecla Espacio (Spacebar)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+        return;
+      }
+
+      if (e.code === "Space" || e.key === " ") {
+        e.preventDefault();
+        setShowAi((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleGlobalKeyDown);
+    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   useEffect(() => {
     const onChange = () =>
@@ -241,7 +236,7 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
     }
   };
 
-  // Exportar captura con membrete clínico en alta resolución
+  // Exportar imagen comparativa limpia
   const handleExport = useCallback(() => {
     if (!beforeUrl) return;
 
@@ -258,11 +253,9 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
     baseImg.crossOrigin = "anonymous";
     baseImg.src = beforeUrl;
     baseImg.onload = () => {
-      ctx.filter = activeFilterStyle;
       ctx.drawImage(baseImg, 0, 0, 800, 800);
-      ctx.filter = "none";
 
-      if (activeHeatmapSrc) {
+      if (activeHeatmapSrc && showAi) {
         const heatImg = new Image();
         heatImg.src = activeHeatmapSrc;
         heatImg.onload = () => {
@@ -270,24 +263,24 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
           ctx.drawImage(heatImg, 0, 0, 800, 800);
           ctx.globalAlpha = 1.0;
 
-          // Membrete clínico inferior
-          ctx.fillStyle = "rgba(1, 38, 65, 0.88)";
-          ctx.fillRect(0, 735, 800, 65);
+          // Membrete inferior informativo
+          ctx.fillStyle = "rgba(1, 38, 65, 0.9)";
+          ctx.fillRect(0, 740, 800, 60);
 
           ctx.fillStyle = "#ffffff";
           ctx.font = "bold 15px sans-serif";
-          ctx.fillText("OncaScan AI • Explicabilidad Grad-CAM", 20, 760);
+          ctx.fillText("OncaScan AI • Explicabilidad Grad-CAM", 20, 765);
 
           ctx.font = "12px sans-serif";
-          ctx.fillStyle = "#94a3b8";
+          ctx.fillStyle = "#cbd5e1";
           ctx.fillText(
-            `Modo: ${mode} | Ventana: ${WINDOW_PRESETS[windowPreset].name} | Umbral: ${threshold}% | ${new Date().toLocaleDateString()}`,
+            `Modo: ${mode} | Fecha: ${new Date().toLocaleDateString()}`,
             20,
-            782
+            785
           );
 
           const a = document.createElement("a");
-          a.download = `oncascan_gradcam_${Date.now()}.png`;
+          a.download = `oncascan_analisis_${Date.now()}.png`;
           a.href = canvas.toDataURL("image/png");
           a.click();
         };
@@ -298,7 +291,7 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
         a.click();
       }
     };
-  }, [beforeUrl, activeFilterStyle, activeHeatmapSrc, opacity, mode, windowPreset, threshold]);
+  }, [beforeUrl, activeHeatmapSrc, opacity, mode, showAi]);
 
   const segBase =
     "px-3 py-1.5 text-xs font-semibold rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer";
@@ -311,7 +304,7 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
         <div
           ref={containerRef}
           role="group"
-          aria-label="Visor interactivo de tomografía médica con explicabilidad Grad-CAM"
+          aria-label="Visor de tomografía y mapa de calor Grad-CAM"
           tabIndex={0}
           onKeyDown={onKeyDown}
           className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary data-[fullscreen=true]:flex data-[fullscreen=true]:h-full data-[fullscreen=true]:flex-col data-[fullscreen=true]:justify-center data-[fullscreen=true]:bg-white data-[fullscreen=true]:p-6"
@@ -319,7 +312,7 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
         >
           {/* Barra de herramientas superior */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            {/* Selector de modo (3 modos) */}
+            {/* Selector de modo simple */}
             <div
               role="radiogroup"
               aria-label="Modo de visualización"
@@ -338,16 +331,6 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
               <button
                 type="button"
                 role="radio"
-                aria-checked={mode === "overlay"}
-                onClick={() => setMode("overlay")}
-                className={`${segBase} ${mode === "overlay" ? segActive : segIdle} inline-flex items-center gap-1.5`}
-              >
-                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-                Superpuesto
-              </button>
-              <button
-                type="button"
-                role="radio"
                 aria-checked={mode === "side"}
                 onClick={() => setMode("side")}
                 className={`${segBase} ${mode === "side" ? segActive : segIdle} inline-flex items-center gap-1.5`}
@@ -355,9 +338,19 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
                 <Columns2 className="h-3.5 w-3.5" aria-hidden="true" />
                 Lado a lado
               </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={mode === "overlay"}
+                onClick={() => setMode("overlay")}
+                className={`${segBase} ${mode === "overlay" ? segActive : segIdle} inline-flex items-center gap-1.5`}
+              >
+                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+                Superpuesto
+              </button>
             </div>
 
-            {/* HUD de Zoom y Acciones */}
+            {/* Controles de Zoom, Parpadeo, Pantalla Completa y Descarga */}
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 tabular-nums">
                 {Math.round(scale * 100)}%
@@ -371,9 +364,34 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
               <ToolbarButton onClick={reset} label="Restablecer vista (0)">
                 <RotateCcw className="h-4 w-4" aria-hidden="true" />
               </ToolbarButton>
+
+              {/* Botón Parpadeo (con Espacio) */}
+              <button
+                type="button"
+                onClick={() => setShowAi((prev) => !prev)}
+                title={showAi ? "Parpadeo: Ocultar IA (Barra Espaciadora)" : "Parpadeo: Mostrar IA (Barra Espaciadora)"}
+                className={`flex h-9 items-center gap-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
+                  !showAi
+                    ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
+                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary"
+                }`}
+              >
+                {!showAi ? (
+                  <>
+                    <EyeOff className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                    <span>TAC Pura</span>
+                  </>
+                ) : (
+                  <>
+                    <Eye className="h-3.5 w-3.5 text-brand-primary" aria-hidden="true" />
+                    <span>Parpadeo</span>
+                  </>
+                )}
+              </button>
+
               <ToolbarButton
                 onClick={handleExport}
-                label="Exportar captura para historia clínica"
+                label="Descargar imagen"
               >
                 <Download className="h-4 w-4 text-emerald-600" aria-hidden="true" />
               </ToolbarButton>
@@ -390,74 +408,98 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
             </div>
           </div>
 
-          {/* ── Render del Escenario según el modo ── */}
+          {/* ── Visualizador Principal ── */}
           {mode === "curtain" ? (
             beforeUrl ? (
               <div className="relative">
                 <Stage
                   handlers={stageHandlers}
                   canPan={canPan}
-                  ariaLabel="Comparativa en modo cortina entre corte tomográfico puro y activación Grad-CAM"
+                  ariaLabel="Comparativa en cortina: imagen original vs detección IA"
                   layerStyle={layerStyle}
                 >
-                  {/* Capa Base: Tomografía limpia */}
+                  {/* Capa Base: TAC Original */}
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={beforeUrl}
-                    alt="Estudio tomográfico original del paciente"
+                    alt="Estudio tomográfico original"
                     draggable={false}
-                    style={{ filter: activeFilterStyle }}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   />
 
-                  {/* Capa Superior Cortada: Tomografía + Activación Grad-CAM */}
-                  <div
-                    className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden"
-                    style={{
-                      clipPath: `inset(0 0 0 ${splitPosition}%)`,
-                    }}
-                  >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={beforeUrl}
-                      alt=""
-                      aria-hidden="true"
-                      draggable={false}
-                      style={{ filter: activeFilterStyle }}
-                      className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                    />
-                    {activeHeatmapSrc && (
-                      // eslint-disable-next-line @next/next/no-img-element
+                  {/* Capa Revelada (Grad-CAM sobre TAC): Se descubre de izquierda a derecha al mover la barra a la derecha */}
+                  {showAi && activeHeatmapSrc && (
+                    <div
+                      className="pointer-events-none absolute inset-0 h-full w-full overflow-hidden"
+                      style={{
+                        clipPath: `inset(0 ${100 - splitPosition}% 0 0)`,
+                      }}
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={beforeUrl}
+                        alt=""
+                        aria-hidden="true"
+                        draggable={false}
+                        className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                      />
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={activeHeatmapSrc}
-                        alt="Activación Grad-CAM superpuesta"
+                        alt="Detección IA superpuesta"
                         draggable={false}
                         style={{ opacity }}
                         className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                       />
-                    )}
-                  </div>
-
-                  {/* Indicador visual de la línea divisoria */}
-                  <div
-                    className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.8)]"
-                    style={{ left: `${splitPosition}%` }}
-                  >
-                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary text-white border border-white shadow-md text-[9px] font-bold">
-                      ◀▶
                     </div>
-                  </div>
+                  )}
+
+                  {/* Indicador visual de la línea divisoria de la cortina */}
+                  {showAi && (
+                    <div
+                      className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.8)]"
+                      style={{ left: `${splitPosition}%` }}
+                    >
+                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary text-white border border-white shadow-md text-[9px] font-bold">
+                        ◀▶
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Badges de orientación en las esquinas */}
+                  {showAi && (
+                    <>
+                      <span className="absolute top-2 left-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-brand-primary/80 text-white backdrop-blur-sm pointer-events-none">
+                        Detección IA
+                      </span>
+                      <span className="absolute top-2 right-2 z-10 px-2 py-0.5 rounded text-[10px] font-bold bg-slate-900/80 text-white backdrop-blur-sm pointer-events-none">
+                        TAC Original
+                      </span>
+                    </>
+                  )}
+
+                  {/* Cartel de modo Parpadeo activo */}
+                  {!showAi && (
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-sm pointer-events-none">
+                      <EyeOff className="w-3.5 h-3.5" />
+                      Parpadeo Activo: Mostrando TAC Pura (Presiona Espacio para ver IA)
+                    </div>
+                  )}
                 </Stage>
 
-                {/* Etiquetas de ayuda sobre la cortina */}
-                <div className="mt-2 flex items-center justify-between text-[11px] font-semibold text-slate-500 uppercase tracking-wider px-1">
-                  <span>← TAC Pura (Anatomía)</span>
-                  <span className="text-brand-primary font-bold">Posición: {splitPosition}%</span>
-                  <span>Activación IA (Grad-CAM) →</span>
-                </div>
-
-                {/* Control deslizable de la cortina */}
-                <div className="mt-1 flex items-center gap-3">
+                {/* Deslizador de la cortina (0% = TAC Original, 100% = Detección IA) */}
+                <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1.5 px-1">
+                    <span className={splitPosition === 0 ? "text-brand-primary font-bold" : ""}>
+                      ← TAC Original (0%)
+                    </span>
+                    <span className="text-brand-primary font-bold">
+                      IA Revelada: {splitPosition}%
+                    </span>
+                    <span className={splitPosition === 100 ? "text-brand-primary font-bold" : ""}>
+                      Detección IA (100%) →
+                    </span>
+                  </div>
                   <label htmlFor={splitId} className="sr-only">
                     Posición de la cortina
                   </label>
@@ -468,175 +510,160 @@ export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewe
                     max={100}
                     value={splitPosition}
                     onChange={(e) => setSplitPosition(Number(e.target.value))}
-                    className="h-2 flex-1 cursor-pointer accent-brand-primary"
-                    aria-valuetext={`${splitPosition} por ciento`}
+                    className="h-2.5 w-full cursor-pointer accent-brand-primary"
+                    aria-valuetext={`${splitPosition} por ciento de IA revelada`}
                   />
                 </div>
               </div>
             ) : (
-              <Placeholder message="Vista previa tomográfica no disponible" />
+              <Placeholder message="Vista previa de la tomografía no disponible" />
             )
-          ) : mode === "overlay" ? (
-            beforeUrl ? (
-              <Stage
-                handlers={stageHandlers}
-                canPan={canPan}
-                ariaLabel="Imagen original con el mapa de calor Grad-CAM superpuesto"
-                layerStyle={layerStyle}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={beforeUrl}
-                  alt="Imagen original del estudio"
-                  draggable={false}
-                  style={{ filter: activeFilterStyle }}
-                  className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                />
-                {activeHeatmapSrc && (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={activeHeatmapSrc}
-                    alt="Mapa de calor Grad-CAM"
-                    draggable={false}
-                    style={{ opacity }}
-                    className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                  />
+          ) : mode === "side" ? (
+            <div className="grid gap-4 md:grid-cols-2">
+              <div>
+                <div className="mb-2 text-xs font-bold text-slate-700 uppercase tracking-wider text-center">
+                  TAC Original
+                </div>
+                {beforeUrl ? (
+                  <Stage
+                    handlers={stageHandlers}
+                    canPan={canPan}
+                    ariaLabel="TAC original"
+                    layerStyle={layerStyle}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={beforeUrl}
+                      alt="TAC original"
+                      draggable={false}
+                      className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                    />
+                  </Stage>
+                ) : (
+                  <Placeholder message="TAC original no disponible" />
                 )}
-              </Stage>
-            ) : (
-              <Placeholder message="Vista previa tomográfica no disponible" />
-            )
+              </div>
+              <div>
+                <div className="mb-2 text-xs font-bold text-brand-primary uppercase tracking-wider text-center">
+                  Detección IA (Grad-CAM)
+                </div>
+                {activeHeatmapSrc ? (
+                  <Stage
+                    handlers={stageHandlers}
+                    canPan={canPan}
+                    ariaLabel="Mapa de calor Grad-CAM"
+                    layerStyle={layerStyle}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={beforeUrl || activeHeatmapSrc}
+                      alt="Base de tomografía"
+                      draggable={false}
+                      className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                    />
+                    {showAi && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={activeHeatmapSrc}
+                        alt="Mapa de calor Grad-CAM"
+                        draggable={false}
+                        className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                      />
+                    )}
+                    {!showAi && (
+                      <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-600/90 text-white text-[11px] font-bold shadow-md">
+                        <EyeOff className="w-3 h-3" />
+                        IA en pausa (Espacio)
+                      </div>
+                    )}
+                  </Stage>
+                ) : (
+                  <Placeholder message="Mapa Grad-CAM no disponible" />
+                )}
+              </div>
+            </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2">
-              {beforeUrl ? (
+            beforeUrl ? (
+              <div className="relative">
                 <Stage
                   handlers={stageHandlers}
                   canPan={canPan}
-                  ariaLabel="Imagen original del estudio tomográfico"
+                  ariaLabel="Imagen con mapa de calor superpuesto"
                   layerStyle={layerStyle}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={beforeUrl}
-                    alt="Imagen original del estudio subido por el usuario"
-                    draggable={false}
-                    style={{ filter: activeFilterStyle }}
-                    className="pointer-events-none absolute inset-0 h-full w-full object-contain"
-                  />
-                </Stage>
-              ) : (
-                <Placeholder message="Vista previa tomográfica no disponible" />
-              )}
-              {activeHeatmapSrc ? (
-                <Stage
-                  handlers={stageHandlers}
-                  canPan={canPan}
-                  ariaLabel="Mapa de calor Grad-CAM de atención del modelo"
-                  layerStyle={layerStyle}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={activeHeatmapSrc}
-                    alt="Mapa de calor Grad-CAM que resalta las zonas de mayor activación del modelo"
+                    alt="TAC original"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   />
+                  {showAi && activeHeatmapSrc && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={activeHeatmapSrc}
+                      alt="Mapa Grad-CAM"
+                      draggable={false}
+                      style={{ opacity }}
+                      className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                    />
+                  )}
+                  {!showAi && (
+                    <div className="absolute top-3 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-600/90 text-white text-xs font-bold shadow-lg backdrop-blur-sm pointer-events-none">
+                      <EyeOff className="w-3.5 h-3.5" />
+                      Parpadeo Activo: TAC Pura (Presiona Espacio para ver IA)
+                    </div>
+                  )}
                 </Stage>
-              ) : (
-                <Placeholder message="Mapa de calor Grad-CAM no disponible" />
-              )}
-            </div>
+
+                {/* Control de opacidad */}
+                <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                    <span className="flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                      Intensidad del mapa de calor
+                    </span>
+                    <span className="font-bold tabular-nums text-brand-primary">
+                      {Math.round(opacity * 100)}%
+                    </span>
+                  </div>
+                  <input
+                    id={opacityId}
+                    type="range"
+                    min={20}
+                    max={100}
+                    value={Math.round(opacity * 100)}
+                    onChange={(e) => setOpacity(Number(e.target.value) / 100)}
+                    className="h-2.5 w-full cursor-pointer accent-brand-primary"
+                    aria-valuetext={`${Math.round(opacity * 100)} por ciento`}
+                  />
+                </div>
+              </div>
+            ) : (
+              <Placeholder message="Vista previa no disponible" />
+            )
           )}
 
-          {/* ── Controles Clínicos Inferiores ── */}
-          <div className="mt-5 pt-4 border-t border-slate-100 flex flex-col gap-4">
-            {/* Presets de Ventana Radiológica (Window/Level) */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-700">
-                <SunMedium className="w-4 h-4 text-slate-500" />
-                Ventana Tomográfica:
-              </div>
-              <div className="flex flex-wrap gap-1.5">
-                {(Object.keys(WINDOW_PRESETS) as WindowPreset[]).map((presetKey) => {
-                  const preset = WINDOW_PRESETS[presetKey];
-                  const isActive = windowPreset === presetKey;
-                  return (
-                    <button
-                      key={presetKey}
-                      type="button"
-                      onClick={() => setWindowPreset(presetKey)}
-                      title={preset.description}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                        isActive
-                          ? "bg-slate-800 text-white border-slate-800"
-                          : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
-                      }`}
-                    >
-                      {preset.name}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+          {/* ── Opciones Sencillas Inferiores ── */}
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            {/* Switch simple para limpiar ruido de fondo */}
+            <label className="inline-flex items-center gap-2 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={cleanNoise}
+                onChange={(e) => setCleanNoise(e.target.checked)}
+                className="w-4 h-4 rounded text-brand-primary focus:ring-brand-primary accent-brand-primary cursor-pointer"
+              />
+              <span className="flex items-center gap-1 font-medium text-slate-700">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                Enfocar nódulo (eliminar ruido de esquinas)
+              </span>
+            </label>
 
-            {/* Sliders de Umbral y Opacidad */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
-              {/* Filtro de Umbral (Elimina ruido y esquinas) */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                  <span className="flex items-center gap-1">
-                    <Filter className="w-3.5 h-3.5 text-blue-600" />
-                    Filtro de Umbral (Limpia esquinas)
-                  </span>
-                  <span className="font-bold tabular-nums text-blue-700">{threshold}%</span>
-                </div>
-                <input
-                  id={thresholdId}
-                  type="range"
-                  min={0}
-                  max={85}
-                  value={threshold}
-                  onChange={(e) => setThreshold(Number(e.target.value))}
-                  className="h-2 cursor-pointer accent-blue-600"
-                  aria-valuetext={`${threshold} por ciento`}
-                />
-                <span className="text-[10px] text-slate-500">
-                  {threshold > 45
-                    ? "Filtrando activaciones débiles para mostrar solo el foco de mayor sospecha."
-                    : "Atenúa artefactos de borde y activa foco tumoral."}
-                </span>
-              </div>
-
-              {/* Slider de Opacidad */}
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between text-xs font-medium text-slate-700">
-                  <span className="flex items-center gap-1">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
-                    Opacidad de Mapa IA
-                  </span>
-                  <span className="font-bold tabular-nums text-slate-700">
-                    {Math.round(opacity * 100)}%
-                  </span>
-                </div>
-                <input
-                  id={opacityId}
-                  type="range"
-                  min={10}
-                  max={100}
-                  value={Math.round(opacity * 100)}
-                  onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                  className="h-2 cursor-pointer accent-brand-primary"
-                  aria-valuetext={`${Math.round(opacity * 100)} por ciento`}
-                />
-                <span className="text-[10px] text-slate-500">
-                  Ajusta la intensidad de color sobre la imagen tomográfica.
-                </span>
-              </div>
-            </div>
-
-            <p className="text-[11px] text-slate-500 leading-relaxed">
-              <strong>Guía de navegación clínica:</strong> Usa la rueda del mouse o los botones para hacer zoom hacia cualquier región pulmonar, arrastra para desplazarte y alterna entre ventana pulmonar y de mediastino para verificar densidad tisular. La herramienta es de apoyo investigativo y no sustituye la lectura integral del especialista.
-            </p>
+            <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">Espacio</kbd>
+              <span>Alterna parpadeo al instante entre TAC limpia e IA.</span>
+            </span>
           </div>
         </div>
       </CardContent>
