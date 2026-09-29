@@ -13,13 +13,39 @@ import {
 
 type ViewerMode = "curtain" | "parpadeo" | "side";
 
-export function HeroDemoViewer() {
-  const [mode, setMode] = useState<ViewerMode>("curtain");
-  const [sliderPos, setSliderPos] = useState<number>(50);
-  const [showAiInParpadeo, setShowAiInParpadeo] = useState<boolean>(true);
+export type HeroDemoViewerProps = {
+  initialMode?: ViewerMode;
+  initialSlider?: number;
+  initialShowAiInParpadeo?: boolean;
+};
+
+export function HeroDemoViewer({
+  initialMode = "curtain",
+  initialSlider = 50,
+  initialShowAiInParpadeo = true,
+}: HeroDemoViewerProps = {}) {
+  const [mode, setMode] = useState<ViewerMode>(initialMode);
+  const [sliderPos, setSliderPos] = useState<number>(initialSlider);
+  const [showAiInParpadeo, setShowAiInParpadeo] = useState<boolean>(initialShowAiInParpadeo);
   const [isDragging, setIsDragging] = useState<boolean>(false);
   const pointerIsDown = useRef<boolean>(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Soporte para parámetros URL en demostraciones y capturas (?mode=side, ?mode=parpadeo, ?slider=75)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const urlMode = params.get("mode");
+      if (urlMode === "curtain" || urlMode === "parpadeo" || urlMode === "side") {
+        setMode(urlMode);
+      }
+      const slider = params.get("slider");
+      if (slider) {
+        const val = Number(slider);
+        if (!isNaN(val)) setSliderPos(Math.max(0, Math.min(100, val)));
+      }
+    }
+  }, []);
 
   // Escucha de la tecla Espacio: alterna la capa en modo Parpadeo a demanda del usuario
   useEffect(() => {
