@@ -22,6 +22,9 @@ import { usePanZoom } from "./usePanZoom";
 type BeforeAfterViewerProps = {
   beforeUrl: string | null;
   heatmapBase64: string | null;
+  initialMode?: Mode;
+  initialSplit?: number;
+  initialShowAi?: boolean;
 };
 
 type Mode = "curtain" | "side" | "overlay";
@@ -96,13 +99,19 @@ function ToolbarButton({
   );
 }
 
-export function BeforeAfterViewer({ beforeUrl, heatmapBase64 }: BeforeAfterViewerProps) {
-  const [mode, setMode] = useState<Mode>("curtain");
+export function BeforeAfterViewer({
+  beforeUrl,
+  heatmapBase64,
+  initialMode = "curtain",
+  initialSplit = 50,
+  initialShowAi = true,
+}: BeforeAfterViewerProps) {
+  const [mode, setMode] = useState<Mode>(initialMode);
   const [opacity, setOpacity] = useState(0.7);
   // splitPosition representa el % de Detección IA revelado de izquierda a derecha (0% = TAC Original, 100% = IA pura)
-  const [splitPosition, setSplitPosition] = useState(50);
+  const [splitPosition, setSplitPosition] = useState(initialSplit);
   const [cleanNoise, setCleanNoise] = useState(true);
-  const [showAi, setShowAi] = useState(true);
+  const [showAi, setShowAi] = useState(initialShowAi);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
 
