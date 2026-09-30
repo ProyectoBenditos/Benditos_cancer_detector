@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { after } from "next/server";
 import { createClient } from "@/utils/supabase/server";
 import {
     Upload, FileStack, Brain, FileText, CheckCircle2, ShieldAlert, Users
@@ -26,6 +27,14 @@ function asRiskLevel(level: string | null): RiskLevel | null {
 }
 
 export default async function PlatformPage() {
+    // Render Free duerme el backend tras 15 min sin tráfico; este ping lo despierta antes de que el médico suba un estudio.
+    after(() =>
+        fetch(`${process.env.API_URL}/api/v1/health`, {
+            cache: "no-store",
+            signal: AbortSignal.timeout(10_000),
+        }).catch(() => {})
+    );
+
     const supabase = await createClient();
 
     const { data: { user } } = await supabase.auth.getUser();
