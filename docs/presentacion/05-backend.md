@@ -55,7 +55,7 @@ apps/api/
 ## Endpoints y responsabilidades
 
 ### `GET /api/v1/health`
-Sin auth. Devuelve `{"status":"ok"}`. Usado por Railway para health checks.
+Sin auth. Devuelve `{"status":"ok"}`. Sirve como health check de Render y para despertar la instancia Free antes de una demo.
 
 ### `POST /api/v1/dicom/upload`
 1. Valida extensión (`.dcm`, `.png`, `.jpg`, `.jpeg`)
@@ -127,8 +127,8 @@ log_event("dicom_upload_ok", email=user_email)  # lanza ValueError
 cd apps/api
 uvicorn app.main:app --reload --port 8000
 
-# Producción (Railway usa este comando internamente)
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+# Producción (Start Command configurado en Render)
+uvicorn app.main:app --host 0.0.0.0 --port $PORT
 ```
 
 ---

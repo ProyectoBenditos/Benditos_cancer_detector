@@ -1,6 +1,6 @@
 # Catálogo de API — OncoScan Backend
 
-> Base URL en producción: `https://ideal-strength.up.railway.app`
+> Base URL en producción: `https://benditos-cancer-detector.onrender.com`
 > Base URL en local: `http://localhost:8000`
 > Todos los endpoints bajo `/api/v1/` requieren `Authorization: Bearer <JWT>` salvo los indicados.
 

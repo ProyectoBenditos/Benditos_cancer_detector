@@ -27,12 +27,18 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 - URL pública: `https://benditos-cancer-detector.vercel.app`
 
 ### Backend
-- Plataforma: Railway
+- Plataforma: Render (Web Service, instancia **Free**)
 - Framework: FastAPI
 - Root Directory: `apps/api`
+- Runtime: Python 3 (`PYTHON_VERSION=3.11.9`)
+- Build Command: `pip install -r requirements.txt`
 - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
-- URL pública: `https://benditoscancerdetector-production.up.railway.app`
-- Proyecto Railway real: `ideal-strength` (el segundo proyecto visible con el mismo repo, `endearing-education`, es un duplicado huérfano sin dominio expuesto — candidato a archivar).
+- Branch: `main`
+- URL pública: `https://benditos-cancer-detector.onrender.com`
+- Cold start: la instancia Free se duerme tras 15 min sin tráfico; el primer request tarda ~30–60 s en despertarla. Mitigaciones:
+  - **Ping externo** (cron-job.org) cada 10 min a `GET /api/v1/health`. Consume ~744 h/mes de las 750 h Free del workspace: no crear otro servicio Free en el mismo workspace sin acotar el horario del ping.
+  - **Ping al abrir el dashboard**: `apps/web/src/app/platform/page.tsx` dispara `GET {API_URL}/api/v1/health` con `after()` (no bloquea el render), para que el backend despierte mientras el médico navega.
+- Historial: hasta 2026-09 el backend corría en Railway (proyecto `ideal-strength`, `https://benditoscancerdetector-production.up.railway.app`); se migró a Render por costo.
 
 ### Servicios externos
 - Base de datos: Supabase PostgreSQL
@@ -46,17 +52,19 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
-- `NEXT_PUBLIC_API_URL` — URL pública del backend Railway, sin `/` al final.
+- `NEXT_PUBLIC_API_URL` — URL pública del backend (`https://benditos-cancer-detector.onrender.com`), sin `/` al final. La usan `upload/page.tsx` y `analyze/batch/page.tsx` desde el navegador.
 - `API_URL` — mismo valor que `NEXT_PUBLIC_API_URL`. Lo usa la server action de `/platform/analyze` (server-only, no se hornea al bundle del cliente).
 
 **Importante:** las 4 variables deben estar marcadas en los tres environments (**Production + Preview + Development**). Si solo están en Production, los deploys Preview de cualquier PR fallan en el build de Next.js al prerenderizar `/login` (`@supabase/ssr` lanza "Your project's URL and API key are required"). Las `NEXT_PUBLIC_*` se hornean al bundle al momento del build, así que cualquier cambio requiere un **redeploy** (no basta con guardar la variable).
 
-### 4.2 Backend (Railway)
+### 4.2 Backend (Render)
 
-- `SUPABASE_URL`
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `SUPABASE_BUCKET_NAME`
-- `FRONTEND_URL`
+- `PYTHON_VERSION` — `3.11.9` (sin esta variable Render usa una versión de Python más reciente).
+- `SUPABASE_URL` — obligatoria; la API no arranca sin ella.
+- `SUPABASE_SERVICE_ROLE_KEY` — obligatoria; la API no arranca sin ella.
+- `SUPABASE_BUCKET_NAME` — default `dicom-files`.
+- `HF_MODEL_VERSION` — etiqueta que se guarda en cada predicción.
+- `LOG_LEVEL` — default `INFO`.
 - `HF_API_BASE_URL` — URL del Space de Hugging Face que expone `/predict` (default: `https://luisdam-oncoscan-ai.hf.space`).
 - `HF_PREDICT_TIMEOUT` — timeout en segundos para la inferencia (default: `120`). Subir si el Space hace cold-start frecuente.
 
@@ -95,7 +103,7 @@ experimental: { serverActions: { bodySizeLimit: "10mb" } }
 No subir más allá de 10 MB sin revisar el límite de body de funciones serverless de Vercel (4.5 MB en Hobby).
 
 ### 5.6 Backend — encoding de `requirements.txt`
-`apps/api/requirements.txt` debe estar en **UTF-8 (ASCII compatible)**, sin BOM. Si se regenera desde PowerShell 5.1 con `>` o `Out-File`, el archivo queda en UTF-16 LE y Railway falla el build con `Invalid requirement: 'f\x00a\x00s\x00t...'` porque pip lo lee carácter por carácter con bytes null intercalados.
+`apps/api/requirements.txt` debe estar en **UTF-8 (ASCII compatible)**, sin BOM. Si se regenera desde PowerShell 5.1 con `>` o `Out-File`, el archivo queda en UTF-16 LE y Railway falla el build con `Invalid requirement: 'f\x00a\x00s\x00t...'` porque pip lo lee carácter por carácter con bytes null intercalados. Aplica igual en Render.
 
 Para regenerar desde PowerShell, usar siempre `-Encoding utf8`:
 ```powershell
@@ -200,6 +208,7 @@ El flujo desplegado y validado es el siguiente:
 ## 9. Limitaciones actuales del MVP
 
 - La inferencia IA depende del Space de Hugging Face (puede tener cold-starts y caídas; no hay SLA).
+- El backend en Render Free se duerme tras 15 min de inactividad; el primer request posterior sufre cold start.
 - No incorpora visor clínico DICOM avanzado.
 - No reemplaza el criterio del especialista.
 - No está diseñado para uso hospitalario productivo.

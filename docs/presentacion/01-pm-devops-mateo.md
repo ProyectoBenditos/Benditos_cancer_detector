@@ -17,7 +17,7 @@ Presentar el **alcance del MVP**, la **trazabilidad del proceso** (Jira + PSP) y
 | [docs/requisitos.md](../requisitos.md) | Requisitos funcionales y no funcionales del MVP |
 | [docs/mvp_status.md](../mvp_status.md) | Estado actual de cada feature del MVP |
 | [docs/roadmap.md](../roadmap.md) | Roadmap y milestones del proyecto |
-| [docs/deploy.md](../deploy.md) | Guía completa de deploy Vercel + Railway + Supabase |
+| [docs/deploy.md](../deploy.md) | Guía completa de deploy Vercel + Render + Supabase |
 | [docs/psp/milestones.md](../psp/milestones.md) | Milestones PSP con fechas y entregables |
 | [docs/psp/traceability-matrix.md](../psp/traceability-matrix.md) | Matriz de trazabilidad Jira ↔ código |
 | [docs/psp/defect-log.md](../psp/defect-log.md) | Registro de defectos y resolución |
@@ -34,7 +34,7 @@ Presentar el **alcance del MVP**, la **trazabilidad del proceso** (Jira + PSP) y
 4. **Trazabilidad Jira**: cómo cada KAN-xx se refleja en commits y en la traceability matrix.
 5. **Deploy**:
    - **Vercel**: conectado al repo GitHub, root `apps/web`, variables de entorno configuradas en dashboard.
-   - **Railway**: proyecto `ideal-strength`, root `apps/api`, variables de entorno configuradas, deploy manual.
+   - **Render** (Web Service Free): root `apps/api`, branch `main`, URL `https://benditos-cancer-detector.onrender.com`. Se migró desde Railway por costo; la instancia gratuita se duerme tras 15 min sin tráfico (cold start ~30–60 s).
    - **Supabase**: BD + Storage + Auth. Migraciones aplicadas manualmente via SQL Editor.
 6. **Entornos**: local (localhost:3000 + localhost:8000) vs staging/producción.
 7. **Sin CI/CD**: el pipeline es manual hoy; se puede mencionar como mejora futura.
@@ -45,7 +45,7 @@ Presentar el **alcance del MVP**, la **trazabilidad del proceso** (Jira + PSP) y
 
 ### Backend (`apps/api/`)
 
-| Variable                  | Local              | Producción (Railway)               |
+| Variable                  | Local              | Producción (Render)                |
 |---------------------------|--------------------|------------------------------------|
 | `SUPABASE_URL`            | URL del proyecto   | URL del proyecto                   |
 | `SUPABASE_SERVICE_ROLE_KEY`| service_role key  | service_role key (secret)          |
@@ -60,8 +60,8 @@ Presentar el **alcance del MVP**, la **trazabilidad del proceso** (Jira + PSP) y
 |------------------------------------|--------------------------|--------------------------------|
 | `NEXT_PUBLIC_SUPABASE_URL`         | URL del proyecto         | URL del proyecto               |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | publishable key      | publishable key                |
-| `NEXT_PUBLIC_API_URL`              | `http://localhost:8000`  | URL Railway (Railway URL)      |
-| `API_URL`                          | `http://localhost:8000`  | URL Railway (Railway URL)      |
+| `NEXT_PUBLIC_API_URL`              | `http://localhost:8000`  | `https://benditos-cancer-detector.onrender.com` |
+| `API_URL`                          | `http://localhost:8000`  | `https://benditos-cancer-detector.onrender.com` |
 
 > Ver plantilla: [apps/web/.env.example](../../apps/web/.env.example)
 
@@ -87,11 +87,14 @@ Aplicadas manualmente en Supabase Dashboard → SQL Editor:
 **¿Cómo se controla la calidad sin CI?**
 > Mediante PSP: auditorías de código, defect log, smoke tests documentados en `docs/smoke-test.md` y `docs/qa/`. Los tests se corren localmente antes de hacer deploy.
 
-**¿Qué pasa si Railway o Vercel cae?**
-> Son servicios independientes. Vercel sirve el frontend estático con CDN. Railway corre el backend. Si Railway cae el frontend muestra error de conexión pero no se pierde data (BD en Supabase, independiente).
+**¿Qué pasa si Render o Vercel cae?**
+> Son servicios independientes. Vercel sirve el frontend estático con CDN. Render corre el backend. Si Render cae el frontend muestra error de conexión pero no se pierde data (BD en Supabase, independiente).
+
+**¿Por qué Render y no Railway?**
+> Railway dejó de tener capa gratuita útil y el backend es un proxy liviano. Render Free cubre el uso académico; el costo es el cold start tras 15 min de inactividad.
 
 **¿Cómo se maneja la seguridad de secretos?**
-> Las claves están en variables de entorno de cada plataforma (Railway secrets, Vercel env vars), nunca en el código ni en git.
+> Las claves están en variables de entorno de cada plataforma (Render environment, Vercel env vars), nunca en el código ni en git.
 
 ---
 
@@ -101,8 +104,8 @@ Aplicadas manualmente en Supabase Dashboard → SQL Editor:
 # Ver estado del repo
 git log --oneline -10
 
-# Ver variables en Railway (desde CLI)
-# railway variables
+# Despertar/verificar el backend en Render
+curl https://benditos-cancer-detector.onrender.com/api/v1/health
 
 # Correr el proyecto localmente
 cd apps/api && uvicorn app.main:app --reload --port 8000

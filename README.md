@@ -9,7 +9,7 @@ Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Proc
 | Capa | Tecnología |
 |------|-----------|
 | Frontend | Next.js 16 + React 19 + Tailwind 4 — desplegado en Vercel |
-| Backend | FastAPI + Python 3.11 + httpx — desplegado en Railway |
+| Backend | FastAPI + Python 3.11 + httpx — desplegado en Render (`https://benditos-cancer-detector.onrender.com`) |
 | Base de datos | Supabase (PostgreSQL + Storage + RLS) |
 | Autenticación | Supabase Auth + middleware Next.js |
 | Motor IA | HF Space `luisdam-oncoscan-ai` — endpoint `/predict` |
@@ -58,7 +58,7 @@ Documentos clave:
 | Documento | Descripción |
 |-----------|-------------|
 | [docs/setup-nuevo-pc.md](docs/setup-nuevo-pc.md) | Instalación paso a paso en entorno local |
-| [docs/deploy.md](docs/deploy.md) | Variables de entorno y despliegue Vercel + Railway |
+| [docs/deploy.md](docs/deploy.md) | Variables de entorno y despliegue Vercel + Render |
 | [docs/architecture_analysis.md](docs/architecture_analysis.md) | Análisis cliente-servidor |
 | [docs/smoke-test.md](docs/smoke-test.md) | Pruebas básicas end-to-end |
 | [docs/requisitos.md](docs/requisitos.md) | Requisitos funcionales del sistema |

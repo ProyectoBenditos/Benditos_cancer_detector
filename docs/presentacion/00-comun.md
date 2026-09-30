@@ -23,7 +23,7 @@ OncoScan es una plataforma académica de apoyo a la detección temprana de cánc
 | Auth           | Supabase Auth + middleware Next.js                |
 | Modelo IA      | HF Space `luisdam-oncoscan-ai` — endpoint `/predict` |
 | Deploy front   | Vercel (root `apps/web`)                          |
-| Deploy back    | Railway (proyecto `ideal-strength`, root `apps/api`) |
+| Deploy back    | Render Free (root `apps/api`) — `https://benditos-cancer-detector.onrender.com` |
 
 ---
 
@@ -52,7 +52,7 @@ Benditos_cancer_detector/
 graph LR
     U["👤 Médico (navegador)"]
     V["Vercel\n(Next.js 16)"]
-    R["Railway\n(FastAPI)"]
+    R["Render\n(FastAPI)"]
     HF["HF Space\nluisdam-oncoscan-ai\n/predict"]
     SDB["Supabase DB\n(PostgreSQL + RLS)"]
     SST["Supabase Storage\n(archivos DICOM/PNG)"]

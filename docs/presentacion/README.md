@@ -18,7 +18,7 @@ Documentación de apoyo para la defensa del proyecto OncoScan.
 | Archivo | Audiencia | Descripción |
 |---------|-----------|-------------|
 | [00-comun.md](00-comun.md) | **Todos** | Stack, monorepo, arquitectura (Mermaid), cómo correr localmente, flujo end-to-end |
-| [01-pm-devops-mateo.md](01-pm-devops-mateo.md) | PM + DevOps | Alcance MVP, PSP/Jira, deploy Vercel+Railway, variables de entorno |
+| [01-pm-devops-mateo.md](01-pm-devops-mateo.md) | PM + DevOps | Alcance MVP, PSP/Jira, deploy Vercel+Render, variables de entorno |
 | [02-ia-qa.md](02-ia-qa.md) | IA + QA | HF Space, features clínicas, flujo sync/async, tests, smoke test |
 | [03-database.md](03-database.md) | Base de Datos | Tablas, RLS, `is_admin()`, trigger `handle_new_user()`, migraciones |
 | [04-frontend.md](04-frontend.md) | Frontend | App Router, rutas, componentes UI, design tokens, auth gate |
