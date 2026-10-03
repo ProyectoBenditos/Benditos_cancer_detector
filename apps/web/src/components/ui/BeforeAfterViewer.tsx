@@ -122,6 +122,35 @@ export function BeforeAfterViewer({
   const { scale, canPan, layerStyle, stageHandlers, zoomIn, zoomOut, panBy, reset } =
     usePanZoom();
 
+  // Arrastre del tirador de la cortina. Se mide contra la capa transformada (padre
+  // del tirador), así la línea sigue al cursor también con zoom/pan aplicados.
+  const draggingSplit = useRef(false);
+  const updateSplitFromPointer = (e: React.PointerEvent<HTMLDivElement>) => {
+    const layer = e.currentTarget.parentElement;
+    if (!layer) return;
+    const rect = layer.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const pct = ((e.clientX - rect.left) / rect.width) * 100;
+    setSplitPosition(Math.round(Math.min(100, Math.max(0, pct))));
+  };
+  const splitHandlers = {
+    onPointerDown: (e: React.PointerEvent<HTMLDivElement>) => {
+      e.stopPropagation(); // no iniciar el pan del stage
+      e.currentTarget.setPointerCapture(e.pointerId);
+      draggingSplit.current = true;
+      updateSplitFromPointer(e);
+    },
+    onPointerMove: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (draggingSplit.current) updateSplitFromPointer(e);
+    },
+    onPointerUp: (e: React.PointerEvent<HTMLDivElement>) => {
+      if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+        e.currentTarget.releasePointerCapture(e.pointerId);
+      }
+      draggingSplit.current = false;
+    },
+  };
+
   // Filtrado inteligente automático: atenúa el ruido difuso de esquinas para resaltar el foco principal
   useEffect(() => {
     if (!heatmapBase64 || !cleanNoise) return;
@@ -463,13 +492,18 @@ export function BeforeAfterViewer({
                     </div>
                   )}
 
-                  {/* Indicador visual de la línea divisoria de la cortina */}
+                  {/* Tirador de la cortina: arrastrable desde la línea o el símbolo ◀▶.
+                      Para teclado y lectores de pantalla está el range de abajo. */}
                   {showAi && (
                     <div
-                      className="pointer-events-none absolute top-0 bottom-0 z-20 w-0.5 bg-white shadow-[0_0_8px_rgba(0,0,0,0.8)]"
+                      {...splitHandlers}
+                      onPointerCancel={splitHandlers.onPointerUp}
+                      aria-hidden="true"
+                      className="absolute top-0 bottom-0 z-20 w-6 -translate-x-1/2 cursor-ew-resize touch-none group"
                       style={{ left: `${splitPosition}%` }}
                     >
-                      <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary text-white border border-white shadow-md text-[9px] font-bold">
+                      <div className="pointer-events-none absolute top-0 bottom-0 left-1/2 w-0.5 -translate-x-1/2 bg-white shadow-[0_0_8px_rgba(0,0,0,0.8)]" />
+                      <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center justify-center w-6 h-6 rounded-full bg-brand-primary text-white border border-white shadow-md text-[9px] font-bold transition-transform group-hover:scale-125 group-active:scale-125">
                         ◀▶
                       </div>
                     </div>
