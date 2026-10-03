@@ -18,6 +18,9 @@
   --color-brand-sidebar: #012641;
   --color-brand-bg: #f8f9fa;
   --color-brand-surface: #ffffff;
+  /* Wordmark "OncoScan" sobre el sidebar. No es color de alerta: el rojo
+     del logo (#911D32) no alcanza contraste sobre #012641, este sí (3.5:1, AA texto grande). */
+  --color-brand-wordmark: #EE005A;
 }
 
 @theme inline {
@@ -33,6 +36,7 @@
   --color-brand-sidebar: var(--color-brand-sidebar);
   --color-brand-bg: var(--color-brand-bg);
   --color-brand-surface: var(--color-brand-surface);
+  --color-brand-wordmark: var(--color-brand-wordmark);
 }
 
 body {

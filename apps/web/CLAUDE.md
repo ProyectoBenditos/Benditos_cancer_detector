@@ -11,6 +11,7 @@
 | `brand-sidebar` | `#012641` | Fondo del sidebar (unificado con brand-primary) |
 | `brand-bg` | `#f8f9fa` | Fondo de página |
 | `brand-surface` | `#ffffff` | Fondo de tarjetas/paneles |
+| `brand-wordmark` | `#EE005A` | Solo el texto "OncoScan" junto al isotipo del sidebar. No usar para alertas ni UI. |
 
 **Regla de color:** El rojo (`brand-danger`) está reservado para alertas clínicas. Un error de validación de formulario, un 404, o un toast de error genérico usan `slate` o variantes neutras.
 

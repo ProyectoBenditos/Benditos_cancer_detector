@@ -28,16 +28,16 @@ export function Sidebar({ userRole }: SidebarProps) {
       aria-label="Menú lateral"
       className="w-64 bg-brand-sidebar text-slate-300 flex flex-col h-screen fixed left-0 top-0 border-r border-white/10"
     >
-      <div className="p-6 border-b border-white/10 flex items-center">
+      <div className="px-6 py-5 border-b border-white/10 flex items-center gap-3">
         <Image
-          src="/images/brand/logo-oncascan.png"
-          alt="OncaScan Logo"
-          width={160}
-          height={42}
-          style={{ width: "auto", height: "1.75rem" }}
+          src="/images/brand/logo-osp-icon-dark.png"
+          alt=""
+          width={44}
+          height={44}
           priority
-          className="object-contain"
+          className="object-contain shrink-0"
         />
+        <span className="text-2xl font-bold tracking-tight text-brand-wordmark">OncoScan</span>
       </div>
 
       <nav aria-label="Navegación principal" className="flex-1 py-6 px-3 space-y-1 overflow-y-auto">
