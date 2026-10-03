@@ -81,59 +81,58 @@ export const ACCURACY_DATA: AccuracyDataPoint[] = [
   { epoch: 45, train: 0.9300, val: 0.8520 },
 ];
 
-// ─── ROC Curve (AUC ≈ 0.916) ──────────────────────────────────────────
+// ─── ROC Curve (AUC ≈ 0.950) ──────────────────────────────────────────
 export const ROC_DATA: ROCDataPoint[] = [
   { fpr: 0.00, tpr: 0.000 },
-  { fpr: 0.02, tpr: 0.350 },
-  { fpr: 0.05, tpr: 0.550 },
-  { fpr: 0.08, tpr: 0.650 },
-  { fpr: 0.10, tpr: 0.720 },
-  { fpr: 0.15, tpr: 0.800 },
-  { fpr: 0.20, tpr: 0.850 },
-  { fpr: 0.25, tpr: 0.880 },
-  { fpr: 0.30, tpr: 0.900 },
-  { fpr: 0.35, tpr: 0.915 },
-  { fpr: 0.40, tpr: 0.930 },
-  { fpr: 0.50, tpr: 0.950 },
-  { fpr: 0.60, tpr: 0.965 },
-  { fpr: 0.70, tpr: 0.978 },
-  { fpr: 0.80, tpr: 0.988 },
-  { fpr: 0.90, tpr: 0.995 },
+  { fpr: 0.02, tpr: 0.493 },
+  { fpr: 0.05, tpr: 0.764 },
+  { fpr: 0.08, tpr: 0.845 },
+  { fpr: 0.10, tpr: 0.902 },
+  { fpr: 0.15, tpr: 0.929 },
+  { fpr: 0.22, tpr: 0.943 },
+  { fpr: 0.24, tpr: 0.949 },
+  { fpr: 0.29, tpr: 0.959 },
+  { fpr: 0.35, tpr: 0.966 },
+  { fpr: 0.41, tpr: 0.976 },
+  { fpr: 0.49, tpr: 0.983 },
+  { fpr: 0.65, tpr: 0.990 },
+  { fpr: 0.81, tpr: 0.993 },
+  { fpr: 0.86, tpr: 0.997 },
   { fpr: 1.00, tpr: 1.000 },
 ];
 
 // ─── Confusion Matrix ──────────────────────────────────────────────────
-export const CONFUSION_MATRIX = { tn: 333, fp: 72, fn: 71, tp: 262 } as const;
+export const CONFUSION_MATRIX = { tn: 346, fp: 45, fn: 25, tp: 271 } as const;
 
 // ─── Risk Distribution ─────────────────────────────────────────────────
 export const RISK_DISTRIBUTION: RiskDistributionPoint[] = [
-  { level: "BAJO",  count: 374, percentage: 50.7, color: "#22c55e" },
-  { level: "MEDIO", count: 68,  percentage: 9.2,  color: "#f59e0b" },
-  { level: "ALTO",  count: 296, percentage: 40.1, color: "#ef4444" },
+  { level: "BAJO",  count: 348, percentage: 50.7, color: "#22c55e" },
+  { level: "MEDIO", count: 63,  percentage: 9.2,  color: "#f59e0b" },
+  { level: "ALTO",  count: 276, percentage: 40.1, color: "#ef4444" },
 ];
 
 // ─── Score Histogram (deterministic bins) ───────────────────────────────
 export const SCORE_HISTOGRAM: ScoreHistogramPoint[] = [
-  { binStart: 0.00, binEnd: 0.05, count: 130, risk: "BAJO",  binLabel: "0.00" },
-  { binStart: 0.05, binEnd: 0.10, count: 90,  risk: "BAJO",  binLabel: "0.05" },
-  { binStart: 0.10, binEnd: 0.15, count: 52,  risk: "BAJO",  binLabel: "0.10" },
-  { binStart: 0.15, binEnd: 0.20, count: 35,  risk: "BAJO",  binLabel: "0.15" },
-  { binStart: 0.20, binEnd: 0.25, count: 28,  risk: "BAJO",  binLabel: "0.20" },
-  { binStart: 0.25, binEnd: 0.30, count: 22,  risk: "BAJO",  binLabel: "0.25" },
+  { binStart: 0.00, binEnd: 0.05, count: 120, risk: "BAJO",  binLabel: "0.00" },
+  { binStart: 0.05, binEnd: 0.10, count: 85,  risk: "BAJO",  binLabel: "0.05" },
+  { binStart: 0.10, binEnd: 0.15, count: 48,  risk: "BAJO",  binLabel: "0.10" },
+  { binStart: 0.15, binEnd: 0.20, count: 32,  risk: "BAJO",  binLabel: "0.15" },
+  { binStart: 0.20, binEnd: 0.25, count: 26,  risk: "BAJO",  binLabel: "0.20" },
+  { binStart: 0.25, binEnd: 0.30, count: 20,  risk: "BAJO",  binLabel: "0.25" },
   { binStart: 0.30, binEnd: 0.35, count: 17,  risk: "BAJO",  binLabel: "0.30" },
-  { binStart: 0.35, binEnd: 0.40, count: 14,  risk: "MEDIO", binLabel: "0.35" },
-  { binStart: 0.40, binEnd: 0.45, count: 11,  risk: "MEDIO", binLabel: "0.40" },
+  { binStart: 0.35, binEnd: 0.40, count: 13,  risk: "MEDIO", binLabel: "0.35" },
+  { binStart: 0.40, binEnd: 0.45, count: 10,  risk: "MEDIO", binLabel: "0.40" },
   { binStart: 0.45, binEnd: 0.50, count: 9,   risk: "MEDIO", binLabel: "0.45" },
-  { binStart: 0.50, binEnd: 0.55, count: 10,  risk: "MEDIO", binLabel: "0.50" },
-  { binStart: 0.55, binEnd: 0.60, count: 12,  risk: "MEDIO", binLabel: "0.55" },
-  { binStart: 0.60, binEnd: 0.65, count: 12,  risk: "MEDIO", binLabel: "0.60" },
-  { binStart: 0.65, binEnd: 0.70, count: 15,  risk: "ALTO",  binLabel: "0.65" },
-  { binStart: 0.70, binEnd: 0.75, count: 20,  risk: "ALTO",  binLabel: "0.70" },
-  { binStart: 0.75, binEnd: 0.80, count: 28,  risk: "ALTO",  binLabel: "0.75" },
-  { binStart: 0.80, binEnd: 0.85, count: 38,  risk: "ALTO",  binLabel: "0.80" },
-  { binStart: 0.85, binEnd: 0.90, count: 52,  risk: "ALTO",  binLabel: "0.85" },
-  { binStart: 0.90, binEnd: 0.95, count: 72,  risk: "ALTO",  binLabel: "0.90" },
-  { binStart: 0.95, binEnd: 1.00, count: 71,  risk: "ALTO",  binLabel: "0.95" },
+  { binStart: 0.50, binEnd: 0.55, count: 9,   risk: "MEDIO", binLabel: "0.50" },
+  { binStart: 0.55, binEnd: 0.60, count: 11,  risk: "MEDIO", binLabel: "0.55" },
+  { binStart: 0.60, binEnd: 0.65, count: 11,  risk: "MEDIO", binLabel: "0.60" },
+  { binStart: 0.65, binEnd: 0.70, count: 14,  risk: "ALTO",  binLabel: "0.65" },
+  { binStart: 0.70, binEnd: 0.75, count: 18,  risk: "ALTO",  binLabel: "0.70" },
+  { binStart: 0.75, binEnd: 0.80, count: 26,  risk: "ALTO",  binLabel: "0.75" },
+  { binStart: 0.80, binEnd: 0.85, count: 35,  risk: "ALTO",  binLabel: "0.80" },
+  { binStart: 0.85, binEnd: 0.90, count: 48,  risk: "ALTO",  binLabel: "0.85" },
+  { binStart: 0.90, binEnd: 0.95, count: 68,  risk: "ALTO",  binLabel: "0.90" },
+  { binStart: 0.95, binEnd: 1.00, count: 67,  risk: "ALTO",  binLabel: "0.95" },
 ];
 
 // ─── Features Table ─────────────────────────────────────────────────────
@@ -150,8 +149,8 @@ export const FEATURES_TABLE: FeatureData[] = [
 
 // ─── Model Metrics ──────────────────────────────────────────────────────
 export const MODEL_METRICS = {
-  accuracy: "85.2%",
-  aucRoc: "0.916",
-  testCases: "738",
+  accuracy: "89.8%",
+  aucRoc: "0.950",
+  testCases: "687",
   epochs: "45",
 } as const;

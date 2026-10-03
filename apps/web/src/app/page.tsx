@@ -169,7 +169,7 @@ export default function LandingPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
                 <div className="text-3xl sm:text-4xl font-mono font-bold text-white mb-1">
-                  85.2%
+                  89.8%
                 </div>
                 <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
                   Exactitud Global
@@ -181,7 +181,7 @@ export default function LandingPage() {
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
                 <div className="text-3xl sm:text-4xl font-mono font-bold text-white mb-1">
-                  0.916
+                  0.950
                 </div>
                 <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
                   AUC-ROC
@@ -193,7 +193,7 @@ export default function LandingPage() {
 
               <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
                 <div className="text-3xl sm:text-4xl font-mono font-bold text-white mb-1">
-                  738
+                  687
                 </div>
                 <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
                   Tomografías de Test

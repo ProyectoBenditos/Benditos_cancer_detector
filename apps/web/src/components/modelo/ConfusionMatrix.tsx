@@ -21,13 +21,15 @@ interface QuadrantDetail {
   protocol: string;
 }
 
+const TOTAL_CASES = CONFUSION_MATRIX.tn + CONFUSION_MATRIX.fp + CONFUSION_MATRIX.fn + CONFUSION_MATRIX.tp;
+
 const DETAILS: Record<QuadrantKey, QuadrantDetail> = {
   TN: {
     key: "TN",
     sigla: "VN",
     name: "Verdaderos Negativos",
     count: CONFUSION_MATRIX.tn,
-    pct: ((CONFUSION_MATRIX.tn / 738) * 100).toFixed(1) + "%",
+    pct: ((CONFUSION_MATRIX.tn / TOTAL_CASES) * 100).toFixed(1) + "%",
     category: "Éxito diagnóstico",
     badgeColor: "text-emerald-700",
     badgeBg: "bg-emerald-50",
@@ -43,7 +45,7 @@ const DETAILS: Record<QuadrantKey, QuadrantDetail> = {
     sigla: "FP",
     name: "Falsos Positivos",
     count: CONFUSION_MATRIX.fp,
-    pct: ((CONFUSION_MATRIX.fp / 738) * 100).toFixed(1) + "%",
+    pct: ((CONFUSION_MATRIX.fp / TOTAL_CASES) * 100).toFixed(1) + "%",
     category: "Sobrediagnóstico",
     badgeColor: "text-amber-700",
     badgeBg: "bg-amber-50",
@@ -59,7 +61,7 @@ const DETAILS: Record<QuadrantKey, QuadrantDetail> = {
     sigla: "FN",
     name: "Falsos Negativos",
     count: CONFUSION_MATRIX.fn,
-    pct: ((CONFUSION_MATRIX.fn / 738) * 100).toFixed(1) + "%",
+    pct: ((CONFUSION_MATRIX.fn / TOTAL_CASES) * 100).toFixed(1) + "%",
     category: "Riesgo de subdiagnóstico",
     badgeColor: "text-rose-700",
     badgeBg: "bg-rose-50",
@@ -75,7 +77,7 @@ const DETAILS: Record<QuadrantKey, QuadrantDetail> = {
     sigla: "VP",
     name: "Verdaderos Positivos",
     count: CONFUSION_MATRIX.tp,
-    pct: ((CONFUSION_MATRIX.tp / 738) * 100).toFixed(1) + "%",
+    pct: ((CONFUSION_MATRIX.tp / TOTAL_CASES) * 100).toFixed(1) + "%",
     category: "Éxito diagnóstico",
     badgeColor: "text-blue-700",
     badgeBg: "bg-blue-50",
@@ -115,7 +117,7 @@ export default function ConfusionMatrix() {
           </p>
         </div>
         <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 border border-slate-200">
-          738 casos de prueba
+          {TOTAL_CASES} casos de prueba
         </span>
       </div>
 

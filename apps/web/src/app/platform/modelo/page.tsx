@@ -51,9 +51,9 @@ function ChartSkeleton() {
 
 /* ─── KPI Metric data ────────────────────────────────────────────────── */
 const KPI_METRICS = [
-    { label: "Accuracy", value: "85.2%", icon: BarChart3, accent: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "AUC-ROC", value: "0.916", icon: BarChart3, accent: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Casos test", value: "738", icon: Database, accent: "text-violet-600", bg: "bg-violet-50" },
+    { label: "Accuracy", value: "89.8%", icon: BarChart3, accent: "text-emerald-600", bg: "bg-emerald-50" },
+    { label: "AUC-ROC", value: "0.950", icon: BarChart3, accent: "text-blue-600", bg: "bg-blue-50" },
+    { label: "Casos test", value: "687", icon: Database, accent: "text-violet-600", bg: "bg-violet-50" },
     { label: "Épocas", value: "45", icon: Layers, accent: "text-amber-600", bg: "bg-amber-50" },
 ] as const;
 

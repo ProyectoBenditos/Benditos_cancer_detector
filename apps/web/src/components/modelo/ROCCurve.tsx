@@ -1,7 +1,7 @@
 "use client";
 
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { ROC_DATA } from './modelData';
+import { ROC_DATA, MODEL_METRICS } from './modelData';
 
 export default function ROCCurve() {
   return (
@@ -52,7 +52,7 @@ export default function ROCCurve() {
         </ResponsiveContainer>
       </div>
       <div className="absolute right-8 bottom-16 bg-white/80 p-2 rounded-md border border-slate-200 font-semibold text-slate-700 shadow-sm">
-        AUC = 0.916
+        AUC = {MODEL_METRICS.aucRoc}
       </div>
     </div>
   );
