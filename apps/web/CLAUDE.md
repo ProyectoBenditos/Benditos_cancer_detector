@@ -34,6 +34,8 @@ Antes de crear un componente nuevo, revisar esta tabla:
 | `StatusBadge` | `src/components/ui/StatusBadge.tsx` | Badge de estado IA (`processing`, `ai_completed`, `ai_failed`, etc.) |
 | `Table` | `src/components/ui/Table.tsx` | Tabla de datos con estilos consistentes |
 | `BeforeAfterViewer` | `src/components/ui/BeforeAfterViewer.tsx` | Visor interactivo de la imagen original + mapa de calor Grad-CAM: zoom hacia el cursor (rueda), pan (arrastre), modos superpuesto/lado a lado sincronizados, opacidad del heatmap y pantalla completa. Client Component; props `beforeUrl` y `heatmapBase64`. Apoyado por `usePanZoom.ts` (estado de transform) y `panZoomMath.ts` (matemática pura testeada). Controles en `brand-primary`/`slate`; el rojo es dato del heatmap, no UI. |
+| `SourceLink` | `src/components/referencias/SourceLink.tsx` | Enlace a fuente externa (norma, guía, dataset, paper): pestaña nueva, icono y texto `sr-only`. `tone="onDark"` sobre fondos `brand-primary`. Las URLs salen siempre de `REFERENCES` en `src/lib/references.ts`. |
+| `ReferenceList` | `src/components/referencias/ReferenceList.tsx` | Lista completa de fuentes agrupada (normativa, guías, datos, métodos). Se muestra en `/platform/modelo#referencias`. |
 
 **Regla:** Si el componente que necesitas no está aquí, pregunta antes de inventar uno nuevo.
 

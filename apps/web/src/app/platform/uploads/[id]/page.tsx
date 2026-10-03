@@ -9,6 +9,10 @@ import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { SourceLink } from "@/components/referencias/SourceLink";
+import { REFERENCES } from "@/lib/references";
+import type { UploadReview } from "@/lib/uploadReview";
+import { ClinicalReviewForm } from "./ClinicalReviewForm";
 
 type PageProps = {
     params: Promise<{ id: string }>;
@@ -62,6 +66,18 @@ export default async function UploadDetailPage({ params }: PageProps) {
         beforeUrl = signed?.signedUrl ?? null;
     }
 
+    // Si la consulta falla (p. ej. migración aún no aplicada) el formulario arranca vacío
+    // y el guardado muestra el error al médico.
+    let review: UploadReview | null = null;
+    if (isAnalyzed) {
+        const { data, error: reviewError } = await supabase
+            .from("upload_reviews")
+            .select("concordancia, lung_rads, nodule_size_mm, conducta, notes, updated_at")
+            .eq("upload_id", id)
+            .maybeSingle<UploadReview>();
+        review = reviewError ? null : data;
+    }
+
     return (
         <PageContainer maxWidth="4xl">
             <SectionHeader
@@ -81,8 +97,15 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 variant="warning"
                 title="OncoScan es una herramienta académica de apoyo."
                 description="No es un dispositivo médico certificado y su resultado no reemplaza el juicio del especialista."
-                className="mb-6"
+                className="mb-2"
             />
+            <p className="text-xs text-slate-500 mb-6 px-1">
+                No cuenta con registro sanitario INVIMA (
+                <SourceLink href={REFERENCES.decreto4725.url}>Decreto 4725 de 2005</SourceLink>).{" "}
+                <Link href="/platform/modelo#referencias" className="text-brand-primary underline underline-offset-2 hover:text-brand-primary-hover">
+                    Ver fuentes y marco normativo
+                </Link>
+            </p>
 
             {/* Resultado IA */}
             {isAnalyzed && (
@@ -111,6 +134,12 @@ export default async function UploadDetailPage({ params }: PageProps) {
                                         ? `${(upload.ai_score * 100).toFixed(1)}%`
                                         : "N/D"}
                                 </p>
+                                <Link
+                                    href="/platform/modelo#interpretacion-score"
+                                    className="text-xs text-brand-primary underline underline-offset-2 hover:text-brand-primary-hover"
+                                >
+                                    ¿De dónde sale este score?
+                                </Link>
                             </div>
 
                             <div className="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center">
@@ -128,6 +157,12 @@ export default async function UploadDetailPage({ params }: PageProps) {
                                 Recomendación clínica
                             </p>
                             <p className="text-slate-800 font-medium">{upload.ai_recommendation ?? "N/D"}</p>
+                            <p className="text-xs text-slate-500 mt-2">
+                                Texto fijo asociado al nivel de riesgo en el{" "}
+                                <SourceLink href={REFERENCES.inferenceService.url}>servicio de inferencia</SourceLink>; no es una
+                                conducta normativa. El seguimiento según tamaño del nódulo lo define la{" "}
+                                <SourceLink href={REFERENCES.gpc36.url}>GPC No. 36 MinSalud</SourceLink>.
+                            </p>
                         </div>
 
                         {upload.ai_processed_at && (
@@ -147,8 +182,16 @@ export default async function UploadDetailPage({ params }: PageProps) {
             {isAnalyzed && upload.ai_heatmap_base64 && (
                 <div className="mb-6">
                     <BeforeAfterViewer beforeUrl={beforeUrl} heatmapBase64={upload.ai_heatmap_base64} />
+                    <p className="text-xs text-slate-500 mt-2 px-1">
+                        Mapa de calor generado con{" "}
+                        <SourceLink href={REFERENCES.gradcam.url}>Grad-CAM (Selvaraju et al., 2017)</SourceLink>: indica las
+                        regiones que más pesaron en el score, no delimita el nódulo.
+                    </p>
                 </div>
             )}
+
+            {/* Valoración del especialista */}
+            {isAnalyzed && <ClinicalReviewForm uploadId={upload.id} initial={review} />}
 
             {/* Metadata de inferencia */}
             {isAnalyzed && (upload.model_version || upload.inference_time_ms != null || upload.predicted_at) && (

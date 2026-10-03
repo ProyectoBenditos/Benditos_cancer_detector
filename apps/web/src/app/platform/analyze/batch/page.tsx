@@ -10,6 +10,8 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { Modal } from "@/components/ui/Modal";
+import { SourceLink } from "@/components/referencias/SourceLink";
+import { REFERENCES } from "@/lib/references";
 import { createPatientInline, type PatientInlineState } from "../../pacientes/actions";
 import { toast } from "sonner";
 import {
@@ -716,7 +718,8 @@ export default function BatchUploadPage() {
                   Parámetros Radiológicos Estándar
                 </p>
                 <p>
-                  En modo <strong>Pacientes Múltiples</strong> se aplican automáticamente los valores estándar de referencia clínica (LIDC-IDRI baseline) para cada estudio.
+                  En modo <strong>Pacientes Múltiples</strong> se aplican automáticamente los valores estándar de referencia clínica (
+                  <SourceLink href={REFERENCES.lidcData.url}>LIDC-IDRI</SourceLink> baseline) para cada estudio.
                 </p>
               </div>
               <span className="px-3 py-1 bg-white border border-slate-200 rounded-full text-[11px] font-semibold text-slate-600">

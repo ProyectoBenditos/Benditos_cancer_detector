@@ -1,6 +1,8 @@
 "use client";
 
 import React from 'react';
+import { SourceLink } from '@/components/referencias/SourceLink';
+import { REFERENCES } from '@/lib/references';
 
 const featuresData = [
   { feature: 'Subtlety', name: 'Sutileza', scale: '1–5', description: 'Qué tan evidente es el nódulo en la imagen' },
@@ -16,7 +18,13 @@ const featuresData = [
 export default function FeaturesTable() {
   return (
     <div className="w-full flex flex-col gap-4">
-      <h3 className="text-xl font-semibold text-slate-800">Features Clínicas Lung-RADS</h3>
+      <div>
+        <h3 className="text-xl font-semibold text-slate-800">Features Clínicas (anotación LIDC-IDRI)</h3>
+        <p className="text-xs text-slate-500 mt-1">
+          Escalas de caracterización del nódulo usadas por los radiólogos del{" "}
+          <SourceLink href={REFERENCES.lidcPaper.url}>LIDC-IDRI (Armato et al., 2011)</SourceLink>. No son categorías Lung-RADS.
+        </p>
+      </div>
       <div className="w-full overflow-x-auto rounded-xl border border-slate-200 shadow-sm">
         <table className="w-full text-left border-collapse min-w-[600px]">
           <thead>

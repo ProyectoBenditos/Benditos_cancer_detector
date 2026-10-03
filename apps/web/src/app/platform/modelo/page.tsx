@@ -5,7 +5,10 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Brain, Database, BarChart3, ShieldCheck, Layers } from "lucide-react";
+import { Brain, Database, BarChart3, ShieldCheck, Layers, BookOpen } from "lucide-react";
+import { SourceLink } from "@/components/referencias/SourceLink";
+import { ReferenceList } from "@/components/referencias/ReferenceList";
+import { REFERENCES } from "@/lib/references";
 
 /* ─── Dynamic imports (client components, no SSR) ────────────────────── */
 const AccuracyChart = dynamic(
@@ -79,7 +82,8 @@ export default function ModeloPage() {
                     <p className="text-xs text-white/80 font-bold uppercase tracking-widest mb-1">Versión activa</p>
                     <h2 className="text-2xl font-extrabold text-white">multimodal-v1.1</h2>
                     <p className="text-white/80 text-sm mt-2 max-w-2xl">
-                        Modelo de clasificación de nódulos pulmonares desplegado en Hugging Face Spaces.
+                        Modelo de clasificación de nódulos pulmonares desplegado en{" "}
+                        <SourceLink href={REFERENCES.inferenceService.url} tone="onDark">Hugging Face Spaces</SourceLink>.
                         Combina análisis de imagen CT con features clínicas radiológicas estructuradas
                         para estimar la probabilidad de malignidad de un nódulo pulmonar.
                         Soporta imágenes PNG, JPG y archivos DICOM (.dcm) nativos.
@@ -124,18 +128,26 @@ export default function ModeloPage() {
                         <ul className="space-y-2.5 text-sm text-slate-600">
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
-                                Dataset público <strong>LIDC-IDRI</strong> (Lung Image Database Consortium) —
-                                1,018 CT pulmonares del Instituto Nacional del Cáncer de EE.UU.
+                                <span>
+                                    Dataset público{" "}
+                                    <SourceLink href={REFERENCES.lidcData.url}><strong>LIDC-IDRI</strong></SourceLink>{" "}
+                                    (Lung Image Database Consortium, The Cancer Imaging Archive) — 1,018 casos de TC
+                                    torácica de 7 centros académicos, iniciativa financiada por el Instituto Nacional del
+                                    Cáncer de EE.UU. Licencia CC BY 3.0.
+                                </span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
-                                <strong>4,918 imágenes</strong> filtradas por consenso de 4 radiólogos independientes —
-                                solo casos con acuerdo clínico claro
+                                <span>
+                                    <strong>4,918 imágenes</strong> filtradas por el equipo según el acuerdo entre los 4
+                                    radiólogos torácicos que anotaron cada caso (
+                                    <SourceLink href={REFERENCES.lidcPaper.url}>Armato et al., 2011</SourceLink>)
+                                </span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
                                 Features clínicas reales: sutileza, calcificación, esfericidad, margen,
-                                lobulación, espiculación, textura y malignidad visual
+                                lobulación, espiculación, textura y malignidad visual (anotaciones LIDC)
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
@@ -159,7 +171,7 @@ export default function ModeloPage() {
             </div>
 
             {/* Score interpretation card */}
-            <Card className="mb-8">
+            <Card id="interpretacion-score" className="mb-8 scroll-mt-24">
                 <CardContent className="p-6">
                     <h3 className="font-bold text-slate-800 mb-4">Interpretación del Score</h3>
                     <div className="space-y-2.5">
@@ -190,6 +202,85 @@ export default function ModeloPage() {
                         </div>
                         <p className="text-xs text-slate-500 px-1 -mt-1">Evaluación urgente recomendada</p>
                     </div>
+
+                    <div className="mt-6 pt-5 border-t border-slate-100 space-y-3 text-sm text-slate-600">
+                        <h4 className="text-sm font-semibold text-slate-800">¿De dónde salen estos cortes?</h4>
+                        <p>
+                            El score es la salida (0–1) de la red multimodal. Los cortes <strong>0.33</strong> y{" "}
+                            <strong>0.66</strong> y los textos de recomendación están definidos en la función{" "}
+                            <code className="text-xs bg-slate-100 px-1 py-0.5 rounded">nivel_riesgo()</code> del{" "}
+                            <SourceLink href={REFERENCES.inferenceService.url}>servicio de inferencia</SourceLink>: dividen el
+                            rango en tercios. <strong>No provienen de una norma colombiana</strong> — la regulación nacional
+                            no fija umbrales para scores de IA — y el score no ha sido calibrado como probabilidad clínica
+                            de malignidad.
+                        </p>
+                        <p>
+                            La referencia clínica más cercana es la{" "}
+                            <SourceLink href={REFERENCES.gpc36.url}>GPC No. 36 del Ministerio de Salud (2014)</SourceLink>,
+                            que adopta los criterios de la ACCP para nódulos pulmonares. La{" "}
+                            <SourceLink href={REFERENCES.accp2013.url}>ACCP 2013</SourceLink> clasifica la probabilidad de
+                            malignidad en muy baja (&lt;5%), baja–moderada (5–65%) y alta (&gt;65%). El corte ALTO del modelo
+                            (≥ 0.66) queda cerca del umbral de alta probabilidad de la ACCP; el rango BAJO (&lt; 0.33) es mucho
+                            más amplio que el &lt;5% de la ACCP, así que un resultado BAJO <strong>no</strong> equivale a
+                            “muy baja probabilidad”.
+                        </p>
+                        <p>
+                            La categoría de reporte la asigna el radiólogo con{" "}
+                            <SourceLink href={REFERENCES.lungRads.url}>ACR Lung-RADS v2022</SourceLink> (tamización) o con la{" "}
+                            <SourceLink href={REFERENCES.fleischner2017.url}>Fleischner Society 2017</SourceLink> (hallazgo
+                            incidental). El modelo no asigna estas categorías.
+                        </p>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Seguimiento normativo por tamaño — GPC No. 36, Rec. 2.1 */}
+            <Card id="seguimiento-gpc" className="mb-8 scroll-mt-24">
+                <CardContent className="p-6">
+                    <h3 className="font-bold text-slate-800 mb-1">Seguimiento de nódulos sólidos según la GPC No. 36</h3>
+                    <p className="text-sm text-slate-600 mb-4">
+                        Recomendación 2.1 de la{" "}
+                        <SourceLink href={REFERENCES.gpc36.url}>Guía de Práctica Clínica de cáncer de pulmón (MinSalud, 2014)</SourceLink>,
+                        págs. 31–33. Controles con TAC según el diámetro del nódulo.
+                    </p>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                        <table className="w-full text-sm text-left min-w-[560px]">
+                            <caption className="sr-only">Intervalos de seguimiento por TAC según tamaño del nódulo y factores de riesgo</caption>
+                            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
+                                <tr>
+                                    <th scope="col" className="py-2.5 px-4 font-semibold">Diámetro</th>
+                                    <th scope="col" className="py-2.5 px-4 font-semibold">Sin factores de riesgo</th>
+                                    <th scope="col" className="py-2.5 px-4 font-semibold">Con factores de riesgo</th>
+                                </tr>
+                            </thead>
+                            <tbody className="text-slate-700">
+                                <tr className="border-t border-slate-100">
+                                    <th scope="row" className="py-2.5 px-4 font-medium">≤ 4 mm</th>
+                                    <td className="py-2.5 px-4">Sin seguimiento (informar al paciente)</td>
+                                    <td className="py-2.5 px-4">Control a 12 meses</td>
+                                </tr>
+                                <tr className="border-t border-slate-100">
+                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 4 – 6 mm</th>
+                                    <td className="py-2.5 px-4">Control a 12 meses</td>
+                                    <td className="py-2.5 px-4">6 y 12 meses; si no cambia, 18 y 24 meses</td>
+                                </tr>
+                                <tr className="border-t border-slate-100">
+                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 6 – 8 mm</th>
+                                    <td className="py-2.5 px-4">6 y 12 meses; si no cambia, 18 y 24 meses</td>
+                                    <td className="py-2.5 px-4">3, 6, 9 y 12 meses; si no cambia, 24 meses</td>
+                                </tr>
+                                <tr className="border-t border-slate-100">
+                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 8 mm</th>
+                                    <td className="py-2.5 px-4" colSpan={2}>Sugestivo de malignidad: requiere confirmación histológica</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3">
+                        Nódulos no sólidos (vidrio esmerilado) &gt; 5 mm: control anual hasta 3 años. Subsólidos ≤ 8 mm: 6, 12
+                        y 24 meses, luego anual hasta 3 años. Factores de riesgo: edad &gt; 55 años, tabaquismo, exposición a
+                        asbesto, antecedentes familiares.
+                    </p>
                 </CardContent>
             </Card>
 
@@ -198,6 +289,11 @@ export default function ModeloPage() {
 
             <div className="mb-6">
                 <ArchitecturePipeline />
+                <p className="text-xs text-slate-500 mt-3 px-1">
+                    Rama de imagen:{" "}
+                    <SourceLink href={REFERENCES.resnet.url}>ResNet-18 (He et al., 2016)</SourceLink> con transfer learning.
+                    Explicabilidad: <SourceLink href={REFERENCES.gradcam.url}>Grad-CAM (Selvaraju et al., 2017)</SourceLink>.
+                </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
@@ -209,7 +305,10 @@ export default function ModeloPage() {
             {/* ── Endpoint de la API ──────────────────────────────────────── */}
             <Card className="mb-6">
                 <CardContent className="p-6">
-                    <h3 className="font-bold text-slate-800 mb-3">Endpoint del Microservicio IA</h3>
+                    <h3 className="font-bold text-slate-800 mb-1">Endpoint del Microservicio IA</h3>
+                    <p className="text-xs text-slate-500 mb-3">
+                        Código fuente: <SourceLink href={REFERENCES.inferenceService.url}>service.py en Hugging Face</SourceLink>
+                    </p>
                     <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300">
                         <p className="text-emerald-400">POST</p>
                         <p className="text-white mt-1">https://luisdam-oncoscan-ai.hf.space/predict</p>
@@ -221,6 +320,16 @@ export default function ModeloPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* ── Fuentes y marco normativo ───────────────────────────────── */}
+            <div id="referencias" className="scroll-mt-24">
+                <SectionDivider title="Fuentes y marco normativo" icon={<BookOpen className="w-5 h-5" />} />
+                <Card className="mb-6">
+                    <CardContent className="p-6">
+                        <ReferenceList />
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* ── Clinical disclaimer ─────────────────────────────────────── */}
             <AlertBanner

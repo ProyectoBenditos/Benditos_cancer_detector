@@ -9,6 +9,8 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { buttonVariants } from "@/components/ui/Button";
+import { SourceLink } from "@/components/referencias/SourceLink";
+import { REFERENCES } from "@/lib/references";
 
 type RecentUpload = {
     id: string;
@@ -87,6 +89,17 @@ export default async function PlatformPage() {
                 </h1>
                 <p className="text-white/80 text-sm mt-2 max-w-xl">
                     Plataforma de apoyo diagnóstico oncológico mediante inteligencia artificial. Los resultados son referenciales y no sustituyen el criterio médico.
+                </p>
+                <p className="text-white/80 text-xs mt-3 max-w-xl">
+                    Modelo entrenado con{" "}
+                    <SourceLink href={REFERENCES.lidcData.url} tone="onDark">LIDC-IDRI</SourceLink>; seguimiento clínico según la{" "}
+                    <SourceLink href={REFERENCES.gpc36.url} tone="onDark">GPC No. 36 MinSalud</SourceLink>.{" "}
+                    <Link
+                        href="/platform/modelo#referencias"
+                        className="text-white underline underline-offset-2 hover:text-white/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-white rounded"
+                    >
+                        Todas las fuentes →
+                    </Link>
                 </p>
             </div>
 

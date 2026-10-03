@@ -21,6 +21,8 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { HeroDemoViewer } from "@/components/landing/HeroDemoViewer";
+import { SourceLink } from "@/components/referencias/SourceLink";
+import { REFERENCES } from "@/lib/references";
 
 export default function LandingPage() {
   return (
@@ -158,7 +160,9 @@ export default function LandingPage() {
                 Rendimiento Clínico del Modelo Multimodal
               </h2>
               <p className="text-slate-300 text-sm mt-2">
-                Evaluado sobre el dataset internacional LIDC-IDRI con partición a nivel de paciente.
+                Evaluado sobre el dataset internacional{" "}
+                <SourceLink href={REFERENCES.lidcData.url} tone="onDark">LIDC-IDRI</SourceLink>{" "}
+                con partición a nivel de paciente.
               </p>
             </div>
 
@@ -346,7 +350,8 @@ export default function LandingPage() {
             </div>
             <h2 className="text-2xl font-bold text-slate-900 mb-3">Contexto de Investigación Estudiantil</h2>
             <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-5">
-              Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej. LIDC-IDRI).
+              Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej.{" "}
+              <SourceLink href={REFERENCES.lidcData.url}>LIDC-IDRI</SourceLink>).
             </p>
             <div className="inline-block px-3.5 py-1.5 bg-brand-danger/10 text-brand-danger rounded-lg text-xs font-semibold border border-brand-danger/20">
               Proyecto Universitario — Versión Final
