@@ -256,7 +256,7 @@ async def analyze_dicom(
             png_bytes  = png_buffer.getvalue()
 
         # 4. Llamar al modelo en Hugging Face
-        hf_url  = f"{os.getenv('HF_API_BASE_URL', 'https://luisdam-oncoscan-ai.hf.space')}/predict"
+        hf_url  = f"{os.getenv('HF_API_BASE_URL', 'https://oncoscan-ai.duckdns.org')}/predict"
         timeout = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
 
         files = {"imagen": ("imagen.png", png_bytes, "image/png")}

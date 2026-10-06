@@ -307,11 +307,11 @@ export default function ModeloPage() {
                 <CardContent className="p-6">
                     <h3 className="font-bold text-slate-800 mb-1">Endpoint del Microservicio IA</h3>
                     <p className="text-xs text-slate-500 mb-3">
-                        Código fuente: <SourceLink href={REFERENCES.inferenceService.url}>service.py en Hugging Face</SourceLink>
+                        Infraestructura: Servidor dedicado Oracle Cloud Always Free (24/7 Always-On, ARM64)
                     </p>
                     <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300">
                         <p className="text-emerald-400">POST</p>
-                        <p className="text-white mt-1">https://luisdam-oncoscan-ai.hf.space/predict</p>
+                        <p className="text-white mt-1">https://oncoscan-ai.duckdns.org/predict</p>
                         <p className="text-slate-500 mt-3 text-xs">Parámetros (form-data):</p>
                         <p className="text-slate-400 text-xs">imagen · subtlety · calcification · sphericity</p>
                         <p className="text-slate-400 text-xs">margin · lobulation · spiculation · texture · malignancy</p>
