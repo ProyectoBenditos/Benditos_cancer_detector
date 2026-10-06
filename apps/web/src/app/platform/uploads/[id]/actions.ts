@@ -7,7 +7,8 @@ import { parseReviewForm } from "@/lib/uploadReview";
 export type ReviewState = {
     error?: string;
     savedAt?: string;
-    // Valores enviados, para repoblar el formulario si falla (React 19 lo resetea tras la acción).
+    // Valores enviados. React 19 resetea el formulario tras la acción: con esto se
+    // repuebla si falla y también tras guardar en pantallas sin revalidación (subida).
     fields?: Record<string, string>;
 };
 
@@ -48,5 +49,5 @@ export async function saveUploadReviewAction(
     }
 
     revalidatePath(`/platform/uploads/${parsed.uploadId}`);
-    return { savedAt: data?.updated_at ?? new Date().toISOString() };
+    return { savedAt: data?.updated_at ?? new Date().toISOString(), fields: submittedFields(formData) };
 }

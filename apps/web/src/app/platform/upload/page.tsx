@@ -11,6 +11,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 
 type UploadResponse = {
@@ -516,6 +517,18 @@ export default function UploadDicomPage() {
                         </div>
                     </CardContent>
                 </Card>
+            )}
+
+            {/* PASO 4: Valoración del especialista (la misma que en el historial).
+                key por estudio: "Subir otro estudio" arranca con el formulario limpio. */}
+            {analysisResult && (
+                <div className="mt-6">
+                    <ClinicalReviewForm
+                        key={analysisResult.dicom_id}
+                        uploadId={analysisResult.dicom_id}
+                        initial={null}
+                    />
+                </div>
             )}
 
             {/* Modal: registrar paciente */}

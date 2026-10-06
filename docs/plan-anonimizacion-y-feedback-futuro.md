@@ -120,7 +120,12 @@ sequenceDiagram
 
 ## 5. ¿Para Qué Sirven los Datos de Feedback Clínico Hoy?
 
-El componente creado por Mateo ([`ClinicalReviewForm.tsx`](file:///c:/Users/USUARIO/Desktop/Proyectos/Oncoscan/Benditos_cancer_detector/apps/web/src/app/platform/uploads/%5Bid%5D/ClinicalReviewForm.tsx)) captura 5 variables clave:
+El componente creado por Mateo ([`ClinicalReviewForm.tsx`](../apps/web/src/app/platform/uploads/%5Bid%5D/ClinicalReviewForm.tsx)) se guarda en la tabla `upload_reviews` (una valoración por estudio, RLS por médico; migración [`20261002120000_upload_reviews.sql`](../supabase/migrations/20261002120000_upload_reviews.sql)). El mismo formulario aparece en dos puntos del flujo y ambos editan el mismo registro:
+
+- **Al terminar el análisis IA** (`/platform/upload`), debajo del resultado y del visor Grad-CAM, para registrar la lectura en el momento.
+- **En el historial del estudio** (`/platform/uploads/[id]`), precargado con lo guardado, para completarla o corregirla después.
+
+Captura 5 variables clave:
 1. `concordancia` (`concuerda`, `discrepa`, `indeterminado`)
 2. `lung_rads` (`0`, `1`, `2`, `3`, `4A`, `4B`, `4X`)
 3. `nodule_size_mm` (tamaño real medido por el radiólogo)
@@ -130,7 +135,7 @@ El componente creado por Mateo ([`ClinicalReviewForm.tsx`](file:///c:/Users/USUA
 ### Usos Inmediatos (Presente):
 
 #### A. Detección en Tiempo Real de Falsos Negativos y Falsos Positivos
-* **Alerta de Falso Negativo Crítico:** Si el modelo predice `Riesgo BAJO` ($\text{score} < 0.30$) pero el especialista marca `discrepa` y clasifica como `Lung-RADS 4A` o `4B`, el sistema detecta un **error de omisión**. Esto permite alertar inmediatamente y evitar que el paciente se vaya sin conducta de seguimiento.
+* **Alerta de Falso Negativo Crítico:** Si el modelo predice `Riesgo BAJO` ($\text{score} < 0.33$) pero el especialista marca `discrepa` y clasifica como `Lung-RADS 4A` o `4B`, el sistema detecta un **error de omisión**. Esto permite alertar inmediatamente y evitar que el paciente se vaya sin conducta de seguimiento.
 * **Control de Falsas Alarmas:** Si el modelo predice `Riesgo ALTO` pero el médico marca `discrepa` porque identificó que la densidad corresponde a un vaso sanguíneo cortado en ángulo o a una cicatriz benigna antigua, evitamos biopsias innecesarias.
 
 #### B. Métrica de Concordancia Clínica en el Dashboard (`/platform/modelo`)

@@ -107,7 +107,8 @@ Puntos a cubrir:
 5. Ingresar las 8 features clínicas con los sliders.
 6. Hacer clic en "Analizar con IA" — esperar resultado.
 7. Mostrar el badge de nivel de riesgo y la recomendación.
-8. Navegar a historial `/platform/uploads`.
+8. Debajo del resultado, completar la **Valoración del especialista** (concordancia, Lung-RADS, tamaño, conducta, notas) y guardar.
+9. Navegar a historial `/platform/uploads`, abrir el estudio y mostrar que la valoración quedó guardada.
 
 > **Archivos de prueba:** usar los fixtures en `docs/qa/fixtures/` (ver `docs/qa/fixtures/README.md`).
 

@@ -88,7 +88,17 @@ describe("saveUploadReviewAction", () => {
             }),
         );
 
-        expect(state).toEqual({ savedAt: "2026-10-02T12:00:00Z" });
+        // fields permite repoblar el form en la pantalla de subida, donde no hay revalidación.
+        expect(state).toEqual({
+            savedAt: "2026-10-02T12:00:00Z",
+            fields: {
+                concordancia: "concuerda",
+                lung_rads: "4A",
+                nodule_size_mm: "7,25",
+                conducta: "tac_3m",
+                notes: "  Control en 3 meses  ",
+            },
+        });
         expect(mocks.upsert).toHaveBeenCalledWith(
             {
                 upload_id: UPLOAD_ID,

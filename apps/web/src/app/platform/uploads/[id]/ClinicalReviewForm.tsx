@@ -31,7 +31,7 @@ type Props = {
 export function ClinicalReviewForm({ uploadId, initial }: Props) {
     const [state, formAction, pending] = useActionState<ReviewState, FormData>(saveUploadReviewAction, {});
     const lastSaved = state.savedAt ?? initial?.updated_at ?? null;
-    // Tras un error se repuebla con lo enviado; si no, con lo guardado en BD.
+    // Tras enviar (con éxito o error) se repuebla con lo enviado; antes, con lo guardado en BD.
     const value = (key: string, saved: string | number | null | undefined) =>
         state.fields?.[key] ?? (saved == null ? "" : String(saved));
 
@@ -168,7 +168,7 @@ export function ClinicalReviewForm({ uploadId, initial }: Props) {
 
                     <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <Button type="submit" variant="primary" size="md" loading={pending}>
-                            {pending ? "Guardando..." : initial ? "Actualizar valoración" : "Guardar valoración"}
+                            {pending ? "Guardando..." : initial || state.savedAt ? "Actualizar valoración" : "Guardar valoración"}
                         </Button>
                         <p role="status" aria-live="polite" className="text-xs text-slate-500">
                             {lastSaved && !pending
