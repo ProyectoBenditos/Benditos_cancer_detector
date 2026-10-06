@@ -15,6 +15,7 @@ from PIL import Image
 from pydantic import BaseModel
 
 from app.core.config import SUPABASE_BUCKET_NAME
+from app.core.deidentifier import deidentify_dicom_bytes
 from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
@@ -137,9 +138,16 @@ async def upload_dicom(
 
             modality         = modality_val
             study_date       = str(getattr(dataset, "StudyDate", "")) or None
-            patient_id_dicom = str(getattr(dataset, "PatientID", "")) or None
+            raw_patient_id   = str(getattr(dataset, "PatientID", "")) or None
+
+            # Desidentificación clínica bajo estándar DICOM PS 3.15 (Anexo E) y Ley 1581 de 2012:
+            # Se purga el PHI en memoria binaria y se genera un hash determinista para patient_id_dicom
+            clean_bytes, audit_deid = deidentify_dicom_bytes(contents)
+            contents = clean_bytes
+            patient_id_dicom = audit_deid["pseudonymized_patient_id"]
         else:
             modality = "IMG"
+            audit_deid = None
 
         content_type_map = {
             ".dcm":  "application/dicom",
@@ -174,6 +182,9 @@ async def upload_dicom(
                 "uploaded_by_email": current_user["email"],
                 "file_ext":          file_ext,
                 "case_ref":          case_ref or None,
+                "deidentified":      is_dicom,
+                "deidentified_at":   audit_deid["deidentified_at"] if audit_deid else None,
+                "tags_cleared":      audit_deid["tags_cleared_count"] if audit_deid else 0,
             },
         }).execute()
 

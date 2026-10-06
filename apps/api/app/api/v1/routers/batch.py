@@ -30,6 +30,7 @@ from fastapi import (
 from PIL import Image
 
 from app.core.config import HF_API_BASE_URL, SUPABASE_BUCKET_NAME
+from app.core.deidentifier import deidentify_dicom_bytes
 from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
@@ -279,7 +280,12 @@ async def create_batch(
 
                 modality = modality_val
                 study_date = str(getattr(dataset, "StudyDate", "")) or None
-                original_patient_id_dicom = str(getattr(dataset, "PatientID", "")) or None
+                raw_patient_id = str(getattr(dataset, "PatientID", "")) or None
+
+                # Desidentificación bajo DICOM PS 3.15 y Ley 1581 de 2012
+                clean_bytes, audit_deid = deidentify_dicom_bytes(contents)
+                contents = clean_bytes
+                original_patient_id_dicom = audit_deid["pseudonymized_patient_id"]
 
             except HTTPException:
                 raise

@@ -321,7 +321,69 @@ export default function ModeloPage() {
                 </CardContent>
             </Card>
 
+            {/* ── Section: Privacidad y Desidentificación de Datos ─────────── */}
+            <div id="privacidad-datos" className="scroll-mt-24 mb-6">
+                <SectionDivider title="Privacidad y Desidentificación de Datos" icon={<ShieldCheck className="w-5 h-5" />} />
+                <Card>
+                    <CardContent className="p-6 space-y-4">
+                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 border-b border-slate-100 pb-4">
+                            <div>
+                                <h3 className="font-bold text-slate-800 text-base">Protocolo de Desidentificación en Origen</h3>
+                                <p className="text-xs text-slate-500">
+                                    Conforme a la <SourceLink href={REFERENCES.ley1581.url}>Ley 1581 de 2012</SourceLink> (Habeas Data) y el estándar internacional <SourceLink href={REFERENCES.dicomPs315.url}>DICOM PS 3.15 (Anexo E)</SourceLink>.
+                                </p>
+                            </div>
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 shrink-0">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                Activo en ingestión
+                            </span>
+                        </div>
+
+                        <p className="text-sm text-slate-600 leading-relaxed">
+                            Para proteger los datos sensibles de salud, todo archivo tomográfico DICOM (<code>.dcm</code>) subido a OncoScan es procesado en memoria volátil por el motor de desidentificación antes de persistir en almacenamiento o enviarse al microservicio de inferencia:
+                        </p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    1. Purgado de Identificadores (PHI)
+                                </p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    Se eliminan nombres propios (<code>PatientName</code> reemplazado por <code>ONCOSCAN-ANON</code>), nombres de clínicas (<code>InstitutionName</code>), médicos tratantes y etiquetas privadas propietarias de fabricantes.
+                                </p>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    2. Seudonimización Criptográfica
+                                </p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    El documento de identidad (<code>PatientID</code>) se transforma mediante <code>HMAC-SHA256</code> con salt del servidor en un código irreversible (<code>ONC-PAT-xxxx</code>). Permite comparar estudios de control del mismo paciente a lo largo del tiempo sin exponer su cédula.
+                                </p>
+                            </div>
+
+                            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 mb-1.5">
+                                    3. Preservación Física Radiológica
+                                </p>
+                                <p className="text-xs text-slate-600 leading-relaxed">
+                                    Se preservan intactos los parámetros indispensables para la red neuronal: unidades Hounsfield (<code>RescaleSlope</code>, <code>RescaleIntercept</code>), ventana pulmonar, espaciamiento milimétrico (<code>PixelSpacing</code>), grosor de corte y fecha del estudio.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 space-y-2">
+                            <p className="font-semibold text-slate-800">Inferencia con Retención Cero (Zero Data Retention):</p>
+                            <p>
+                                El microservicio de inferencia en Hugging Face Spaces procesa la pasada hacia adelante de ResNet-18 y genera el mapa Grad-CAM exclusivamente en la memoria RAM del contenedor. No retiene copias del estudio en disco ni bases de datos de terceros, garantizando que el cómputo sea efímero y seguro.
+                            </p>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
             {/* ── Fuentes y marco normativo ───────────────────────────────── */}
+
             <div id="referencias" className="scroll-mt-24">
                 <SectionDivider title="Fuentes y marco normativo" icon={<BookOpen className="w-5 h-5" />} />
                 <Card className="mb-6">

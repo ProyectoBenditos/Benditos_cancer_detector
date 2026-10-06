@@ -18,6 +18,7 @@ SUPABASE_BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "dicom-files")
 
 HF_API_BASE_URL = os.getenv("HF_API_BASE_URL", "https://luisdam-oncoscan-ai.hf.space")
 HF_PREDICT_TIMEOUT = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
+ANONYMIZATION_SALT = os.getenv("ANONYMIZATION_SALT", "oncoscan-clinical-salt-v1")
 
 _REQUIRED_ENV = {
     "SUPABASE_URL": SUPABASE_URL,

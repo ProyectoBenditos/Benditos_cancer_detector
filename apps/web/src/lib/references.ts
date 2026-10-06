@@ -48,6 +48,14 @@ export const REFERENCES = {
         url: "https://observatorios.invima.gov.co/invima_website/static/attachments/dispositivos_dispositivos_medicos_equipos_biomedicos/Decreto-4725-de-2005.pdf",
         note: "Un software con finalidad diagnóstica puede ser dispositivo médico (arts. 6–7). OncoScan no tiene registro sanitario INVIMA.",
     },
+    dicomPs315: {
+        group: "normativa",
+        short: "DICOM PS 3.15 (Anexo E)",
+        citation:
+            "National Electrical Manufacturers Association (NEMA). DICOM Standard PS 3.15: Security and System Management Profiles, Annex E - Basic Application Level Confidentiality Profile; 2023.",
+        url: "https://dicom.nema.org/medical/dicom/current/output/chtml/part15/chapter_E.html",
+        note: "Protocolo estándar internacional para desidentificación y purgado de PHI en cabeceras de imágenes médicas sin alterar la física radiológica.",
+    },
     accp2013: {
         group: "guias",
         short: "ACCP 2013 (Gould et al.)",
