@@ -11,6 +11,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 
 type UploadResponse = {
@@ -488,25 +489,40 @@ export default function UploadDicomPage() {
                             </div>
                         )}
 
+                        {/* Valoración del especialista (Feedback) */}
+                        <div className="mt-6">
+                            <ClinicalReviewForm
+                                uploadId={analysisResult.dicom_id}
+                                initial={null}
+                            />
+                        </div>
+
                         <p className="mt-4 text-xs text-slate-400">
                             ⚠️ Este resultado es de apoyo diagnóstico y no reemplaza el criterio del especialista.
                         </p>
 
-                        <Button
-                            onClick={() => {
-                                setSuccessData(null);
-                                setAnalysisResult(null);
-                                setFeatures(DEFAULT_FEATURES);
-                                setCaseRef("");
-                                setPatientId("");
-                                setErrorMsg("");
-                            }}
-                            variant="secondary"
-                            size="md"
-                            className="mt-6"
-                        >
-                            Subir otro DICOM
-                        </Button>
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <Link
+                                href={`/platform/uploads/${analysisResult.dicom_id}`}
+                                className={buttonVariants({ variant: "secondary", size: "md" })}
+                            >
+                                Ver expediente completo en historial →
+                            </Link>
+                            <Button
+                                onClick={() => {
+                                    setSuccessData(null);
+                                    setAnalysisResult(null);
+                                    setFeatures(DEFAULT_FEATURES);
+                                    setCaseRef("");
+                                    setPatientId("");
+                                    setErrorMsg("");
+                                }}
+                                variant="secondary"
+                                size="md"
+                            >
+                                Subir otro estudio
+                            </Button>
+                        </div>
                     </CardContent>
                 </Card>
             )}
