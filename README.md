@@ -1,6 +1,6 @@
 # OncoScan — Plataforma de Apoyo a la Detección Temprana de Cáncer Pulmonar
 
-Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Procesa imágenes DICOM, ejecuta un modelo de IA alojado en Hugging Face y presenta alertas clínicas estructuradas con nivel de riesgo y recomendación.
+Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Procesa imágenes DICOM, ejecuta un modelo de IA alojado en un servidor dedicado (Oracle Cloud) y presenta alertas clínicas estructuradas con nivel de riesgo y recomendación.
 
 > **Aviso clínico:** OncoScan es una herramienta de apoyo investigativo en un entorno académico controlado. No es un dispositivo médico certificado y no reemplaza el juicio del especialista oncológico o neumólogo.
 
@@ -12,7 +12,7 @@ Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Proc
 | Backend | FastAPI + Python 3.11 + httpx — desplegado en Render (`https://benditos-cancer-detector.onrender.com`) |
 | Base de datos | Supabase (PostgreSQL + Storage + RLS) |
 | Autenticación | Supabase Auth + middleware Next.js |
-| Motor IA | HF Space `luisdam-oncoscan-ai` — endpoint `/predict` |
+| Motor IA | Servidor dedicado Oracle Cloud `https://oncoscan-ai.duckdns.org` — endpoints `/predict` y `/health` |
 
 ## Estructura del repositorio
 
@@ -39,13 +39,13 @@ Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Proc
 
 1. El médico sube una imagen PNG/JPG y 8 features clínicas desde `/platform/analyze`.
 2. El backend valida el JWT, sube la imagen a Supabase Storage e inserta la fila en `dicom_uploads` con `upload_status=processing`.
-3. Una `BackgroundTask` llama al Space en Hugging Face y persiste el resultado (`ai_completed` o `ai_failed`).
+3. Una `BackgroundTask` llama al microservicio de IA y persiste el resultado (`ai_completed` o `ai_failed`).
 4. El frontend hace polling cada 3 s (timeout 3 min) sobre `/api/v1/analysis/{id}` hasta obtener el resultado.
 
 Variables de entorno relevantes del backend:
 
 ```env
-HF_API_BASE_URL=https://luisdam-oncoscan-ai.hf.space   # opcional, tiene default
+HF_API_BASE_URL=https://oncoscan-ai.duckdns.org        # opcional, tiene default
 HF_PREDICT_TIMEOUT=120                                  # opcional, segundos
 ```
 

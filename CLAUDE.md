@@ -2,7 +2,7 @@
 
 ## Qué es OncoScan
 
-Plataforma académica de apoyo a la detección temprana de cáncer pulmonar. Procesa imágenes DICOM, ejecuta un modelo de IA en Hugging Face y muestra alertas clínicas estructuradas. **No es un dispositivo médico certificado.**
+Plataforma académica de apoyo a la detección temprana de cáncer pulmonar. Procesa imágenes DICOM, ejecuta un modelo de IA en un servidor dedicado (Oracle Cloud) y muestra alertas clínicas estructuradas. **No es un dispositivo médico certificado.**
 
 ## Stack
 
@@ -11,7 +11,7 @@ Plataforma académica de apoyo a la detección temprana de cáncer pulmonar. Pro
 | Web | Next.js 16 + React 19 + Tailwind 4 |
 | API | FastAPI + Python 3.11 + httpx |
 | Base de datos | Supabase (PostgreSQL + Storage) |
-| IA | HF Space `luisdam-oncoscan-ai` — endpoint `/predict` |
+| IA | Servidor dedicado Oracle Cloud `https://oncoscan-ai.duckdns.org` — endpoints `/predict`, `/health` |
 | Auth | Supabase Auth + middleware Next.js |
 
 ## Mapa del repo

@@ -607,7 +607,7 @@ async def _process_batch_async(
                     features=features,
                 )
                 inference_ms = int((time.monotonic() - t0) * 1000)
-                model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
+                model_version = os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
                 predicted_at = datetime.now(timezone.utc).isoformat()
 
                 preview_path = None

@@ -65,8 +65,8 @@ Este despliegue corresponde a una versión prototipo académica y no a un sistem
 - `SUPABASE_BUCKET_NAME` — default `dicom-files`.
 - `HF_MODEL_VERSION` — etiqueta que se guarda en cada predicción.
 - `LOG_LEVEL` — default `INFO`.
-- `HF_API_BASE_URL` — URL del Space de Hugging Face que expone `/predict` (default: `https://luisdam-oncoscan-ai.hf.space`).
-- `HF_PREDICT_TIMEOUT` — timeout en segundos para la inferencia (default: `120`). Subir si el Space hace cold-start frecuente.
+- `HF_API_BASE_URL` — URL del microservicio de IA que expone `/predict` (default: `https://oncoscan-ai.duckdns.org`).
+- `HF_PREDICT_TIMEOUT` — timeout en segundos para la inferencia (default: `120`).
 
 ## 5. Configuración relevante
 
@@ -87,11 +87,11 @@ Configuración de URLs de autenticación:
 - Migración IA: ejecutar `docs/ai-service-migration.sql` en el SQL editor de Supabase para añadir las columnas del flujo IA (`file_type`, `clinical_features`, `ai_score`, `ai_risk_level`, `ai_recommendation`, `ai_model_version`, `ai_processed_at`, `ai_error`).
 
 ### 5.4 Servicio de inferencia IA (OncaScan AI)
-- Plataforma: Hugging Face Spaces
-- URL base: `https://luisdam-oncoscan-ai.hf.space`
+- Plataforma: servidor dedicado Oracle Cloud Always Free (ARM64, siempre encendido)
+- URL base: `https://oncoscan-ai.duckdns.org`
 - Endpoint: `POST /predict` (multipart/form-data — imagen PNG/JPG + 8 features clínicas)
 - Health: `GET /health`
-- Comportamiento: cold-start posible de 30–60s; el backend procesa la inferencia en background y el frontend hace polling al endpoint `GET /api/v1/analysis/{id}`.
+- Comportamiento: sin cold-start; el backend procesa la inferencia en background y el frontend hace polling al endpoint `GET /api/v1/analysis/{id}`.
 
 ### 5.5 Next.js — límite de body de Server Actions
 La page `/platform/analyze` envía imágenes hasta 10 MB a través de una Server Action. Next.js limita el body de Server Actions a **1 MB por defecto**; sin override, el framework rechaza la request antes de ejecutar la action y el cliente recibe "Body exceeded 1 MB limit". El override está en `apps/web/next.config.ts`:
@@ -207,7 +207,7 @@ El flujo desplegado y validado es el siguiente:
 
 ## 9. Limitaciones actuales del MVP
 
-- La inferencia IA depende del Space de Hugging Face (puede tener cold-starts y caídas; no hay SLA).
+- La inferencia IA depende de un único servidor Oracle Cloud Always Free (sin redundancia ni SLA).
 - El backend en Render Free se duerme tras 15 min de inactividad; el primer request posterior sufre cold start.
 - No incorpora visor clínico DICOM avanzado.
 - No reemplaza el criterio del especialista.

@@ -255,7 +255,7 @@ async def analyze_dicom(
             pil_img.save(png_buffer, format="PNG")
             png_bytes  = png_buffer.getvalue()
 
-        # 4. Llamar al modelo en Hugging Face
+        # 4. Llamar al microservicio de IA (servidor dedicado Oracle Cloud)
         hf_url  = f"{os.getenv('HF_API_BASE_URL', 'https://oncoscan-ai.duckdns.org')}/predict"
         timeout = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
 
@@ -291,7 +291,7 @@ async def analyze_dicom(
             raise HTTPException(status_code=502, detail="No se obtuvo respuesta del modelo de IA")
 
         inference_time_ms = int((time.monotonic() - t0) * 1000)
-        model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
+        model_version = os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
         predicted_at  = datetime.now(timezone.utc).isoformat()
 
         # 4b. Para DICOM, guardar un preview PNG renderable como imagen "antes".
@@ -360,8 +360,8 @@ async def analyze_dicom(
 
     except httpx.ConnectError as e:
         error_msg = (
-            "No se pudo establecer conexión con el microservicio de IA en Hugging Face "
-            "(el servidor puede estar iniciando tras inactividad o hubo una pausa de red). "
+            "No se pudo establecer conexión con el microservicio de IA "
+            "(posible interrupción de red o reinicio del servidor). "
             "Por favor, intenta de nuevo en unos segundos."
         )
         supabase.table("dicom_uploads").update({
@@ -373,7 +373,7 @@ async def analyze_dicom(
     except httpx.TimeoutException as e:
         error_msg = (
             "El microservicio de IA tardó demasiado en responder "
-            "(posible arranque en frío de Hugging Face). Por favor, intenta de nuevo."
+            "(posible sobrecarga temporal del servidor). Por favor, intenta de nuevo."
         )
         supabase.table("dicom_uploads").update({
             "ai_error": f"TimeoutException: {str(e)}",

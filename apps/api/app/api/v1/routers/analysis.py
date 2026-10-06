@@ -232,7 +232,7 @@ def _run_inference(
             )
         )
         inference_time_ms = int((time.monotonic() - t0) * 1000)
-        model_version = os.getenv("HF_MODEL_VERSION", "luisdam-oncoscan-ai@unknown")
+        model_version = os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
         predicted_at = datetime.now(timezone.utc).isoformat()
         _persist_success(upload_id, payload, model_version, inference_time_ms, predicted_at)
         log_event(

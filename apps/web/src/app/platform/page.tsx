@@ -182,7 +182,7 @@ export default async function PlatformPage() {
                                 <p className="text-xs font-semibold text-white/70 uppercase tracking-wider">Modelo Activo</p>
                                 <Brain className="w-4 h-4 text-white/80" aria-hidden="true" />
                             </div>
-                            <p className="text-base font-bold text-white mt-1">multimodal-v1.0</p>
+                            <p className="text-base font-bold text-white mt-1">multimodal-v1.2</p>
                             <Link href="/platform/modelo" className="text-xs text-white/80 font-medium hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-primary rounded">Ver detalles →</Link>
                         </div>
                     </div>

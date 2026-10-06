@@ -80,10 +80,10 @@ export default function ModeloPage() {
                 </div>
                 <div>
                     <p className="text-xs text-white/80 font-bold uppercase tracking-widest mb-1">Versión activa</p>
-                    <h2 className="text-2xl font-extrabold text-white">multimodal-v1.1</h2>
+                    <h2 className="text-2xl font-extrabold text-white">multimodal-v1.2</h2>
                     <p className="text-white/80 text-sm mt-2 max-w-2xl">
-                        Modelo de clasificación de nódulos pulmonares desplegado en{" "}
-                        <SourceLink href={REFERENCES.inferenceService.url} tone="onDark">Hugging Face Spaces</SourceLink>.
+                        Modelo de clasificación de nódulos pulmonares desplegado en un servidor dedicado de Oracle Cloud{" "}
+                        (<SourceLink href={REFERENCES.inferenceService.url} tone="onDark">código del servicio</SourceLink>).
                         Combina análisis de imagen CT con features clínicas radiológicas estructuradas
                         para estimar la probabilidad de malignidad de un nódulo pulmonar.
                         Soporta imágenes PNG, JPG y archivos DICOM (.dcm) nativos.
@@ -375,7 +375,7 @@ export default function ModeloPage() {
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 space-y-2">
                             <p className="font-semibold text-slate-800">Inferencia con Retención Cero (Zero Data Retention):</p>
                             <p>
-                                El microservicio de inferencia en Hugging Face Spaces procesa la pasada hacia adelante de ResNet-18 y genera el mapa Grad-CAM exclusivamente en la memoria RAM del contenedor. No retiene copias del estudio en disco ni bases de datos de terceros, garantizando que el cómputo sea efímero y seguro.
+                                El microservicio de inferencia en el servidor dedicado de Oracle Cloud procesa la pasada hacia adelante de ResNet-18 y genera el mapa Grad-CAM exclusivamente en memoria RAM. No retiene copias del estudio en disco ni bases de datos de terceros, garantizando que el cómputo sea efímero y seguro.
                             </p>
                         </div>
                     </CardContent>

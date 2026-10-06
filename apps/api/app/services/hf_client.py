@@ -1,4 +1,4 @@
-"""Cliente para el servicio de inferencia de OncaScan en Hugging Face Spaces."""
+"""Cliente para el servicio de inferencia de OncoScan (servidor dedicado en Oracle Cloud)."""
 
 import asyncio
 from typing import Dict
@@ -61,11 +61,11 @@ async def predict(
                 continue
             if isinstance(exc, httpx.TimeoutException):
                 raise HFInferenceError(
-                    f"Timeout consultando el servicio de IA ({HF_PREDICT_TIMEOUT}s). El servidor puede estar en cold-start."
+                    f"Timeout consultando el servicio de IA ({HF_PREDICT_TIMEOUT}s). El servidor puede estar sobrecargado."
                 ) from exc
             raise HFInferenceError(
-                "No se pudo conectar con el microservicio de IA en Hugging Face "
-                "(error de conexión temporal o servidor iniciando tras hibernación)."
+                "No se pudo conectar con el microservicio de IA "
+                "(error de conexión temporal o reinicio del servidor)."
             ) from exc
         except httpx.HTTPError as e:
             raise HFInferenceError(f"Error de red consultando HF: {e}") from e
