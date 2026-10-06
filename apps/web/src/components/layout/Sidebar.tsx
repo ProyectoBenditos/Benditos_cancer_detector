@@ -82,7 +82,7 @@ export function Sidebar({ userRole }: SidebarProps) {
           className={`${linkBase} ${isActive("/platform/modelo") ? linkActive : linkInactive}`}
         >
           <Cpu className="w-5 h-5" aria-hidden="true" />
-          Modelo IA
+          Detalles del sistema
         </Link>
 
         <Link

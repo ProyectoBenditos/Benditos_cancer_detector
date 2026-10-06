@@ -62,8 +62,8 @@ export default function ModeloPage() {
     return (
         <PageContainer>
             <SectionHeader
-                title="Modelo IA — Información Técnica"
-                description="Cómo funciona el sistema de detección de nódulos pulmonares, con qué datos fue entrenado y cuáles son sus limitaciones."
+                title="Detalles del Sistema"
+                description="Cómo funciona el motor de IA, protocolos de desidentificación de datos médicos y marco normativo."
             />
 
             <AlertBanner
