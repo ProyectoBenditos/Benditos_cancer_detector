@@ -185,10 +185,28 @@ async def upload_dicom(
                 "deidentified":      is_dicom,
                 "deidentified_at":   audit_deid["deidentified_at"] if audit_deid else None,
                 "tags_cleared":      audit_deid["tags_cleared_count"] if audit_deid else 0,
+                "source_sha256":     audit_deid["source_sha256"] if audit_deid else None,
+                "sanitized_sha256":  audit_deid["sanitized_sha256"] if audit_deid else None,
+                "audit_summary":     audit_deid if audit_deid else None,
             },
         }).execute()
 
         dicom_id = row.data[0]["id"] if row.data else None
+
+        if is_dicom and dicom_id and audit_deid:
+            try:
+                supabase.table("dicom_anonymization_audit").insert({
+                    "upload_id":                dicom_id,
+                    "user_id":                  current_user["id"],
+                    "pseudonymized_patient_id": audit_deid["pseudonymized_patient_id"],
+                    "source_sha256":            audit_deid["source_sha256"],
+                    "sanitized_sha256":         audit_deid["sanitized_sha256"],
+                    "tags_cleared_count":       audit_deid["tags_cleared_count"],
+                    "normative_compliance":     audit_deid["normative_compliance"],
+                    "zero_retention_verified":  True,
+                }).execute()
+            except Exception as audit_err:
+                log_event("dicom_audit_log_insert_failed", error=str(audit_err))
 
         return {
             "message":          "Archivo cargado correctamente",

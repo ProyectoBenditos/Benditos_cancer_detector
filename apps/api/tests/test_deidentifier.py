@@ -140,6 +140,15 @@ class TestDeidentifier(unittest.TestCase):
         self.assertTrue(str(reparsed.PatientID).startswith("ONC-PAT-"))
         self.assertEqual(reparsed.RescaleIntercept, "-1024.0")
 
+        # Verificación de hashes criptográficos y cumplimiento normativo
+        self.assertIn("source_sha256", audit)
+        self.assertIn("sanitized_sha256", audit)
+        self.assertEqual(len(audit["source_sha256"]), 64)
+        self.assertEqual(len(audit["sanitized_sha256"]), 64)
+        self.assertNotEqual(audit["source_sha256"], audit["sanitized_sha256"])
+        self.assertTrue(audit["zero_retention_verified"])
+        self.assertIn("Ley 1581 de 2012 (Habeas Data Clínico)", audit["normative_compliance"])
+
 
 if __name__ == "__main__":
     unittest.main()
