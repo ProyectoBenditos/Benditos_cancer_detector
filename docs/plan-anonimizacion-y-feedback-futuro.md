@@ -195,3 +195,4 @@ flowchart TD
 | **2** | Interceptar el flujo de upload para guardar solo bytes limpios | `apps/api/app/api/v1/routers/dicom.py`<br/>`apps/api/app/api/v1/routers/batch.py` |
 | **3** | Almacenar identificadores anonimizados en Supabase | Campo `patient_id_dicom` con hash `ONC-PAT-xxxx` |
 | **4** | Exponer métrica de concordancia clínica en el frontend | `apps/web/src/app/platform/modelo/page.tsx` |
+| **5** | Registrar huellas SHA-256 (original y limpio) por estudio y mostrar el Certificado de Desidentificación Clínica | Tabla `dicom_anonymization_audit` ([`20261008120000_dicom_anonymization_audit.sql`](../supabase/migrations/20261008120000_dicom_anonymization_audit.sql))<br/>`apps/web/src/components/dicom/AnonymizationCertificate.tsx` |

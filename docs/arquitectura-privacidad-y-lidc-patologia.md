@@ -18,7 +18,7 @@ sequenceDiagram
     participant Front as 🖥️ Frontend (Next.js en Vercel)
     participant Back as ⚙️ Backend (FastAPI en Render)
     participant Supa as 🗄️ Supabase (Storage + PostgreSQL)
-    participant HF as 🧠 Microservicio IA (Hugging Face Spaces)
+    participant HF as 🧠 Servidor IA (Oracle Cloud)
 
     Medico->>Front: Sube DICOM/PNG + ingresa 8 parámetros
     Front->>Back: POST /analysis/predict (HTTPS / TLS 1.3)
@@ -37,9 +37,9 @@ sequenceDiagram
 ```
 
 ### ¿Dónde residen los datos exactamente?
-1. **Supabase Storage:** Almacena el archivo físico original (`.dcm` o `.png`).
+1. **Supabase Storage:** Almacena el archivo `.dcm` ya desidentificado (nunca el original con PHI) o el `.png`/`.jpg`.
 2. **Supabase Database (PostgreSQL):** Almacena la metadata (`id`, `user_id` del médico, fecha, las 8 características clínicas del nódulo y el resultado numérico de la IA).
-3. **Microservicio Hugging Face Spaces (`luisdam-oncoscan-ai`):** **No almacena datos en disco ni en base de datos.** Recibe los píxeles procesados y los 8 números en la memoria RAM del contenedor, ejecuta la pasada hacia adelante de la red neuronal y el Grad-CAM, devuelve el JSON y libera la memoria.
+3. **Servidor de IA dedicado en Oracle Cloud (`oncoscan-ai.duckdns.org`):** **No almacena datos en disco ni en base de datos.** Recibe los píxeles procesados y los 8 números en la memoria RAM del contenedor, ejecuta la pasada hacia adelante de la red neuronal y el Grad-CAM, devuelve el JSON y libera la memoria.
 
 ---
 
@@ -61,6 +61,9 @@ Antes de almacenar el estudio, la cabecera es despojada de todo campo de identif
 * `(0028,1053) RescaleSlope`
 * `(0028,1050) WindowCenter`
 * `(0028,1051) WindowWidth`
+
+**Trazabilidad de la desidentificación:**  
+Por cada DICOM, el backend calcula dos huellas SHA-256: la del archivo original (antes de limpiar) y la del archivo limpio que se guarda en Storage. Ambas, junto con el seudónimo `ONC-PAT-xxxx` y el número de campos vaciados, se registran en la tabla `dicom_anonymization_audit` (una fila por estudio, sin políticas de edición ni borrado para los usuarios). Con esa fila, la vista del estudio (`/platform/uploads/[id]`) muestra el **Certificado de Desidentificación Clínica**, y cualquiera puede comprobar que el archivo guardado no fue alterado recalculando su SHA-256. Las huellas no permiten reconstruir el archivo ni los datos del paciente.
 
 ### Capa 2: Cifrado en Tránsito y en Reposo
 * **En Tránsito:** Todas las conexiones externas e internas se realizan bajo protocolo **HTTPS con cifrado TLS 1.3**, impidiendo ataques de intermediario (*Man-in-the-Middle*) dentro de la red hospitalaria.
