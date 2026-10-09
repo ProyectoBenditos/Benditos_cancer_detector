@@ -25,7 +25,7 @@ export function AnonymizationCertificate({ audit, fallbackPatientId }: Props) {
     const pseudonym = audit?.pseudonymized_patient_id || fallbackPatientId || "ONC-PAT-PROTEGIDO";
     const sanitizedHash = audit?.sanitized_sha256;
     const sourceHash = audit?.source_sha256;
-    const tagsCount = audit?.tags_cleared_count;
+    const tagsCount = audit?.tags_cleared_count ?? 0;
 
     const copyHash = (hash: string) => {
         navigator.clipboard.writeText(hash);
@@ -34,7 +34,7 @@ export function AnonymizationCertificate({ audit, fallbackPatientId }: Props) {
     };
 
     const standards = audit?.normative_compliance ?? [
-        "Ley 1581 de 2012 (Habeas Data)",
+        "Ley 1581 de 2012 (Habeas Data Clínico)",
         "Decreto 1377 de 2013",
         "DICOM PS 3.15 Annex E",
         "Resolución 1995 de 1999 MinSalud",

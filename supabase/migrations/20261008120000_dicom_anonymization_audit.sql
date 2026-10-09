@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS public.dicom_anonymization_audit (
   sanitized_sha256          text        NOT NULL,
   tags_cleared_count        int         NOT NULL DEFAULT 0,
   normative_compliance      text[]      NOT NULL DEFAULT ARRAY[
-                                          'Ley 1581 de 2012 (Habeas Data)',
+                                          'Ley 1581 de 2012 (Habeas Data Clínico)',
                                           'Decreto 1377 de 2013',
                                           'DICOM PS 3.15 Annex E Basic Profile',
                                           'Resolución 1995 de 1999 MinSalud',
