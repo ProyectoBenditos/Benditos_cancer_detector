@@ -230,3 +230,116 @@ Antes de dar por concluida la actualización la próxima semana, se deberán ver
 * [ ] ¿El endpoint en Hugging Face responde en menos de 2 segundos en CPU?
 * [ ] ¿Las métricas mostradas en la plataforma web coinciden exactamente con la evaluación empírica de los 687 casos?
 * [ ] ¿El guion para la médica patóloga está memorizado y claro para el equipo?
+
+---
+
+## 7. Nuevas Referencias: Modelos 3D y Foundation Models (NV-Reason-CT, MONAI, nnFoundation)
+
+> Análisis de los enlaces recopilados en [nv_reason_ct.md](nv_reason_ct.md) frente al estado actual de OncoScan (octubre 2026).
+
+### 7.1 Conclusión general
+
+La novedad de fondo es que **ya existen modelos abiertos que leen el volumen de tomografía 3D completo** y detectan, miden y describen hallazgos por sí solos. OncoScan `multimodal-v1.2` hace algo mucho más acotado: recibe un recorte PNG de 64 px más **8 features LIDC que el radiólogo ya calificó a mano** (incluida `malignancy`) y responde "nódulo / sin nódulo". Hoy el sistema **confirma** un hallazgo que el médico ya encontró; estos recursos permiten que lo **encuentre**.
+
+### 7.2 Riesgo a verificar en el modelo actual
+
+Los negativos del entrenamiento son cortes **sin nódulo** (sección 3.2 de este documento). Las 8 features LIDC solo existen para nódulos anotados. Si a los negativos se les rellenaron las features con valores por defecto, la rama clínica puede estar separando las clases **por el relleno y no por la imagen**. Eso explicaría el salto de 80.6% (solo imagen) a 89.8% (multimodal).
+
+**Acción:** revisar en el notebook de Kaggle cómo se asignan las features a los negativos y confirmar que la división train/test sea **por paciente**.
+
+### 7.3 Qué aporta cada referencia
+
+| Recurso | Qué es | Utilidad para OncoScan | ¿Usable hoy? (presupuesto cero, Oracle ARM sin GPU) |
+|---|---|---|---|
+| **MONAI Lung Nodule CT Detection** (NGC) | RetinaNet 3D (Apache 2.0). Recibe el volumen CT completo y devuelve cajas con score | **La pieza más valiosa.** Detección automática y diámetro del nódulo, base para estimar Lung-RADS por tamaño | **Sí, con matices.** En CPU tarda minutos (en A100 ~36 s de punta a punta), así que debe correr como trabajo asíncrono con polling, igual que el flujo actual |
+| **nnFoundation** (arXiv 2609.26924, DKFZ) | Modelos 3D preentrenados con 2.1 M de estudios. Pesos en HF: `MIC-DKFZ/nnFoundationCNN` (102 M parámetros) y `nnFoundationViT`. Integrados con nnU-Net y nnDetection | Afinar con pocos datos: con el 10% de los datos, el preentrenamiento sumó **+4.2 puntos de Dice** en sitios externos | Afinar sí, en Kaggle (GPU T4). Servirlo en CPU es más pesado que el detector MONAI |
+| **NV-Reason-CT** (NVIDIA; arXiv 2609.27511) | Modelo 3D de visión y lenguaje (Qwen3.5-4B + ViT 3D, 4.7 B parámetros, licencia OpenMDW-1.1). Genera informe estructurado, responde preguntas y muestra su razonamiento. Incluye *lung nodule* entre 18 hallazgos (CT-RATE: macro-F1 0.614, macro-AUROC 0.871) | Borrador de informe radiológico y preguntas sobre el estudio. En un estudio preliminar redujo ~50% el tiempo de lectura | **No en producción** (requiere GPU en BF16). Sí como demo o investigación en Kaggle o Colab |
+| **Nature Medicine s41591-026-04626-w** (MedGemma, Google) | Modelo abierto de visión y lenguaje + el encoder MedSigLIP | En TC 3D rinde poco (macro-F1 0.303 en CT-RATE, frente a 0.614 de NV-Reason-CT). Puede servir para el proyecto de mama | Baja prioridad para pulmón |
+| **RSNA News (oct 2026)** | Revisión de *RadioGraphics* (doi 10.1148/rg.260012): la tomografía de tamizaje muestra mucho más que nódulos | **Idea de producto:** módulo de hallazgos incidentales. Enfisema en ~31% de NLST (más del 80% sin diagnosticar), calcio coronario, osteoporosis (L1 < 100 HU → pedir DXA) | **Sí, y es barato** (ver hoja de ruta) |
+| **MONAI Physio** | Herramientas de movimiento pulmonar y cardíaco 4D y gemelos digitales | Solo sus segmentadores (TotalSegmentator, NV-Segment-CT), para obtener la máscara de pulmón y de vértebras | Solo los segmentadores |
+| **NVIDIA Clara** | Página general (MONAI, NIM, FLARE) | **NVIDIA FLARE** es la herramienta práctica para aprendizaje federado | Trabajo futuro |
+| **Google Research (aprendizaje federado + TEE)** | El mismo artículo ya citado en [arquitectura-privacidad-y-lidc-patologia.md](arquitectura-privacidad-y-lidc-patologia.md) | Nada nuevo frente a lo ya documentado | Trabajo futuro |
+| **vllm-sr Decision 3.0** (HF) | Modelos de enrutamiento genéricos, sin relación médica | **Descartado** | — |
+| **Segmentación con conciencia de bordes + incertidumbre** | Técnica de segmentación | La incertidumbre aplica ya (vía TTA). La conciencia de bordes, solo cuando haya segmentación | Parcial |
+
+### 7.4 Hoja de ruta propuesta
+
+**Corto plazo (sin cambiar la infraestructura):**
+1. Verificar el riesgo de fuga de datos y la división por paciente. Si se confirma, entrenar una v1.3 que **prediga** las 8 features en lugar de recibirlas: el modelo produce los atributos (espiculación, margen…) y eso además sirve como explicabilidad.
+2. **Incertidumbre visible:** usar la varianza entre las variantes del TTA (ya planeado en v1.2) como indicador de confianza y marcar "indeterminado, revisión prioritaria" cuando sea alta.
+
+**Mediano plazo (crecimiento de la plataforma):**
+
+3. Subir la **serie DICOM completa** en lugar del recorte PNG y procesarla con el detector MONAI de forma asíncrona. Como resultado se ven los nódulos con su ubicación y diámetro, más un "Lung-RADS estimado solo por tamaño" con advertencia. El visor Cornerstone3D ([pioneros-gradcam-tomografia.md](pioneros-gradcam-tomografia.md), fase 4) pasa a ser necesario.
+4. **Módulo de hallazgos incidentales:** con la máscara de pulmón de TotalSegmentator, el **índice de enfisema** es el porcentaje de vóxeles por debajo de −950 HU. La **densidad de L1** es el promedio de HU dentro de la máscara de la vértebra. No requiere entrenar nada y corre en CPU.
+
+**Futuro / demostración:**
+
+5. NV-Reason-CT como demo de informe generado (Kaggle o Colab), no en producción.
+6. NVIDIA FLARE para la fase de aprendizaje federado.
+
+### 7.5 Restricciones
+
+- **El servidor de IA no tiene GPU** (Oracle Always Free ARM64; restricción R1 de presupuesto cero). Esto descarta NV-Reason-CT y MedGemma en producción. El detector MONAI en CPU es viable, pero hay que medir cuánto tarda en ARM.
+- **Almacenamiento:** una serie de TC pesa entre 100 y 300 MB y el plan gratuito de Supabase Storage es limitado. Hay que procesar sin guardar (zero retention) y conservar solo los resultados.
+- **El detector MONAI se entrenó con LUNA16, que es un subconjunto de LIDC-IDRI**: evaluarlo sobre LIDC infla las métricas.
+- Todos estos modelos son de investigación y no son dispositivos médicos, lo cual es coherente con el aviso de OncoScan.
+
+---
+
+## 8. Datos Necesarios para las Nuevas Mejoras
+
+**En resumen:** la mayor parte se cubre con **LIDC-IDRI**, siempre que se tengan las **series DICOM completas** y no solo los recortes PNG. Hace falta **al menos un dataset nuevo**, por dos motivos:
+
+1. **Validación externa del detector:** el detector MONAI ya conoce los casos de LIDC (LUNA16), así que evaluarlo ahí no es válido.
+2. **Verdad de cáncer:** LIDC solo tiene 157 pacientes con confirmación por patología; el resto es consenso de radiólogos. Para hablar de "riesgo de cáncer" y no solo de "hay nódulo" se necesitan datos con malignidad confirmada.
+
+### 8.1 Datos por mejora
+
+| Mejora | ¿Basta LIDC-IDRI? | Qué hace falta |
+|---|---|---|
+| 1. Revisar la fuga y entrenar la v1.3 que predice las 8 features | ✅ Sí | Los mismos datos, rearmados: división por paciente (con `pylidc`) y negativos sin features rellenadas |
+| 2. Incertidumbre con TTA | ✅ Sí | Ningún dato nuevo: se calcula en inferencia y se valida con el mismo test |
+| 3. Detección 3D con MONAI | ⚠️ Solo para la demo | El modelo ya viene entrenado, así que no se necesitan datos para entrenar. Para **evaluarlo** hace falta un conjunto externo: **LUNA25** (recomendado) o LNDb |
+| 4. Lung-RADS estimado por tamaño | ✅ Sí | LIDC trae los diámetros por nódulo (`pylidc`), para comprobar que el diámetro que mide el detector coincide con el de los radiólogos |
+| 5. Hallazgos incidentales (enfisema, densidad de L1) | ✅ Para calcularlos | TotalSegmentator ya viene entrenado y el índice de enfisema es un umbral de HU. Para **validarlos**: **CT-RATE** (etiquetas *emphysema* y *coronary artery wall calcification*) |
+| 6. Demo de NV-Reason-CT | ✅ | Unos pocos volúmenes de LIDC o CT-RATE |
+| 7. Riesgo de malignidad real (cáncer vs benigno) | ❌ | **LUNA25**: 555 nódulos malignos y 5.608 benignos, de NLST |
+
+### 8.2 Datasets nuevos, por prioridad
+
+1. **LUNA25** ([imágenes](https://zenodo.org/records/14223624), [anotaciones](https://zenodo.org/records/14673658), [challenge](https://luna25.grand-challenge.org/)): 4.069 tomografías de baja dosis de 2.120 pacientes de NLST, con etiqueta maligno o benigno por nódulo.
+   - Es tamizaje real con baja dosis.
+   - No se solapa con LUNA16, así que sirve de prueba externa para el detector MONAI.
+   - Permite pasar de "detecta nódulos" a "estima malignidad".
+
+   Trae una carpeta con recortes ya extraídos alrededor de cada nódulo (6.163 archivos `.npy`), liviana para Kaggle. Licencia por verificar en Zenodo.
+2. **CT-RATE** ([Hugging Face](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE)): ~25.700 tomografías de tórax con informe y 18 etiquetas. Sirve para validar el módulo de hallazgos incidentales y para la demo de NV-Reason-CT. Acceso restringido: hay que pedirlo y aceptar los términos. Licencia CC BY-NC-SA.
+3. **LNDb** ([Grand Challenge](https://lndb.grand-challenge.org/Data/)), opcional: 294 tomografías de Portugal; aporta un tomógrafo y una población distintos. Licencia probablemente CC BY-NC-ND.
+
+**Descartado por ahora:** Duke DLCS24 tiene acceso restringido y sus anotaciones se hicieron con un detector entrenado en LUNA16.
+
+### 8.3 Pendiente de confirmar con el equipo de IA
+
+¿Qué versión de LIDC usa hoy el notebook de Kaggle?
+- **Recortes + `features_clinicas_reales.csv`:** sirve para las mejoras 1 y 2. Para las mejoras 3 a 5 se necesitan los volúmenes completos. La opción más práctica es LUNA16 (888 tomografías en `.mhd`, ~60 GB, con copias en Kaggle) o un subconjunto de LIDC descargado de TCIA. No hace falta el archivo completo, de ~125 GB.
+- **Series DICOM completas:** solo falta LUNA25.
+
+### 8.4 Consideraciones
+
+- La restricción R2 prohíbe procesar pacientes reales ([ccii-n2016-02-documentacion-proyecto.md](ccii-n2016-02-documentacion-proyecto.md)). Todos estos datasets son públicos y vienen desidentificados. Las pruebas de subida en la plataforma también deben usar series de LIDC o LUNA25.
+- Licencias: LIDC es CC BY 3.0, CT-RATE es no comercial y LUNA25 está por verificar. Hay que documentarlas por si en el futuro hay uso comercial.
+
+---
+
+## 9. Fuentes Consultadas (Secciones 7 y 8)
+
+- [MONAI Lung Nodule CT Detection (NGC)](https://catalog.ngc.nvidia.com/orgs/nvidia/monaitoolkit/models/monai_lung_nodule_ct_detection)
+- [NV-Reason-CT en Hugging Face](https://huggingface.co/nvidia/NV-Reason-CT) · [Paper NV-Reason-CT (arXiv 2609.27511)](https://arxiv.org/html/2609.27511v2) · [Código en GitHub](https://github.com/NVIDIA-Medtech/NV-Reason-CT)
+- [nnFoundation (arXiv 2609.26924)](https://arxiv.org/html/2609.26924v1) · [nnFoundationCNN](https://huggingface.co/MIC-DKFZ/nnFoundationCNN) · [nnssl](https://github.com/MIC-DKFZ/nnssl)
+- [MedGemma – Nature Medicine](https://www.nature.com/articles/s41591-026-04626-w) · [MedGemma 1.5 – Google Research](https://research.google/blog/next-generation-medical-image-interpretation-with-medgemma-15-and-medical-speech-to-text-with-medasr/)
+- [RSNA News – Lung Cancer Screening (oct 2026)](https://www.rsna.org/news/2026/october/lung-cancer-ct-screening)
+- [MONAI Physio](https://project-monai.github.io/monai-physio/installation.html) · [NVIDIA Clara Medical Imaging](https://www.nvidia.com/es-la/clara/medical-imaging/)
+- [Google Research – Provably private federated learning](https://research.google/blog/toward-provably-private-learning-from-federated-data/)
+- [LUNA25 – imágenes](https://zenodo.org/records/14223624) · [LUNA25 – anotaciones](https://zenodo.org/records/14673658)
+- [CT-RATE](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE) · [LNDb](https://lndb.grand-challenge.org/Data/) · [Duke DLCS](https://zenodo.org/records/13799069)
