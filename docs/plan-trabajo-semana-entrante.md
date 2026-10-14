@@ -66,6 +66,7 @@ flowchart TD
 
 ### Referencia 2: FreeCodeCamp — Preprocesamiento de Imágenes Médicas
 * **Guía:** *"How to Preprocess Medical Images for Machine Learning"* (FreeCodeCamp).
+* > **Nota de precisión:** el artículo trabaja con **radiografía de tórax 2D** usando OpenCV. **No** cubre DICOM, unidades Hounsfield, ventaneo ni remuestreo. El pilar 1 y las partes específicas de TC de los pilares 2, 4 y 6 (marcas de tomógrafo, etiquetas DICOM, *beam hardening*, baja dosis) vienen de la práctica estándar en TC, no del artículo. Lo que el artículo sí aporta se detalla en la sección 10.1.
 * **Concepto Clave:** Detalla los 6 pilares indispensables para preparar imágenes radiológicas antes de alimentarlas a una red neuronal convolucional (CNN), evitando distorsiones que destruyan las características anatómicas.
 * **Los 6 Pilares Adaptados al Pipeline de OncoScan:**
 
@@ -343,3 +344,166 @@ Los negativos del entrenamiento son cortes **sin nódulo** (sección 3.2 de este
 - [Google Research – Provably private federated learning](https://research.google/blog/toward-provably-private-learning-from-federated-data/)
 - [LUNA25 – imágenes](https://zenodo.org/records/14223624) · [LUNA25 – anotaciones](https://zenodo.org/records/14673658)
 - [CT-RATE](https://huggingface.co/datasets/ibrahimhamamci/CT-RATE) · [LNDb](https://lndb.grand-challenge.org/Data/) · [Duke DLCS](https://zenodo.org/records/13799069)
+
+---
+
+## 10. Mejora del Visor: Marcadores con Notas, Herramientas y Pantalla Completa
+
+> **Prioridad:** es lo **primero** que se implementa en la plataforma. No depende del reentrenamiento del modelo ni de datos nuevos.
+> **Referentes:** Lunit INSIGHT MMG (producto comercial) y Lunit INSIGHT Challenge (visor de lectura con marcadores), más el artículo de freeCodeCamp sobre preprocesamiento.
+
+### 10.1 Qué se aprende de cada referente
+
+**Lunit INSIGHT Challenge.** Es el visor donde un lector clasifica un caso y marca la lesión; luego compara contra el resultado. Lo que se observa en su interfaz:
+
+| Elemento | Cómo lo hace Lunit | ¿Lo tiene OncoScan hoy? |
+|---|---|---|
+| Barra de herramientas por modo | Pan · Adjust (brillo/contraste arrastrando) · Reset · Marker. Una sola herramienta activa a la vez | ❌ Hay botones sueltos (zoom, parpadeo, descarga). No existe el concepto de "herramienta activa" |
+| Marcadores sobre la imagen | Pin numerado sobre la lesión. Panel lateral con la lista de marcadores por vista y botón para borrar cada uno | ❌ |
+| Clasificación del caso | Botones Cancer / Non-Cancer en el panel lateral, junto a la imagen | ⚠️ La valoración existe (`ClinicalReviewForm`, tabla `upload_reviews`), pero está **debajo** del visor y no es visible en pantalla completa |
+| Lectura antes del resultado | El lector clasifica y marca **antes** de pulsar "Check The Result" | ❌ La IA se muestra de entrada, lo que favorece el sesgo de automatización |
+| Información en cada panel | Nombre de la vista arriba (RCC, LMLO…). Zoom y WW/WL abajo | ⚠️ Solo un % de zoom en la barra |
+| Tema oscuro | Todo el área de lectura es oscura, como en una estación de radiología | ⚠️ El lienzo es negro, pero la tarjeta y la pantalla completa son blancas |
+| Ayuda con atajos | Modal "Instruction" con los atajos (Pan = arrastrar, Adjust = arrastre horizontal, Marker = clic, Zoom = rueda) | ⚠️ Solo una pista sobre la barra espaciadora |
+| Gamificación | Puntaje y cronómetro | No aplica en clínica. Sí sirve para un modo de práctica (10.6) |
+
+**Lunit INSIGHT MMG (producto).** La página pública aporta lecciones de producto, no de interfaz:
+- El score expresa **probabilidad de malignidad, no severidad**, y su **escala no es lineal**. OncoScan debe explicar lo mismo junto a su score.
+- **No marca hallazgos benignos** (por ejemplo, calcificaciones de piel) salvo que tengan rasgos sospechosos. Marcar menos y mejor reduce la fatiga del lector.
+- Funciona en lectura simple y en **doble lectura**, e integrado al visor o PACS del hospital.
+- Tiene aprobación FDA, CE y Health Canada. OncoScan mantiene su aviso de "no es dispositivo médico".
+
+**freeCodeCamp: preprocesamiento.** El artículo es sobre radiografía 2D (ver la nota en la Referencia 2). Lo que sí aplica:
+- Validación del dataset: archivos corruptos, imágenes casi negras y, sobre todo, **duplicados entre train y test**, que inflan las métricas (relacionado con la sección 7.2).
+- Las estadísticas de normalización se calculan **solo con train**. Usar validación o test es fuga de información.
+- Redimensionar con *padding* (letterbox) en lugar de estirar, CLAHE con `clipLimit=2.0, tileGridSize=(8,8)` y eliminación de ruido suave (mediana k=3). Ya están en el plan v1.2.
+- Advertencia del artículo: la imagen limpia debe **seguir pareciendo la original a los ojos de un radiólogo**. Aplica también al filtro "Enfocar nódulo" del visor.
+
+### 10.2 Diagnóstico del visor actual
+
+Revisión de [BeforeAfterViewer.tsx](../apps/web/src/components/ui/BeforeAfterViewer.tsx):
+
+| # | Problema | Efecto |
+|---|---|---|
+| 1 | En pantalla completa el lienzo sigue siendo `aspect-square w-full` | En una pantalla 16:9 la imagen es tan alta como el ancho de la pantalla y **se sale por abajo**. Hay que hacer scroll, y en pantalla completa no hay scroll |
+| 2 | La pantalla completa tiene fondo blanco (`data-[fullscreen=true]:bg-white`) | Deslumbra. Las estaciones de lectura usan un entorno oscuro |
+| 3 | Solo entra a pantalla completa el visor | El médico pierde de vista el score, la valoración y (en el futuro) los marcadores. No puede trabajar el caso en pantalla completa |
+| 4 | La barra espaciadora se escucha en `window` con `preventDefault` en toda la página | Si el foco está en un **botón** (por ejemplo, "Guardar valoración"), Espacio no lo activa y alterna la IA. Además bloquea el scroll con Espacio. **Es un problema de accesibilidad (WCAG 2.1.1)** |
+| 5 | En iPhone Safari no existe la Fullscreen API para elementos (solo para video) | El botón no hace nada en iPhone. Hace falta un modo alternativo con `position: fixed` |
+| 6 | No hay ajuste de brillo/contraste | Es la herramienta más usada en lectura (el "Adjust" de Lunit) |
+| 7 | No hay herramienta activa ni marcadores | Todo lo de la sección 10.3 |
+
+### 10.3 Diseño propuesto
+
+**A. Paleta de herramientas (máquina de estados).** Reemplaza los botones sueltos por un selector de una sola herramienta activa:
+
+| Herramienta | Atajo | Gesto |
+|---|---|---|
+| Mover (Pan) | `H` | Arrastrar. La rueda hace zoom en cualquier herramienta, como hoy |
+| Ajustar | `A` | Arrastre horizontal = contraste; vertical = brillo. Doble clic restablece |
+| Marcador | `M` | Clic = nuevo marcador numerado y se abre su nota |
+| Medir (fase posterior) | `L` | Dos clics = diámetro en mm (solo si se conoce el *PixelSpacing*, ver 10.5) |
+| Restablecer | `0` | Zoom, pan y ajuste vuelven al inicio |
+| Parpadeo IA | `Espacio` | Igual que hoy, pero **solo con el foco dentro del visor** (corrige el problema 4) |
+| Ayuda | `?` | Modal con todos los atajos, como el "Instruction" de Lunit |
+
+Con la imagen PNG actual (8 bits), "Ajustar" es **brillo/contraste con filtro CSS**, no WW/WL real. La etiqueta debe decir "Brillo/Contraste" y no "WW/WL", para no prometer algo que no es. El WW/WL real con presets (pulmón W1500/L−600, mediastino W350/L50) llega con los datos HU de la serie DICOM (fase E).
+
+**B. Marcadores con notas.**
+- Clic con la herramienta Marcador → pin numerado (1, 2, 3…) y una ventana flotante con:
+  - **Tipo de hallazgo:** nódulo sólido, subsólido, vidrio esmerilado, calcificado, artefacto u otro.
+  - **Opinión frente a la IA:** "la IA lo marcó", "la IA no lo marcó (posible falso negativo)", "la IA marcó algo que no es lesión (falso positivo)".
+  - **Nota libre** de hasta 1.000 caracteres.
+  - **Tamaño estimado en mm** (opcional).
+- **Panel lateral de marcadores**, como la lista de Lunit: número, tipo y comienzo de la nota. Cada fila permite:
+  - clic para centrar y hacer zoom sobre el marcador;
+  - editar;
+  - borrar, con confirmación.
+- Los pins se dibujan **dentro de la capa transformada** (la misma de `layerStyle`), para que sigan a la imagen con zoom, pan y pantalla completa. Su tamaño en pantalla se mantiene constante (escala inversa al zoom).
+- Las coordenadas se guardan **normalizadas a la imagen** (`x`, `y` entre 0 y 1 sobre el tamaño natural del PNG), no en píxeles de pantalla. Así sobreviven a cambios de zoom, de tamaño de ventana y de dispositivo. Ojo: `object-contain` deja franjas si la imagen no es cuadrada, así que hay que calcular el rectángulo real que ocupa la imagen. Esa conversión va en funciones puras con tests, igual que `panZoomMath.ts`.
+- **Accesibilidad:** cada pin es un `<button>` con `aria-label="Marcador 2: nódulo subsólido, nota…"`. Desde teclado se puede "agregar marcador en el centro" y moverlo con las flechas. Los colores salen de los tokens: `brand-primary` para los pins y nunca `brand-danger`, que está reservado para alertas clínicas.
+- **Exportar imagen:** incluye los pins numerados, pero **no** el texto de las notas, salvo que el médico lo pida explícitamente. Las notas son PHI.
+
+**C. Panel lateral y pantalla completa.**
+- Disposición tipo Lunit: imagen a la izquierda y **panel lateral a la derecha** con:
+  1. score y nivel de riesgo;
+  2. lista de marcadores;
+  3. valoración resumida (concordancia, Lung-RADS, conducta), con enlace al formulario completo.
+- La **pantalla completa abarca imagen + panel**, no solo la imagen (corrige el problema 3), con **tema oscuro** (corrige el problema 2).
+- El lienzo se dimensiona por la **altura disponible**: `h-[calc(100dvh-barra)]` con `aspect-square` y `max-w-full`, centrado (corrige el problema 1).
+- Si `requestFullscreen` no existe (iPhone), se usa un modo "expandido" con `position: fixed; inset: 0` y se bloquea el scroll del body (corrige el problema 5).
+- Indicadores en las esquinas del lienzo, como Lunit: arriba el nombre del estudio/vista; abajo el zoom y el brillo/contraste.
+- En pantallas angostas (móvil) el panel pasa a una hoja inferior plegable.
+
+### 10.4 Modelo de datos (Supabase)
+
+Nueva tabla `upload_annotations`, una fila por marcador. Sigue el mismo patrón de `upload_reviews` ([20261002120000_upload_reviews.sql](../supabase/migrations/20261002120000_upload_reviews.sql)):
+
+| Columna | Tipo | Regla |
+|---|---|---|
+| `id` | `uuid` PK | `gen_random_uuid()` |
+| `upload_id` | `uuid` FK → `dicom_uploads(id)` | `ON DELETE CASCADE` |
+| `user_id` | `uuid` FK → `auth.users(id)` | autor del marcador |
+| `seq` | `smallint` | número visible (1, 2, 3…), único por `upload_id` |
+| `kind` | `text` | `CHECK IN ('point','measure')` |
+| `x`, `y` | `real` | `CHECK BETWEEN 0 AND 1`. Para `measure` se agregan `x2`, `y2` |
+| `finding_type` | `text` | `CHECK IN ('solido','subsolido','vidrio_esmerilado','calcificado','artefacto','otro')` |
+| `ai_agreement` | `text` | `CHECK IN ('ia_marco','ia_no_marco','ia_falso_positivo')` |
+| `size_mm` | `numeric(5,1)` | opcional, `> 0 AND <= 300` |
+| `note` | `text` | `char_length <= 1000`. **Es PHI** |
+| `created_at`, `updated_at` | `timestamptz` | se reutiliza el trigger `set_updated_at()` |
+
+- **RLS:** igual que `upload_reviews`. Cada médico ve y edita solo sus marcadores, y solo puede crearlos sobre estudios que él subió. La subconsulta va sobre `dicom_uploads`, nunca sobre la misma tabla, para evitar la recursión que ya se presentó antes.
+- **Guardado:** *server actions* en `apps/web/src/app/platform/uploads/[id]/actions.ts`, como la valoración. Se guarda al cerrar la nota, sin botón global.
+- **PHI:** `note` nunca se envía a `console.*` ni a logs. Los errores se reportan solo con su tipo.
+- **Relación con la valoración:** `upload_reviews` sigue siendo el **veredicto del caso**; `upload_annotations` es el **detalle por lesión**. Si un marcador tiene `size_mm` y la valoración no, el formulario lo puede sugerir.
+
+### 10.5 Valor clínico y académico de los marcadores
+
+1. **Retroalimentación localizada para el modelo.** Hoy la valoración dice "discrepa" para todo el caso. Con marcadores se sabe **dónde** estaba el nódulo que la IA no vio. Eso alimenta el ciclo de retroalimentación ya propuesto en [plan-anonimizacion-y-feedback-futuro.md](plan-anonimizacion-y-feedback-futuro.md) y sirve como etiqueta para futuros reentrenamientos.
+2. **Alerta de falso negativo crítico.** Un marcador "la IA no lo marcó" más Lung-RADS 4A/4B en la valoración activa la alerta de omisión que ya está diseñada en ese documento.
+3. **Concordancia objetiva.** Se puede medir automáticamente si el marcador del médico cae dentro de la zona caliente del Grad-CAM/HiResCAM.
+4. **Medición en mm, solo con calibración.** Medir requiere el `PixelSpacing` del DICOM. En PNG sin calibración la herramienta Medir se desactiva con una explicación. **Nunca** se muestra un tamaño en mm inventado.
+
+### 10.6 Lectura ciega y modo práctica (inspirado en el Challenge)
+
+- **Lectura ciega (opcional, por médico):** la IA queda oculta hasta que el médico registra su impresión inicial y sus marcadores. Luego "Ver resultado de la IA" revela el mapa y el score. Así se reduce el **sesgo de automatización**, y el sistema guarda la impresión antes y después de ver la IA.
+- **Modo práctica / estudio de lectores (para la sustentación):**
+  - casos de LIDC-IDRI (o LUNA25) donde el usuario marca y clasifica;
+  - al pulsar "Ver resultado" se comparan sus marcadores con la anotación de referencia y con la IA;
+  - se mide la sensibilidad y el tiempo de lectura **con y sin IA**, el mismo tipo de evidencia que presentan NV-Reason-CT (−50% en el tiempo de lectura) y Lunit.
+
+  Es un aporte académico fuerte y no requiere pacientes reales (restricción R2).
+
+### 10.7 Plan de implementación por fases
+
+| Fase | Contenido | Archivos principales | Esfuerzo |
+|---|---|---|---|
+| **A. Correcciones** | Problemas 1 a 5 de la sección 10.2: tamaño en pantalla completa, tema oscuro, Espacio solo con foco en el visor, modo expandido para iPhone y modal de ayuda `?` | `BeforeAfterViewer.tsx` | 1 día |
+| **B. Herramientas y marcadores (solo en el navegador)** | Paleta de herramientas, brillo/contraste, pins con notas, panel lateral y conversión de coordenadas con tests | `BeforeAfterViewer.tsx` (dividir en `ViewerToolbar`, `MarkerLayer`, `MarkerPanel`), nuevo `markerMath.ts` + `markerMath.test.ts` | 2–3 días |
+| **C. Persistencia** | Migración `upload_annotations` con RLS, server actions, carga inicial en `uploads/[id]/page.tsx` y en el flujo de subida | `supabase/migrations/2026XXXX_upload_annotations.sql`, `uploads/[id]/actions.ts`, `uploads/[id]/page.tsx`, `upload/page.tsx` | 1–2 días |
+| **D. Lectura ciega y modo práctica** | Preferencia por médico; selección de casos LIDC; comparación con la anotación de referencia | Nueva ruta `/platform/practica` | 3–4 días |
+| **E. Visor DICOM real (futuro)** | Cornerstone3D: serie completa, WW/WL real con presets, herramientas nativas (`ArrowAnnotateTool`, `LengthTool`, `BidirectionalTool`) y exportación como DICOM SR | Depende de la sección 7.4, punto 3 (subir la serie DICOM completa) | Proyecto aparte |
+
+**Verificación de cada fase:**
+- tests de `markerMath` y `panZoomMath`;
+- `/oncoscan-a11y` sobre el visor;
+- `/oncoscan-clinical-review` sobre marcadores y notas (PHI);
+- prueba manual en una pantalla 16:9, en móvil y en iPhone;
+- comprobar que un pin queda en el mismo punto de la anatomía tras hacer zoom, pan, entrar a pantalla completa y recargar.
+
+### 10.8 Lista de chequeo del visor
+
+* [ ] ¿En pantalla completa la imagen cabe entera en una pantalla 16:9 sin hacer scroll?
+* [ ] ¿La pantalla completa incluye el panel lateral (score, marcadores y valoración) con tema oscuro?
+* [ ] ¿Espacio activa normalmente los botones fuera del visor?
+* [ ] ¿Los marcadores mantienen su posición anatómica tras zoom, pan, pantalla completa y recarga?
+* [ ] ¿Las notas nunca aparecen en logs ni en la imagen exportada sin consentimiento explícito?
+* [ ] ¿La herramienta Medir está desactivada cuando no hay `PixelSpacing`?
+* [ ] ¿Todo el visor se puede operar con teclado y los pins tienen nombre accesible?
+
+### 10.9 Fuentes (sección 10)
+
+- [Lunit INSIGHT MMG](https://www.lunit.io/en/ai-radiology-software/insight-mmg/) · [Lunit INSIGHT Challenge](https://insight-challenge.csg-krc.lunit.io/) (capturas de su interfaz revisadas por el equipo)
+- [freeCodeCamp – How to Preprocess Medical Images for Machine Learning](https://www.freecodecamp.org/news/how-to-preprocess-medical-images-for-machine-learning/)
+- Visor actual: [BeforeAfterViewer.tsx](../apps/web/src/components/ui/BeforeAfterViewer.tsx), [usePanZoom.ts](../apps/web/src/components/ui/usePanZoom.ts), [panZoomMath.ts](../apps/web/src/components/ui/panZoomMath.ts)
