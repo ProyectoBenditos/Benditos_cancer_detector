@@ -43,6 +43,7 @@ class ClinicalFeatures(BaseModel):
     spiculation:   float = 1.0
     texture:       float = 5.0
     malignancy:    float = 3.0
+    lobar_location: Optional[str] = None
 
 
 def dicom_to_png_bytes(file_bytes: bytes) -> bytes:

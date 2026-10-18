@@ -35,3 +35,4 @@ describe("AnonymizationCertificate", () => {
         expect(screen.getByText("Purga estricta PS 3.15")).toBeInTheDocument();
     });
 });
+

@@ -12,7 +12,7 @@ export type ReviewState = {
     fields?: Record<string, string>;
 };
 
-const FIELD_KEYS = ["concordancia", "lung_rads", "nodule_size_mm", "conducta", "notes"] as const;
+const FIELD_KEYS = ["concordancia", "lung_rads", "nodule_size_mm", "conducta", "lobar_location", "notes"] as const;
 
 function submittedFields(formData: FormData): Record<string, string> {
     const fields: Record<string, string> = {};
