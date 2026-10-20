@@ -599,9 +599,17 @@ async def _process_batch_async(
                     content_type = "image/png"
                     predict_filename = f"{os.path.splitext(item['filename'])[0]}.png"
                 else:
-                    png_bytes = item["contents"]
-                    content_type = item["content_type"]
-                    predict_filename = item["filename"]
+                    try:
+                        pil_img = Image.open(io.BytesIO(item["contents"])).convert("RGB")
+                        png_buffer = io.BytesIO()
+                        pil_img.save(png_buffer, format="PNG")
+                        png_bytes = png_buffer.getvalue()
+                        content_type = "image/png"
+                        predict_filename = f"{os.path.splitext(item['filename'])[0]}.png"
+                    except Exception:
+                        png_bytes = item["contents"]
+                        content_type = item["content_type"]
+                        predict_filename = item["filename"]
 
                 t0 = time.monotonic()
                 payload = await _predict_with_retry(
