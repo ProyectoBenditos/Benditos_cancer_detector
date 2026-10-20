@@ -29,17 +29,22 @@
 - [x] Generación del **Informe Clínico Estandarizado** en línea y descargable en PDF (Secciones A–G, ACR Lung-RADS v2022, GPC 36 MinSalud y CLAIM 2024).
 - [x] Formulario estructurado de valoración médica por el especialista (`upload_reviews`).
 
-### Fase 4: Modelo multimodal-v2.0 — Ensamble Híbrido (DenseNet-121 + XGBoost), Volumetría 3D y Validación Externa (Planificada)
-*Documento de especificación completo:* [Plan Estratégico Modelo v2.0](./plan-modelo-v2.0-segmentacion-volumetrica.md)
+### Fase 4: OncoScan 2.0 — Foundation Models Médicos 3D, Estación Multiplanar (MPR) y Ecosistema Multiagente (Planificada)
+*Documento de especificación completo:* [Plan Estratégico OncoScan 2.0](./plan-modelo-v2.0-segmentacion-volumetrica.md)
 
-- [ ] **Arquitectura Híbrida de Vanguardia (Estudio 2026 / Springer Nature):**
-  - **Rama de Visión:** Migración del extractor convolucional a **DenseNet-121** (PyTorch) para reutilización densa de características de espiculación y márgenes con Grad-CAM en `norm5`.
-  - **Rama Clínica y Demográfica:** Clasificador **XGBoost** con balanceo **SMOTE** para datos tabulares no lineales y antecedentes de tabaquismo.
-  - **Meta-Clasificador de Fusión:** Calibración isotónica / Platt Scaling para probabilidad de malignidad unificada.
+- [ ] **Ingesta Inteligente y Liviana de Series DICOM:**
+  - Descompresión en el navegador con Web Streams / WebAssembly Worker (`fflate`) en $< 350\text{ ms}$.
+  - Filtrado inteligente de metadatos: descarte automático de Scouts y reportes de dosis, aislando la serie axial pulmonar (-60% de peso).
+- [ ] **Estación de Trabajo Radiológica Web 3D (Ergonomía Clínica):**
+  - Reconstrucción Multiplanar (MPR) con **Cornerstone3D** (Axial, Sagital, Coronal sincronizados con crosshairs 3D).
+  - Presets clínicos instantáneos: Ventana Pulmonar (`WL: -600, WW: 1500`) y Mediastínica (`WL: 40, WW: 400`).
+  - Renderizado volumétrico 3D rotatorio con `vtk.js` y centrado de nódulos a un solo clic.
+- [ ] **Backbone Foundation Model 3D y Razonamiento Clínico:**
+  - Integración del backbone de **NV-Reason-CT** (NVIDIA / NIH) o **MedGemma-4B** (Google DeepMind) con *Chain-of-Thought* médico.
+  - Segmentación anatómica de los 5 lóbulos y pleura con **TotalSegmentator** en GPU.
+  - Estimación volumétrica ($mm^3$), histograma de atenuación en $\text{HU}$ (sólido vs. subsólido) y Duplicación de Volumen (VDT).
 - [ ] **Datasets de Entrenamiento y Benchmarking Internacional:**
-  - Reentrenamiento principal con `FangDai/Multimodal_Lung_Cancer_Dataset-CT-Mask-Clinical` (Hugging Face).
-  - Validación externa independiente ciega con **NLST (National Lung Screening Trial — NCI/NIH)**.
-  - Correlación radiopatológica con **CLID (Kaggle)** para sustento de la Sección E del informe.
-- [ ] **Ingesta de Series DICOM Multislice 3D y Localización Lobar Automatizada:**
-  - Integración de TotalSegmentator / nnU-Net para segmentar los 5 lóbulos pulmonares y la distancia pleural en $< 15$ segundos.
-  - Auto-completado de localización lobar y relación pleural en el informe clínico sin requerir marcación manual previa por el radiólogo.
+  - Reentrenamiento y ajuste fino con **`LIDC-annot-NLST501`** (NCI Imaging Data Commons Octubre 2026, 6.505 nódulos segmentados por 4 radiólogos).
+  - Validación externa independiente ciega con la cohorte completa del **NLST** (>50.000 pacientes).
+- [ ] **Tríada de Agentes Clínicos (Nature Reviews Cancer 2026):**
+  - Coordinación entre Agente Radiólogo (Lung-RADS v2022), Agente Patólogo (Guía GPC 36 MinSalud) y Agente Oncólogo.

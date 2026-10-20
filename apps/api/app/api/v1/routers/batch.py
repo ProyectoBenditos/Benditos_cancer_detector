@@ -153,6 +153,7 @@ async def create_batch(
     spiculation: float = Form(1.0, ge=1, le=5),
     texture: float = Form(5.0, ge=1, le=5),
     malignancy: float = Form(3.0, ge=1, le=5),
+    lobar_location: Optional[str] = Form(None),
     current_user: dict = Depends(get_current_user),
 ):
     """Crea un lote de análisis IA con soporte para imágenes y DICOMs."""
@@ -219,6 +220,8 @@ async def create_batch(
         "texture": texture,
         "malignancy": malignancy,
     }
+    if lobar_location and lobar_location.strip():
+        features["lobar_location"] = lobar_location.strip().lower()
 
     items: List[Dict[str, Any]] = []
 
@@ -402,6 +405,7 @@ async def create_batch(
                         "batch_id": batch_id,
                         "batch_sequence": batch_seq,
                         "case_ref": case_ref.strip() if (case_ref and case_ref.strip()) else f"batch_{batch_seq:03d}",
+                        "lobar_location": lobar_location.strip().lower() if (lobar_location and lobar_location.strip()) else None,
                     },
                 })
                 .execute()

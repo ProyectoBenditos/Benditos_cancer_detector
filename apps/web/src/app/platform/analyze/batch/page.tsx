@@ -12,6 +12,7 @@ import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
 import { Modal } from "@/components/ui/Modal";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
+import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 import { createPatientInline, type PatientInlineState } from "../../pacientes/actions";
 import { toast } from "sonner";
 import {
@@ -163,6 +164,7 @@ export default function BatchUploadPage() {
   const [caseRef, setCaseRef] = useState<string>("");
   const [patients, setPatients] = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
   const [features, setFeatures] = useState<ClinicalFeatures>(DEFAULT_FEATURES);
+  const [lobarLocation, setLobarLocation] = useState<string>("");
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -323,6 +325,9 @@ export default function BatchUploadPage() {
       if (caseRef.trim()) {
         formData.append("case_ref", caseRef.trim());
       }
+      if (lobarLocation) {
+        formData.append("lobar_location", lobarLocation);
+      }
 
       // En modo multi se envían las features estándar por defecto
       const activeFeatures = patientMode === "multi" ? DEFAULT_FEATURES : features;
@@ -357,6 +362,7 @@ export default function BatchUploadPage() {
     stopPolling();
     setFiles([]);
     setCaseRef("");
+    setLobarLocation("");
     setFeatures(DEFAULT_FEATURES);
     setBatchId(null);
     setBatchData(null);
@@ -681,6 +687,38 @@ export default function BatchUploadPage() {
                 <p className="text-sm text-slate-500 mb-6">
                   Estas features se aplicarán a <strong>todas</strong> las imágenes del lote.
                 </p>
+
+                {/* Localización lobar anatómica */}
+                <div className="mb-6 pb-6 border-b border-slate-200">
+                  <label htmlFor="batch-lobar-location" className="mb-2 block text-sm font-semibold text-slate-700">
+                    Localización lobar anatómica <span className="text-slate-400 font-normal">(opcional)</span>
+                  </label>
+                  <select
+                    id="batch-lobar-location"
+                    value={lobarLocation}
+                    onChange={(e) => setLobarLocation(e.target.value)}
+                    className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all font-medium"
+                  >
+                    <option value="">Sin especificar / Pendiente de lectura anatómica</option>
+                    <optgroup label="Pulmón Derecho">
+                      {LOBAR_LOCATIONS.filter((l) => l.side === "Pulmón Derecho").map((l) => (
+                        <option key={l.value} value={l.value}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                    <optgroup label="Pulmón Izquierdo">
+                      {LOBAR_LOCATIONS.filter((l) => l.side === "Pulmón Izquierdo").map((l) => (
+                        <option key={l.value} value={l.value}>
+                          {l.label}
+                        </option>
+                      ))}
+                    </optgroup>
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Asigna la localización anatómica al nódulo para iluminar el segmento en el diagrama anatómico del informe clínico de cada imagen del lote.
+                  </p>
+                </div>
 
                 <div className="grid gap-6 md:grid-cols-2">
                   {FEATURE_LABELS.map(({ key, label, description, max }) => (
