@@ -85,3 +85,71 @@ describe("BeforeAfterViewer — ayuda", () => {
     expect(visor).toHaveAttribute("data-fullscreen", "true");
   });
 });
+
+describe("BeforeAfterViewer — herramientas", () => {
+  it("arranca con Mover activo", () => {
+    renderViewer();
+    expect(screen.getByRole("radio", { name: "Mover (H)" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("las teclas H/A/M cambian la herramienta activa y se anuncian", () => {
+    const visor = renderViewer();
+    fireEvent.keyDown(visor, { key: "a" });
+    expect(screen.getByRole("radio", { name: "Brillo/Contraste (A)" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByRole("status")).toHaveTextContent("Herramienta: Brillo/Contraste");
+    fireEvent.keyDown(visor, { key: "m" });
+    expect(screen.getByRole("radio", { name: "Marcador (M)" })).toHaveAttribute("aria-checked", "true");
+    fireEvent.keyDown(visor, { key: "h" });
+    expect(screen.getByRole("radio", { name: "Mover (H)" })).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("Medir está desactivado con explicación y L lo anuncia", () => {
+    const visor = renderViewer();
+    const medir = screen.getByRole("radio", { name: "Medir (L)" });
+    expect(medir).toHaveAttribute("aria-disabled", "true");
+    expect(medir).toHaveAccessibleDescription(/PixelSpacing/);
+    fireEvent.click(medir);
+    expect(medir).toHaveAttribute("aria-checked", "false");
+    fireEvent.keyDown(visor, { key: "l" });
+    expect(medir).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("status")).toHaveTextContent(/PixelSpacing/);
+  });
+
+  it("flechas recorren la paleta, saltan Medir y no se propagan", () => {
+    renderViewer();
+    const marcador = screen.getByRole("radio", { name: "Marcador (M)" });
+    fireEvent.click(marcador);
+    expect(marcador).toHaveAttribute("tabindex", "0");
+    marcador.focus();
+    expect(fireEvent.keyDown(marcador, { key: "ArrowRight" })).toBe(false);
+    const mover = screen.getByRole("radio", { name: "Mover (H)" });
+    expect(mover).toHaveAttribute("aria-checked", "true");
+    expect(mover).toHaveFocus();
+    expect(marcador).toHaveAttribute("tabindex", "-1");
+  });
+
+  it("flechas en el selector de modo", () => {
+    renderViewer();
+    const cortina = screen.getByRole("radio", { name: /Cortina/ });
+    cortina.focus();
+    fireEvent.keyDown(cortina, { key: "ArrowLeft" });
+    const superpuesto = screen.getByRole("radio", { name: /Superpuesto/ });
+    expect(superpuesto).toHaveAttribute("aria-checked", "true");
+    expect(superpuesto).toHaveFocus();
+  });
+
+  it("Espacio anuncia el estado de la IA", () => {
+    const visor = renderViewer();
+    visor.focus();
+    fireEvent.keyDown(visor, space);
+    expect(screen.getByRole("status")).toHaveTextContent("IA oculta");
+    fireEvent.keyDown(visor, space);
+    expect(screen.getByRole("status")).toHaveTextContent("IA visible");
+  });
+
+  it("el botón Parpadeo también anuncia", () => {
+    renderViewer();
+    fireEvent.click(screen.getByText("Parpadeo"));
+    expect(screen.getByRole("status")).toHaveTextContent("IA oculta");
+  });
+});

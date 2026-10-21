@@ -1,45 +1,24 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState, useCallback } from "react";
-import {
-  Columns2,
-  Download,
-  Eye,
-  EyeOff,
-  Keyboard,
-  Layers,
-  Maximize2,
-  Minimize2,
-  RotateCcw,
-  SlidersHorizontal,
-  Split,
-  Sparkles,
-  ZoomIn,
-  ZoomOut,
-} from "lucide-react";
+import { EyeOff, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
 import { useViewerFullscreen } from "./useViewerFullscreen";
 import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
+import type { ViewerTool } from "./viewerTools";
+import { DARK_PANEL, MEASURE_UNAVAILABLE, TOOL_LABELS, ViewerToolbar, type ViewMode } from "./ViewerToolbar";
 
 type BeforeAfterViewerProps = {
   beforeUrl: string | null;
   heatmapBase64: string | null;
-  initialMode?: Mode;
+  initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
 };
 
-type Mode = "curtain" | "side" | "overlay";
-
 const PAN_STEP = 40;
-
-// Controles en reposo dentro de la pantalla completa oscura. brand-primary no
-// tiene contraste sobre fondo oscuro, por eso los acentos usan sky.
-const DARK_CONTROL =
-  "viewer-full:border-slate-700 viewer-full:bg-slate-800 viewer-full:text-slate-200 viewer-full:hover:bg-slate-700 viewer-full:hover:text-white";
-const DARK_PANEL = "viewer-full:border-slate-700 viewer-full:bg-slate-900 viewer-full:text-slate-300";
 
 type StageHandlers = ReturnType<typeof usePanZoom>["stageHandlers"];
 
@@ -85,34 +64,6 @@ function Stage({
   );
 }
 
-function ToolbarButton({
-  onClick,
-  label,
-  children,
-  active,
-}: {
-  onClick: () => void;
-  label: string;
-  children: React.ReactNode;
-  active?: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-label={label}
-      title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:focus-visible:outline-sky-300 cursor-pointer ${
-        active
-          ? "border-brand-primary bg-brand-primary/10 text-brand-primary viewer-full:border-sky-300 viewer-full:bg-sky-300/15 viewer-full:text-sky-200"
-          : `border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
-
 export function BeforeAfterViewer({
   beforeUrl,
   heatmapBase64,
@@ -120,7 +71,11 @@ export function BeforeAfterViewer({
   initialSplit = 50,
   initialShowAi = true,
 }: BeforeAfterViewerProps) {
-  const [mode, setMode] = useState<Mode>(initialMode);
+  const [mode, setMode] = useState<ViewMode>(initialMode);
+  const [tool, setTool] = useState<ViewerTool>("pan");
+  // Región aria-live: anuncia cambios que no se ven sin mirar la pantalla.
+  // Nunca lleva el texto de las notas (PHI).
+  const [announcement, setAnnouncement] = useState("");
   const [opacity, setOpacity] = useState(0.7);
   // splitPosition representa el % de Detección IA revelado de izquierda a derecha (0% = TAC Original, 100% = IA pura)
   const [splitPosition, setSplitPosition] = useState(initialSplit);
@@ -225,6 +180,22 @@ export function BeforeAfterViewer({
 
   const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
+  const toggleAi = () => {
+    const next = !showAi;
+    setShowAi(next);
+    setAnnouncement(next ? "IA visible" : "IA oculta");
+  };
+
+  // Medir queda desactivado: sin PixelSpacing no hay mm reales que mostrar.
+  const selectTool = (t: ViewerTool) => {
+    if (t === "measure") {
+      setAnnouncement(MEASURE_UNAVAILABLE);
+      return;
+    }
+    setTool(t);
+    setAnnouncement(`Herramienta: ${TOOL_LABELS[t]}`);
+  };
+
   // Los atajos se escuchan solo dentro del visor (no en window): fuera de él,
   // Espacio y las flechas conservan su comportamiento normal.
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -253,7 +224,19 @@ export function BeforeAfterViewer({
         break;
       case "toggleAi":
         e.preventDefault();
-        setShowAi((prev) => !prev);
+        toggleAi();
+        break;
+      case "toolPan":
+        selectTool("pan");
+        break;
+      case "toolAdjust":
+        selectTool("adjust");
+        break;
+      case "toolMarker":
+        selectTool("marker");
+        break;
+      case "toolMeasure":
+        selectTool("measure");
         break;
       case "openHelp":
         e.preventDefault();
@@ -337,11 +320,6 @@ export function BeforeAfterViewer({
     };
   }, [beforeUrl, activeHeatmapSrc, opacity, mode, showAi]);
 
-  const segBase =
-    "px-3 py-1.5 text-xs font-semibold rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:focus-visible:outline-sky-300 cursor-pointer";
-  const segActive = "bg-brand-primary text-white shadow-sm viewer-full:bg-sky-300 viewer-full:text-slate-950";
-  const segIdle = "text-slate-600 hover:text-brand-primary viewer-full:text-slate-300 viewer-full:hover:text-white";
-
   return (
     <Card>
       <CardContent className="p-6">
@@ -358,105 +336,21 @@ export function BeforeAfterViewer({
           data-fullscreen-mode={fullscreenMode}
         >
           {/* Barra de herramientas superior */}
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-            {/* Selector de modo simple */}
-            <div
-              role="radiogroup"
-              aria-label="Modo de visualización"
-              className={`inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 ${DARK_PANEL}`}
-            >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === "curtain"}
-                onClick={() => setMode("curtain")}
-                className={`${segBase} ${mode === "curtain" ? segActive : segIdle} inline-flex items-center gap-1.5`}
-              >
-                <Split className="h-3.5 w-3.5" aria-hidden="true" />
-                Cortina
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === "side"}
-                onClick={() => setMode("side")}
-                className={`${segBase} ${mode === "side" ? segActive : segIdle} inline-flex items-center gap-1.5`}
-              >
-                <Columns2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Lado a lado
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={mode === "overlay"}
-                onClick={() => setMode("overlay")}
-                className={`${segBase} ${mode === "overlay" ? segActive : segIdle} inline-flex items-center gap-1.5`}
-              >
-                <Layers className="h-3.5 w-3.5" aria-hidden="true" />
-                Superpuesto
-              </button>
-            </div>
-
-            {/* Controles de Zoom, Parpadeo, Pantalla Completa y Descarga */}
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 tabular-nums viewer-full:border-slate-700 viewer-full:bg-slate-800 viewer-full:text-slate-200">
-                {Math.round(scale * 100)}%
-              </span>
-              <ToolbarButton onClick={zoomIn} label="Acercar (+)">
-                <ZoomIn className="h-4 w-4" aria-hidden="true" />
-              </ToolbarButton>
-              <ToolbarButton onClick={zoomOut} label="Alejar (-)">
-                <ZoomOut className="h-4 w-4" aria-hidden="true" />
-              </ToolbarButton>
-              <ToolbarButton onClick={reset} label="Restablecer vista (0)">
-                <RotateCcw className="h-4 w-4" aria-hidden="true" />
-              </ToolbarButton>
-
-              {/* Botón Parpadeo (con Espacio) */}
-              <button
-                type="button"
-                onClick={() => setShowAi((prev) => !prev)}
-                title={showAi ? "Parpadeo: Ocultar IA (Barra Espaciadora)" : "Parpadeo: Mostrar IA (Barra Espaciadora)"}
-                className={`flex h-9 items-center gap-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:focus-visible:outline-sky-300 ${
-                  !showAi
-                    ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
-                    : `border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
-                }`}
-              >
-                {!showAi ? (
-                  <>
-                    <EyeOff className="h-4 w-4 text-amber-600" aria-hidden="true" />
-                    <span>TAC Pura</span>
-                  </>
-                ) : (
-                  <>
-                    <Eye className="h-3.5 w-3.5 text-brand-primary viewer-full:text-sky-200" aria-hidden="true" />
-                    <span>Parpadeo</span>
-                  </>
-                )}
-              </button>
-
-              <ToolbarButton
-                onClick={handleExport}
-                label="Descargar imagen"
-              >
-                <Download className="h-4 w-4 text-emerald-600 viewer-full:text-emerald-400" aria-hidden="true" />
-              </ToolbarButton>
-              <ToolbarButton onClick={() => setHelpOpen(true)} label="Atajos de teclado (?)">
-                <Keyboard className="h-4 w-4" aria-hidden="true" />
-              </ToolbarButton>
-              <ToolbarButton
-                onClick={toggleFullscreen}
-                label={isFullscreen ? "Salir de pantalla completa (F)" : "Pantalla completa (F)"}
-              >
-                {isFullscreen ? (
-                  <Minimize2 className="h-4 w-4" aria-hidden="true" />
-                ) : (
-                  <Maximize2 className="h-4 w-4" aria-hidden="true" />
-                )}
-              </ToolbarButton>
-            </div>
-          </div>
+          <ViewerToolbar
+            mode={mode}
+            onModeChange={setMode}
+            tool={tool}
+            onToolChange={selectTool}
+            showAi={showAi}
+            onToggleAi={toggleAi}
+            isFullscreen={isFullscreen}
+            onToggleFullscreen={toggleFullscreen}
+            onZoomIn={zoomIn}
+            onZoomOut={zoomOut}
+            onReset={reset}
+            onExport={handleExport}
+            onHelp={() => setHelpOpen(true)}
+          />
 
           {/* ── Visualizador Principal ── */}
           <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
@@ -722,6 +616,10 @@ export function BeforeAfterViewer({
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
+
+          <p role="status" aria-live="polite" className="sr-only">
+            {announcement}
+          </p>
 
           <ViewerHelpDialog open={helpOpen} onClose={closeHelp} />
         </div>
