@@ -8,6 +8,7 @@ import { useViewerFullscreen } from "./useViewerFullscreen";
 import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
+import { useFocusTrap } from "./useFocusTrap";
 import { MarkerLayer } from "./MarkerLayer";
 import { normalizedToStage, stageToNormalized, visibleCenter, type Size } from "./markerMath";
 import { MARKERS_INITIAL, markersReducer, type Marker } from "./markerState";
@@ -118,6 +119,10 @@ export function BeforeAfterViewer({
     toggle: toggleFullscreen,
     exit: exitFullscreen,
   } = useViewerFullscreen(containerRef);
+  useFocusTrap(containerRef, isFullscreen);
+  // Hoja inferior del panel (pantalla completa en móvil): se abre al agregar o
+  // seleccionar un marcador para que su editor se vea.
+  const [sheetOpen, setSheetOpen] = useState(false);
   const opacityId = useId();
   const splitId = useId();
 
@@ -146,6 +151,7 @@ export function BeforeAfterViewer({
   const addMarkerAt = (n: { x: number; y: number }) => {
     setAnnouncement(`Marcador ${markersState.nextSeq} agregado`);
     dispatchMarkers({ type: "add", x: n.x, y: n.y });
+    setSheetOpen(true);
   };
   const centerOnMarker = (m: Marker) => {
     centerOn(normalizedToStage(m, getStageSize(), natural), CENTER_ZOOM);
@@ -168,7 +174,10 @@ export function BeforeAfterViewer({
       natural={natural}
       scale={scale}
       focusable={focusable}
-      onSelect={(id) => dispatchMarkers({ type: "select", id })}
+      onSelect={(id) => {
+        dispatchMarkers({ type: "select", id });
+        setSheetOpen(true);
+      }}
       onMove={(id, x, y) => dispatchMarkers({ type: "move", id, x, y })}
     />
   );
@@ -756,7 +765,7 @@ export function BeforeAfterViewer({
           </div>
 
           {/* ── Panel del caso (también en pantalla completa) ── */}
-          <div className="lg:w-72 lg:shrink-0">
+          <div className="lg:w-72 lg:shrink-0 viewer-full:min-h-0 lg:viewer-full:w-80 lg:viewer-full:overflow-y-auto">
             <MarkerPanel
               summary={summary}
               markers={markersState.markers}
@@ -765,6 +774,9 @@ export function BeforeAfterViewer({
               onCenter={centerOnMarker}
               onGoToReview={goToReview}
               onAnnounce={setAnnouncement}
+              isFullscreen={isFullscreen}
+              sheetOpen={sheetOpen}
+              onSheetOpenChange={setSheetOpen}
             />
           </div>
           </div>

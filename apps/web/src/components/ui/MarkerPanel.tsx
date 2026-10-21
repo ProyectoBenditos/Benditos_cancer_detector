@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef, useState } from "react";
-import { Crosshair, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Crosshair, Pencil, Trash2 } from "lucide-react";
 import { RiskBadge } from "./RiskBadge";
 import { CONCORDANCIA_OPTIONS, CONDUCTA_OPTIONS, LUNG_RADS_OPTIONS } from "@/lib/uploadReview";
 import { MarkerEditor } from "./MarkerEditor";
@@ -31,7 +31,14 @@ export function MarkerPanel({
   onCenter,
   onGoToReview,
   onAnnounce,
+  isFullscreen,
+  sheetOpen,
+  onSheetOpenChange,
 }: {
+  isFullscreen: boolean;
+  /** Hoja inferior abierta (pantalla completa por debajo de lg). */
+  sheetOpen: boolean;
+  onSheetOpenChange: (open: boolean) => void;
   summary?: ViewerSummary;
   markers: Marker[];
   selectedId: string | null;
@@ -42,6 +49,8 @@ export function MarkerPanel({
 }) {
   const uid = useId();
   const [confirmId, setConfirmId] = useState<string | null>(null);
+  const contentId = `${uid}-contenido`;
+  const count = markers.length;
   const listHeadingRef = useRef<HTMLHeadingElement>(null);
   const cancelRef = useRef<HTMLButtonElement>(null);
 
@@ -67,8 +76,32 @@ export function MarkerPanel({
   return (
     <aside
       aria-label="Panel del caso"
-      className={`space-y-5 rounded-xl border border-slate-200 bg-slate-50 p-4 ${DARK_PANEL}`}
+      className={`rounded-xl border border-slate-200 bg-slate-50 p-4 max-lg:viewer-full:p-3 ${DARK_PANEL}`}
     >
+      {/* Solo en pantalla completa y por debajo de lg: el panel pasa a hoja inferior plegable. */}
+      {isFullscreen && (
+        <button
+          type="button"
+          aria-expanded={sheetOpen}
+          aria-controls={contentId}
+          onClick={() => onSheetOpenChange(!sheetOpen)}
+          className="flex w-full items-center justify-between gap-2 rounded-md text-sm font-semibold text-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-300 cursor-pointer lg:hidden"
+        >
+          {`Panel del caso · ${count} ${count === 1 ? "marcador" : "marcadores"}`}
+          {sheetOpen ? (
+            <ChevronDown className="h-4 w-4" aria-hidden="true" />
+          ) : (
+            <ChevronUp className="h-4 w-4" aria-hidden="true" />
+          )}
+        </button>
+      )}
+
+      <div
+        id={contentId}
+        className={`space-y-5 max-lg:viewer-full:mt-3 max-lg:viewer-full:max-h-[50dvh] max-lg:viewer-full:overflow-y-auto ${
+          isFullscreen && !sheetOpen ? "max-lg:hidden" : ""
+        }`}
+      >
       {summary && (
         <section className="space-y-2">
           <h2 className={H2}>Resultado IA</h2>
@@ -222,6 +255,7 @@ export function MarkerPanel({
           </button>
         </section>
       )}
+      </div>
     </aside>
   );
 }

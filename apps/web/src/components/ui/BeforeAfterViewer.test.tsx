@@ -347,3 +347,67 @@ describe("BeforeAfterViewer — panel", () => {
     expect(screen.getByRole("textbox", { name: "Nota" })).toBeInTheDocument();
   });
 });
+
+describe("BeforeAfterViewer — pantalla completa con panel", () => {
+  const enterFullscreen = () => fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+
+  it("en pantalla completa el panel está dentro del visor", () => {
+    const visor = renderViewer({ score: 0.5, riskLevel: "MEDIO", review: null });
+    enterFullscreen();
+    expect(visor).toContainElement(screen.getByRole("complementary", { name: "Panel del caso" }));
+  });
+
+  it("la hoja inferior arranca plegada y se despliega", () => {
+    renderViewer();
+    enterFullscreen();
+    const toggle = screen.getByRole("button", { name: /Panel del caso · 0 marcadores/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveAttribute("aria-controls");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("agregar o seleccionar un marcador abre la hoja inferior", () => {
+    const visor = renderViewer();
+    enterFullscreen();
+    addMarkerWithKeyboard(visor);
+    const toggle = screen.getByRole("button", { name: /Panel del caso · 1 marcador$/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(screen.getByRole("button", { name: /^Marcador 1/ }));
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("en modo expandido Tab desde el último control vuelve al visor", () => {
+    const visor = renderViewer();
+    enterFullscreen();
+    const focusables = visor.querySelectorAll<HTMLElement>(
+      'button:not([disabled]):not([tabindex="-1"]), input, select, textarea'
+    );
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    fireEvent.keyDown(last, { key: "Tab" });
+    expect(visor).toHaveFocus();
+  });
+
+  it("fuera de pantalla completa Tab no se contiene", () => {
+    const visor = renderViewer();
+    const focusables = visor.querySelectorAll<HTMLElement>(
+      'button:not([disabled]):not([tabindex="-1"]), input, select, textarea'
+    );
+    const last = focusables[focusables.length - 1];
+    last.focus();
+    expect(fireEvent.keyDown(last, { key: "Tab" })).toBe(true);
+  });
+
+  it("Tab dentro de la ayuda abierta en pantalla completa se queda en la ayuda", () => {
+    const visor = renderViewer();
+    enterFullscreen();
+    fireEvent.keyDown(visor, { key: "?" });
+    const cerrar = screen.getByRole("button", { name: "Cerrar modal" });
+    cerrar.focus();
+    fireEvent.keyDown(cerrar, { key: "Tab" });
+    expect(screen.getByRole("dialog")).toContainElement(document.activeElement as HTMLElement);
+  });
+});
