@@ -24,6 +24,9 @@ export type AnnotationInput = {
     sizeMm: number | null;
 };
 
+/** Resultado de las server actions de marcadores: el error solo como tipo, sin detalle. */
+export type AnnotationResult = { ok: true } | { ok: false; error: "sesion" | "invalido" | "guardado" };
+
 /** Fila tal como la devuelve PostgREST (`numeric` puede llegar como texto). */
 export type AnnotationRow = {
     seq: number;

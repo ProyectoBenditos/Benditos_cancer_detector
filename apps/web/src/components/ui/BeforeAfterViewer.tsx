@@ -13,7 +13,9 @@ import { useToolPointer } from "./useToolPointer";
 import { useFocusTrap } from "./useFocusTrap";
 import { MarkerLayer } from "./MarkerLayer";
 import { normalizedToStage, stageToNormalized, visibleCenter, type Size } from "./markerMath";
-import { MARKERS_INITIAL, markersReducer, type Marker } from "./markerState";
+import { markersReducer, markersStateFrom, type Marker } from "./markerState";
+import { useMarkerAutosave } from "./useMarkerAutosave";
+import type { AnnotationInput, AnnotationResult } from "@/lib/uploadAnnotations";
 import { MarkerPanel } from "./MarkerPanel";
 import type { RiskLevel } from "./RiskBadge";
 import type { UploadReview } from "@/lib/uploadReview";
@@ -30,10 +32,24 @@ export type ViewerSummary = {
   reviewAnchorId?: string;
 };
 
+/**
+ * Persistencia de los marcadores (Fase C). La página pasa los guardados y las
+ * server actions; sin esta prop el visor funciona como en la Fase B (sin guardar).
+ */
+export type ViewerAnnotations = {
+  uploadId: string;
+  initial: Marker[];
+  /** La carga de los guardados falló: no se guarda nada para no sobrescribirlos. */
+  loadFailed?: boolean;
+  save: (input: AnnotationInput) => Promise<AnnotationResult>;
+  remove: (uploadId: string, seq: number) => Promise<AnnotationResult>;
+};
+
 type BeforeAfterViewerProps = {
   beforeUrl: string | null;
   heatmapBase64: string | null;
   summary?: ViewerSummary;
+  annotations?: ViewerAnnotations;
   initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
@@ -96,6 +112,7 @@ export function BeforeAfterViewer({
   beforeUrl,
   heatmapBase64,
   summary,
+  annotations,
   initialMode = "curtain",
   initialSplit = 50,
   initialShowAi = true,
@@ -144,7 +161,29 @@ export function BeforeAfterViewer({
 
   // Marcadores (solo en el navegador en la Fase B). El tamaño natural del PNG
   // hace falta para ubicar los pins sobre el rectángulo real de la imagen.
-  const [markersState, dispatchMarkers] = useReducer(markersReducer, MARKERS_INITIAL);
+  const [markersState, dispatchMarkers] = useReducer(
+    markersReducer,
+    annotations?.initial ?? [],
+    markersStateFrom
+  );
+
+  // Guardado automático. Si la carga de los guardados falló, no se guarda:
+  // un marcador nuevo con el mismo número sobrescribiría uno guardado.
+  const persist = annotations && !annotations.loadFailed ? annotations : null;
+  const { status: saveStatus, retry: retrySave } = useMarkerAutosave({
+    markers: markersState.markers,
+    enabled: persist !== null,
+    save: async (m) => {
+      if (!persist) return false;
+      const { seq, x, y, findingType, aiAgreement, note, sizeMm } = m;
+      const result = await persist.save({ uploadId: persist.uploadId, seq, x, y, findingType, aiAgreement, note, sizeMm });
+      return result.ok;
+    },
+    remove: async (seq) => {
+      if (!persist) return false;
+      return (await persist.remove(persist.uploadId, seq)).ok;
+    },
+  });
   const [natural, setNatural] = useState<Size>({ w: 1, h: 1 });
   const onCtLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -825,6 +864,11 @@ export function BeforeAfterViewer({
               isFullscreen={isFullscreen}
               sheetOpen={sheetOpen}
               onSheetOpenChange={setSheetOpen}
+              saveState={
+                annotations
+                  ? { status: saveStatus, loadFailed: annotations.loadFailed === true, onRetry: retrySave }
+                  : undefined
+              }
             />
           </div>
           </div>

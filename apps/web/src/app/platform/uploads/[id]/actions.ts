@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
 import { parseReviewForm, UUID_RE } from "@/lib/uploadReview";
-import { isValidSeq, parseAnnotation, type AnnotationInput } from "@/lib/uploadAnnotations";
+import { isValidSeq, parseAnnotation, type AnnotationInput, type AnnotationResult } from "@/lib/uploadAnnotations";
 
 export type ReviewState = {
     error?: string;
@@ -57,8 +57,6 @@ export async function saveUploadReviewAction(
 // Los llama el guardado automático del visor. Errores solo como tipo: la nota
 // es PHI y el detalle de Supabase no debe llegar al cliente ni a logs.
 // Sin revalidatePath: el visor ya tiene el estado y se guarda en cada pausa.
-
-export type AnnotationResult = { ok: true } | { ok: false; error: "sesion" | "invalido" | "guardado" };
 
 export async function saveAnnotationAction(input: AnnotationInput): Promise<AnnotationResult> {
     const parsed = parseAnnotation(input);
