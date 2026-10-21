@@ -8,11 +8,18 @@ import { MarkerEditor } from "./MarkerEditor";
 import { findingLabel, type Marker, type MarkerAction } from "./markerState";
 import { DARK_PANEL } from "./ViewerToolbar";
 import type { ViewerSummary } from "./BeforeAfterViewer";
+import type { SaveStatus } from "./useMarkerAutosave";
 
 const H2 = "text-sm font-semibold uppercase tracking-wider text-slate-500 viewer-full:text-slate-400";
 const ICON_BTN =
   "flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-200 hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer viewer-full:text-slate-300 viewer-full:hover:bg-slate-700 viewer-full:hover:text-white viewer-full:focus-visible:outline-sky-300";
 const NOTE_PREVIEW_CHARS = 40;
+
+const SAVE_STATUS_TEXT: Record<Exclude<SaveStatus, "error">, string> = {
+  idle: "Los marcadores se guardan automáticamente.",
+  saving: "Guardando…",
+  saved: "Guardado.",
+};
 
 function optionLabel(options: ReadonlyArray<{ value: string; label: string }>, value: string | null): string {
   return options.find((o) => o.value === value)?.label ?? "Sin indicar";
@@ -34,7 +41,10 @@ export function MarkerPanel({
   isFullscreen,
   sheetOpen,
   onSheetOpenChange,
+  saveState,
 }: {
+  /** Ausente = sin persistencia (el visor se usa sin estudio guardado). */
+  saveState?: { status: SaveStatus; loadFailed: boolean; onRetry: () => void };
   isFullscreen: boolean;
   /** Hoja inferior abierta (pantalla completa por debajo de lg). */
   sheetOpen: boolean;
@@ -125,8 +135,26 @@ export function MarkerPanel({
         <h2 ref={listHeadingRef} tabIndex={-1} className={`${H2} outline-none`}>
           Marcadores ({markers.length})
         </h2>
-        <p className="text-xs text-slate-500 viewer-full:text-slate-400">
-          Los marcadores todavía no se guardan: se pierden al recargar la página.
+        {/* Estado del guardado. aria-live sin role="status": el visor ya tiene uno. */}
+        <p aria-live="polite" className="text-xs text-slate-500 viewer-full:text-slate-400">
+          {!saveState ? (
+            "Los marcadores todavía no se guardan: se pierden al recargar la página."
+          ) : saveState.loadFailed ? (
+            "No se pudieron cargar los marcadores guardados. Para no sobrescribirlos, los cambios de esta sesión no se guardarán; recarga la página para intentarlo de nuevo."
+          ) : saveState.status === "error" ? (
+            <>
+              No se pudieron guardar los últimos cambios.{" "}
+              <button
+                type="button"
+                onClick={saveState.onRetry}
+                className="font-semibold text-brand-primary underline underline-offset-2 hover:text-brand-primary-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer viewer-full:text-sky-200 viewer-full:focus-visible:outline-sky-300"
+              >
+                Reintentar
+              </button>
+            </>
+          ) : (
+            SAVE_STATUS_TEXT[saveState.status]
+          )}
         </p>
         {markers.length === 0 ? (
           <p className="text-sm text-slate-600 viewer-full:text-slate-300">

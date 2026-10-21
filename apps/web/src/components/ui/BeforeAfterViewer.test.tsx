@@ -1,7 +1,8 @@
-import { describe, expect, it } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
-import { BeforeAfterViewer, type ViewerSummary } from "./BeforeAfterViewer";
+import { BeforeAfterViewer, type ViewerAnnotations, type ViewerSummary } from "./BeforeAfterViewer";
+import type { Marker } from "./markerState";
 
 function renderViewer(summary?: ViewerSummary) {
   render(
@@ -436,5 +437,87 @@ describe("BeforeAfterViewer — pantalla completa con panel", () => {
     cerrar.focus();
     fireEvent.keyDown(cerrar, { key: "Tab" });
     expect(screen.getByRole("dialog")).toContainElement(document.activeElement as HTMLElement);
+  });
+});
+
+describe("BeforeAfterViewer — persistencia", () => {
+  const UPLOAD_ID = "6f1c2b3a-1d2e-4f50-8a9b-0c1d2e3f4a5b";
+  const mk = (seq: number, over: Partial<Marker> = {}): Marker => ({
+    id: `m${seq}`,
+    seq,
+    x: 0.5,
+    y: 0.5,
+    findingType: null,
+    aiAgreement: null,
+    note: "",
+    sizeMm: null,
+    ...over,
+  });
+
+  function renderWithAnnotations(over: Partial<ViewerAnnotations> = {}) {
+    const save = vi.fn<ViewerAnnotations["save"]>().mockResolvedValue({ ok: true });
+    const remove = vi.fn<ViewerAnnotations["remove"]>().mockResolvedValue({ ok: true });
+    render(
+      <BeforeAfterViewer
+        beforeUrl="/estudio.png"
+        heatmapBase64="AAAA"
+        annotations={{ uploadId: UPLOAD_ID, initial: [], save, remove, ...over }}
+      />
+    );
+    return { visor: screen.getByRole("group", { name: /Visor de tomografía/ }), save, remove };
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it("muestra los marcadores guardados al abrir", () => {
+    renderWithAnnotations({ initial: [mk(2, { findingType: "solido" })] });
+    expect(screen.getByRole("button", { name: /^Marcador 2: nódulo sólido/ })).toBeInTheDocument();
+    expect(screen.getByText("Los marcadores se guardan automáticamente.")).toBeInTheDocument();
+  });
+
+  it("un marcador nuevo continúa la numeración y se guarda solo", async () => {
+    vi.useFakeTimers();
+    const { visor, save } = renderWithAnnotations({ initial: [mk(2)] });
+    addMarkerWithKeyboard(visor);
+    expect(screen.getByRole("button", { name: /^Marcador 3/ })).toBeInTheDocument();
+    expect(screen.getByText("Guardando…")).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(700));
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ uploadId: UPLOAD_ID, seq: 3 }));
+    expect(screen.getByText("Guardado.")).toBeInTheDocument();
+  });
+
+  it("borrar llama a remove", async () => {
+    const { remove } = renderWithAnnotations({ initial: [mk(1)] });
+    fireEvent.click(screen.getByRole("button", { name: "Borrar marcador 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Borrar" }));
+    await act(async () => {});
+    expect(remove).toHaveBeenCalledWith(UPLOAD_ID, 1);
+  });
+
+  it("si el guardado falla, muestra el error y Reintentar vuelve a enviar", async () => {
+    vi.useFakeTimers();
+    const { visor, save } = renderWithAnnotations();
+    save.mockResolvedValueOnce({ ok: false, error: "guardado" });
+    addMarkerWithKeyboard(visor);
+    await act(() => vi.advanceTimersByTimeAsync(700));
+    expect(screen.getByText("No se pudieron guardar los últimos cambios.")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+    await act(() => vi.advanceTimersByTimeAsync(0));
+    expect(save).toHaveBeenCalledTimes(2);
+    expect(screen.getByText("Guardado.")).toBeInTheDocument();
+  });
+
+  it("si la carga falló, avisa y no guarda nada", async () => {
+    vi.useFakeTimers();
+    const { visor, save } = renderWithAnnotations({ loadFailed: true });
+    addMarkerWithKeyboard(visor);
+    await act(() => vi.advanceTimersByTimeAsync(2000));
+    expect(save).not.toHaveBeenCalled();
+    expect(screen.getByText(/No se pudieron cargar los marcadores guardados/)).toBeInTheDocument();
+  });
+
+  it("sin annotations conserva el aviso de la Fase B", () => {
+    renderViewer();
+    expect(screen.getByText(/todavía no se guardan/)).toBeInTheDocument();
   });
 });

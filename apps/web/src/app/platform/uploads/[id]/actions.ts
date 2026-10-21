@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/utils/supabase/server";
-import { parseReviewForm } from "@/lib/uploadReview";
+import { parseReviewForm, UUID_RE } from "@/lib/uploadReview";
+import { isValidSeq, parseAnnotation, type AnnotationInput, type AnnotationResult } from "@/lib/uploadAnnotations";
 
 export type ReviewState = {
     error?: string;
@@ -50,4 +51,39 @@ export async function saveUploadReviewAction(
 
     revalidatePath(`/platform/uploads/${parsed.uploadId}`);
     return { savedAt: data?.updated_at ?? new Date().toISOString(), fields: submittedFields(formData) };
+}
+
+// ── Marcadores del visor (Fase C) ──
+// Los llama el guardado automático del visor. Errores solo como tipo: la nota
+// es PHI y el detalle de Supabase no debe llegar al cliente ni a logs.
+// Sin revalidatePath: el visor ya tiene el estado y se guarda en cada pausa.
+
+export async function saveAnnotationAction(input: AnnotationInput): Promise<AnnotationResult> {
+    const parsed = parseAnnotation(input);
+    if (!parsed.ok) return { ok: false, error: "invalido" };
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "sesion" };
+
+    // RLS rechaza la escritura si el estudio no pertenece al médico.
+    const { error } = await supabase
+        .from("upload_annotations")
+        .upsert({ ...parsed.values, user_id: user.id }, { onConflict: "upload_id,seq" });
+
+    return error ? { ok: false, error: "guardado" } : { ok: true };
+}
+
+export async function deleteAnnotationAction(uploadId: string, seq: number): Promise<AnnotationResult> {
+    if (typeof uploadId !== "string" || !UUID_RE.test(uploadId) || !isValidSeq(seq)) {
+        return { ok: false, error: "invalido" };
+    }
+
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return { ok: false, error: "sesion" };
+
+    const { error } = await supabase.from("upload_annotations").delete().eq("upload_id", uploadId).eq("seq", seq);
+
+    return error ? { ok: false, error: "guardado" } : { ok: true };
 }

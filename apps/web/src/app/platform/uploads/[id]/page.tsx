@@ -14,6 +14,9 @@ import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
 import type { UploadReview } from "@/lib/uploadReview";
 import { ClinicalReviewForm } from "./ClinicalReviewForm";
+import { deleteAnnotationAction, saveAnnotationAction } from "./actions";
+import { ANNOTATION_COLUMNS, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
+import type { Marker } from "@/components/ui/markerState";
 import { AnonymizationCertificate, type AnonymizationAuditData } from "@/components/dicom/AnonymizationCertificate";
 
 type PageProps = {
@@ -73,6 +76,24 @@ export default async function UploadDetailPage({ params }: PageProps) {
             .eq("upload_id", id)
             .maybeSingle<UploadReview>();
         review = reviewError ? null : data;
+    }
+
+    // Marcadores guardados del visor. Si la consulta falla (p. ej. migración aún
+    // no aplicada), el visor no guarda para no sobrescribirlos por número.
+    let savedMarkers: Marker[] = [];
+    let markersLoadFailed = false;
+    if (isAnalyzed) {
+        const { data: rows, error: markersError } = await supabase
+            .from("upload_annotations")
+            .select(ANNOTATION_COLUMNS)
+            .eq("upload_id", id)
+            .order("seq")
+            .returns<AnnotationRow[]>();
+        if (markersError) {
+            markersLoadFailed = true;
+        } else {
+            savedMarkers = (rows ?? []).map(rowToMarker).filter((m): m is Marker => m !== null);
+        }
     }
 
     // Auditoría de desidentificación clínica (Ley 1581 / DICOM PS 3.15)
@@ -237,6 +258,13 @@ export default async function UploadDetailPage({ params }: PageProps) {
                                       conducta: review.conducta,
                                   }
                                 : null,
+                        }}
+                        annotations={{
+                            uploadId: upload.id,
+                            initial: savedMarkers,
+                            loadFailed: markersLoadFailed,
+                            save: saveAnnotationAction,
+                            remove: deleteAnnotationAction,
                         }}
                     />
                     <p className="text-xs text-slate-500 mt-2 px-1">

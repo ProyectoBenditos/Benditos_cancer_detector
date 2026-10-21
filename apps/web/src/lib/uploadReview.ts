@@ -51,7 +51,7 @@ export type ParsedReview =
     | { ok: true; uploadId: string; review: Omit<UploadReview, "updated_at"> }
     | { ok: false; error: string };
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+export const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function readText(formData: FormData, key: string): string {
     const value = formData.get(key);

@@ -4,6 +4,7 @@ import {
   MARKERS_INITIAL,
   markerAriaLabel,
   markersReducer,
+  markersStateFrom,
   type MarkersState,
 } from "./markerState";
 
@@ -72,6 +73,21 @@ describe("markersReducer", () => {
     expect(markersReducer(s, { type: "remove", id: "m9" })).toBe(s);
     expect(markersReducer(s, { type: "update", id: "m9", patch: { note: "x" } })).toBe(s);
     expect(markersReducer(s, { type: "move", id: "m9", x: 0, y: 0 })).toBe(s);
+  });
+});
+
+describe("markersStateFrom", () => {
+  it("ordena por seq, continúa la numeración y arranca sin selección", () => {
+    const m3 = { ...add(MARKERS_INITIAL).markers[0], id: "m3", seq: 3 };
+    const m1 = add(MARKERS_INITIAL).markers[0];
+    const s = markersStateFrom([m3, m1]);
+    expect(s.markers.map((m) => m.seq)).toEqual([1, 3]);
+    expect(s.nextSeq).toBe(4);
+    expect(s.selectedId).toBeNull();
+  });
+
+  it("sin marcadores empieza en 1", () => {
+    expect(markersStateFrom([])).toEqual(MARKERS_INITIAL);
   });
 });
 
