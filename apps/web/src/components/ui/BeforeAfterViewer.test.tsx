@@ -348,6 +348,27 @@ describe("BeforeAfterViewer — panel", () => {
   });
 });
 
+describe("BeforeAfterViewer — exportar", () => {
+  it("con notas, descargar pide consentimiento dentro del visor y la casilla arranca desmarcada", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.change(screen.getByRole("textbox", { name: "Nota" }), { target: { value: "x" } });
+    fireEvent.click(screen.getByRole("button", { name: "Descargar imagen" }));
+    const dialog = screen.getByRole("dialog", { name: "Descargar imagen" });
+    expect(visor).toContainElement(dialog);
+    expect(screen.getByRole("checkbox", { name: /Incluir el texto de las notas/ })).not.toBeChecked();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("sin notas descarga directamente, sin diálogo", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.click(screen.getByRole("button", { name: "Descargar imagen" }));
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+});
+
 describe("BeforeAfterViewer — pantalla completa con panel", () => {
   const enterFullscreen = () => fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
 

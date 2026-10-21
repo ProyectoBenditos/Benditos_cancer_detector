@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
 import { useViewerFullscreen } from "./useViewerFullscreen";
 import { ViewerHelpDialog } from "./ViewerHelpDialog";
+import { ViewerExportDialog } from "./ViewerExportDialog";
+import { EXPORT_SIZE, exportLegendLines, exportPinPositions, hasNotes } from "./viewerExport";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
 import { useFocusTrap } from "./useFocusTrap";
@@ -323,7 +325,7 @@ export function BeforeAfterViewer({
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     // Con la ayuda abierta el teclado es del modal (Esc lo cierra a él, no la
     // pantalla completa).
-    if (helpOpen) return;
+    if (helpOpen || exportOpen) return;
     const action = resolveViewerKey(e, {
       isContainer: e.target === e.currentTarget,
       isFormControl: isFormControlTarget(e.target),
@@ -390,62 +392,105 @@ export function BeforeAfterViewer({
     }
   };
 
-  // Exportar imagen comparativa limpia
-  const handleExport = useCallback(() => {
-    if (!beforeUrl) return;
+  // Exportar imagen comparativa con los pins numerados. El texto de las notas
+  // (PHI) solo entra en la leyenda si el médico lo consiente en el diálogo.
+  const exportImage = useCallback(
+    (includeNotes: boolean) => {
+      if (!beforeUrl) return;
 
-    const canvas = document.createElement("canvas");
-    canvas.width = 800;
-    canvas.height = 800;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+      const S = EXPORT_SIZE;
+      const legend = exportLegendLines(markersState.markers, includeNotes);
+      const legendHeight = legend.length > 0 ? 24 + 18 * legend.length : 0;
 
-    ctx.fillStyle = "#000000";
-    ctx.fillRect(0, 0, 800, 800);
+      const canvas = document.createElement("canvas");
+      canvas.width = S;
+      canvas.height = S + legendHeight;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
 
-    const baseImg = new Image();
-    baseImg.crossOrigin = "anonymous";
-    baseImg.src = beforeUrl;
-    baseImg.onload = () => {
-      ctx.drawImage(baseImg, 0, 0, 800, 800);
+      ctx.fillStyle = "#000000";
+      ctx.fillRect(0, 0, S, S + legendHeight);
 
-      if (activeHeatmapSrc && showAi) {
-        const heatImg = new Image();
-        heatImg.src = activeHeatmapSrc;
-        heatImg.onload = () => {
-          ctx.globalAlpha = opacity;
-          ctx.drawImage(heatImg, 0, 0, 800, 800);
-          ctx.globalAlpha = 1.0;
-
-          // Membrete inferior informativo
-          ctx.fillStyle = "rgba(1, 38, 65, 0.9)";
-          ctx.fillRect(0, 740, 800, 60);
-
-          ctx.fillStyle = "#ffffff";
-          ctx.font = "bold 15px sans-serif";
-          ctx.fillText("OncaScan AI • Explicabilidad Grad-CAM", 20, 765);
-
-          ctx.font = "12px sans-serif";
-          ctx.fillStyle = "#cbd5e1";
-          ctx.fillText(
-            `Modo: ${mode} | Fecha: ${new Date().toLocaleDateString()}`,
-            20,
-            785
-          );
-
-          const a = document.createElement("a");
-          a.download = `oncascan_analisis_${Date.now()}.png`;
-          a.href = canvas.toDataURL("image/png");
-          a.click();
-        };
-      } else {
+      const download = (name: string) => {
         const a = document.createElement("a");
-        a.download = `oncascan_estudio_${Date.now()}.png`;
+        a.download = `${name}_${Date.now()}.png`;
         a.href = canvas.toDataURL("image/png");
         a.click();
-      }
-    };
-  }, [beforeUrl, activeHeatmapSrc, opacity, mode, showAi]);
+      };
+
+      const drawPinsAndLegend = () => {
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.font = "bold 13px sans-serif";
+        for (const p of exportPinPositions(markersState.markers, S)) {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+          ctx.fillStyle = "#012641";
+          ctx.fill();
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = "#ffffff";
+          ctx.stroke();
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(String(p.seq), p.x, p.y);
+        }
+        ctx.textAlign = "start";
+        ctx.textBaseline = "alphabetic";
+
+        if (legend.length > 0) {
+          ctx.fillStyle = "#0f172a";
+          ctx.fillRect(0, S, S, legendHeight);
+          ctx.fillStyle = "#e2e8f0";
+          ctx.font = "13px sans-serif";
+          legend.forEach((line, i) => ctx.fillText(line, 20, S + 24 + 18 * i));
+        }
+      };
+
+      const baseImg = new Image();
+      baseImg.crossOrigin = "anonymous";
+      baseImg.src = beforeUrl;
+      baseImg.onload = () => {
+        // Brillo/contraste solo sobre la TAC, igual que en pantalla.
+        ctx.filter = adjustFilter(adjust);
+        ctx.drawImage(baseImg, 0, 0, S, S);
+        ctx.filter = "none";
+
+        if (activeHeatmapSrc && showAi) {
+          const heatImg = new Image();
+          heatImg.src = activeHeatmapSrc;
+          heatImg.onload = () => {
+            ctx.globalAlpha = opacity;
+            ctx.drawImage(heatImg, 0, 0, S, S);
+            ctx.globalAlpha = 1.0;
+
+            // Membrete inferior informativo
+            ctx.fillStyle = "rgba(1, 38, 65, 0.9)";
+            ctx.fillRect(0, S - 60, S, 60);
+
+            ctx.fillStyle = "#ffffff";
+            ctx.font = "bold 15px sans-serif";
+            ctx.fillText("OncoScan AI • Explicabilidad Grad-CAM", 20, S - 35);
+
+            ctx.font = "12px sans-serif";
+            ctx.fillStyle = "#cbd5e1";
+            ctx.fillText(`Modo: ${mode} | Fecha: ${new Date().toLocaleDateString()}`, 20, S - 15);
+
+            drawPinsAndLegend();
+            download("oncoscan_analisis");
+          };
+        } else {
+          drawPinsAndLegend();
+          download("oncoscan_estudio");
+        }
+      };
+    },
+    [beforeUrl, activeHeatmapSrc, opacity, mode, showAi, adjust, markersState.markers],
+  );
+
+  const [exportOpen, setExportOpen] = useState(false);
+  const handleExport = () => {
+    if (hasNotes(markersState.markers)) setExportOpen(true);
+    else exportImage(false);
+  };
 
   return (
     <Card>
@@ -786,6 +831,14 @@ export function BeforeAfterViewer({
           </p>
 
           <ViewerHelpDialog open={helpOpen} onClose={closeHelp} />
+          <ViewerExportDialog
+            open={exportOpen}
+            onClose={() => setExportOpen(false)}
+            onConfirm={(includeNotes) => {
+              setExportOpen(false);
+              exportImage(includeNotes);
+            }}
+          />
         </div>
       </CardContent>
     </Card>
