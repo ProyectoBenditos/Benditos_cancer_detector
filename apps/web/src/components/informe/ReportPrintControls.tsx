@@ -31,7 +31,7 @@ export function ReportPrintControls({ uploadId, sourceHash, caseRef }: Props) {
   };
 
   return (
-    <div className="print:hidden sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 px-6 py-3.5 mb-6 shadow-xs">
+    <div className="print:hidden sticky top-16 z-10 bg-white/95 backdrop-blur-md border-b border-slate-200 px-4 sm:px-6 py-3.5 mb-6 shadow-xs">
       <div className="max-w-4xl mx-auto flex flex-wrap items-center justify-between gap-4">
         <Link
           href={`/platform/uploads/${uploadId}`}

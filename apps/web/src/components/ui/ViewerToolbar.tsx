@@ -117,7 +117,7 @@ function RadioGroup<T extends string>({
     <div
       role="radiogroup"
       aria-label={label}
-      className={`inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 ${DARK_PANEL}`}
+      className={`${variant === "segment" ? "flex w-full sm:inline-flex sm:w-auto" : "inline-flex"} gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 ${DARK_PANEL}`}
     >
       {options.map((o, i) => {
         const checked = o.value === value;
@@ -128,7 +128,7 @@ function RadioGroup<T extends string>({
           : "text-slate-600 hover:text-brand-primary viewer-full:text-slate-300 viewer-full:hover:text-white";
         const shape =
           variant === "segment"
-            ? "inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold"
+            ? "inline-flex flex-1 items-center justify-center gap-1.5 whitespace-nowrap rounded-md px-2 py-1.5 text-xs font-semibold sm:flex-none sm:px-3"
             : "flex h-7 w-7 items-center justify-center rounded-md";
         return (
           <button
@@ -148,7 +148,8 @@ function RadioGroup<T extends string>({
             onKeyDown={(e) => onKeyDown(e, i)}
             className={`${base} ${state} ${shape}`}
           >
-            <Icon className={variant === "segment" ? "h-3.5 w-3.5" : "h-4 w-4"} aria-hidden="true" />
+            {/* En móvil los modos van sin icono para que quepan en una línea. */}
+            <Icon className={variant === "segment" ? "hidden h-3.5 w-3.5 sm:block" : "h-4 w-4"} aria-hidden="true" />
             {variant === "segment" && o.label}
             {o.description && (
               <span id={`${descId}-${i}`} className="sr-only">

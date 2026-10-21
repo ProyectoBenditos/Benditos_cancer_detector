@@ -123,21 +123,21 @@ export default function ConfusionMatrix() {
 
       <div className="flex flex-col items-center my-2">
         {/* Column header */}
-        <div className="text-center font-medium text-xs text-slate-500 mb-2 ml-20 uppercase tracking-wider">
+        <div className="text-center font-medium text-xs text-slate-500 mb-2 ml-16 sm:ml-20 uppercase tracking-wider">
           Resultado Predicho por IA
         </div>
 
-        <div className="flex">
+        <div className="flex w-full max-w-md">
           {/* Row header */}
-          <div className="flex flex-col items-center justify-center mr-2 w-14">
+          <div className="flex flex-col items-center justify-center mr-1 w-6 sm:mr-2 sm:w-14">
             <span className="text-xs font-medium text-slate-500 uppercase tracking-wider [writing-mode:vertical-lr] rotate-180">
               Diagnóstico Real
             </span>
           </div>
 
-          <div className="flex flex-col">
+          <div className="flex min-w-0 flex-1 flex-col">
             {/* Column labels */}
-            <div className="grid grid-cols-[80px_1fr_1fr] gap-2 mb-2">
+            <div className="grid grid-cols-[64px_1fr_1fr] sm:grid-cols-[80px_1fr_1fr] gap-2 mb-2">
               <div />
               <div className="text-center text-xs font-semibold text-slate-600">
                 Sin nódulo
@@ -148,7 +148,7 @@ export default function ConfusionMatrix() {
             </div>
 
             {/* Row 1: Real = Sin nódulo */}
-            <div className="grid grid-cols-[80px_1fr_1fr] gap-2 mb-2">
+            <div className="grid grid-cols-[64px_1fr_1fr] sm:grid-cols-[80px_1fr_1fr] gap-2 mb-2">
               <div className="flex items-center justify-end pr-2 text-xs font-semibold text-slate-600">
                 Sin nódulo
               </div>
@@ -158,13 +158,13 @@ export default function ConfusionMatrix() {
                 type="button"
                 onClick={() => toggleQuadrant("TN")}
                 aria-pressed={selectedQuadrant === "TN"}
-                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
+                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-0 min-h-[80px] sm:min-w-[110px] sm:min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
                   selectedQuadrant === "TN"
                     ? "bg-blue-900 ring-3 ring-blue-500 shadow-md scale-102"
                     : "bg-blue-800 hover:bg-blue-850 hover:shadow-sm"
                 }`}
               >
-                <span className="text-3xl font-extrabold tracking-tight">{tn}</span>
+                <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">{tn}</span>
                 <span className="text-xs font-medium opacity-85 mt-1 flex items-center gap-1">
                   VN · {DETAILS.TN.pct}
                 </span>
@@ -175,13 +175,13 @@ export default function ConfusionMatrix() {
                 type="button"
                 onClick={() => toggleQuadrant("FP")}
                 aria-pressed={selectedQuadrant === "FP"}
-                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 ${
+                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-0 min-h-[80px] sm:min-w-[110px] sm:min-h-[96px] cursor-pointer transition-all duration-150 ${
                   selectedQuadrant === "FP"
                     ? "bg-blue-200 text-slate-900 ring-3 ring-amber-500 shadow-md scale-102"
                     : "bg-blue-100/70 text-slate-800 hover:bg-blue-200/80 hover:shadow-sm"
                 }`}
               >
-                <span className="text-3xl font-extrabold tracking-tight">{fp}</span>
+                <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">{fp}</span>
                 <span className="text-xs font-medium text-slate-600 mt-1 flex items-center gap-1">
                   FP · {DETAILS.FP.pct}
                 </span>
@@ -189,7 +189,7 @@ export default function ConfusionMatrix() {
             </div>
 
             {/* Row 2: Real = Nódulo */}
-            <div className="grid grid-cols-[80px_1fr_1fr] gap-2">
+            <div className="grid grid-cols-[64px_1fr_1fr] sm:grid-cols-[80px_1fr_1fr] gap-2">
               <div className="flex items-center justify-end pr-2 text-xs font-semibold text-slate-600">
                 Nódulo
               </div>
@@ -199,13 +199,13 @@ export default function ConfusionMatrix() {
                 type="button"
                 onClick={() => toggleQuadrant("FN")}
                 aria-pressed={selectedQuadrant === "FN"}
-                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 ${
+                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-0 min-h-[80px] sm:min-w-[110px] sm:min-h-[96px] cursor-pointer transition-all duration-150 ${
                   selectedQuadrant === "FN"
                     ? "bg-blue-200 text-slate-900 ring-3 ring-rose-500 shadow-md scale-102"
                     : "bg-blue-100/70 text-slate-800 hover:bg-blue-200/80 hover:shadow-sm"
                 }`}
               >
-                <span className="text-3xl font-extrabold tracking-tight">{fn}</span>
+                <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">{fn}</span>
                 <span className="text-xs font-medium text-slate-600 mt-1 flex items-center gap-1">
                   FN · {DETAILS.FN.pct}
                 </span>
@@ -216,13 +216,13 @@ export default function ConfusionMatrix() {
                 type="button"
                 onClick={() => toggleQuadrant("TP")}
                 aria-pressed={selectedQuadrant === "TP"}
-                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-[110px] min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
+                className={`flex flex-col items-center justify-center rounded-xl p-3 min-w-0 min-h-[80px] sm:min-w-[110px] sm:min-h-[96px] cursor-pointer transition-all duration-150 text-white ${
                   selectedQuadrant === "TP"
                     ? "bg-blue-700 ring-3 ring-blue-400 shadow-md scale-102"
                     : "bg-blue-600 hover:bg-blue-650 hover:shadow-sm"
                 }`}
               >
-                <span className="text-3xl font-extrabold tracking-tight">{tp}</span>
+                <span className="text-2xl font-extrabold tracking-tight sm:text-3xl">{tp}</span>
                 <span className="text-xs font-medium opacity-85 mt-1 flex items-center gap-1">
                   VP · {DETAILS.TP.pct}
                 </span>
