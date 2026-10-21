@@ -112,7 +112,9 @@ export function MarkerPanel({
           isFullscreen && !sheetOpen ? "max-lg:hidden" : ""
         }`}
       >
-      {summary && (
+      {/* Solo en pantalla completa: fuera de ella el resultado IA ya está en la
+          página, justo arriba del visor, y repetirlo es ruido. */}
+      {summary && isFullscreen && (
         <section className="space-y-2">
           <h2 className={H2}>Resultado IA</h2>
           <div className="flex items-center gap-3">

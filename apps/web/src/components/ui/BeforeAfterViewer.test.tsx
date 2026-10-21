@@ -266,20 +266,28 @@ describe("BeforeAfterViewer — marcadores", () => {
 });
 
 describe("BeforeAfterViewer — panel", () => {
-  it("muestra score, riesgo y valoración resumida", () => {
+  it("fuera de pantalla completa no repite el resultado IA (ya está en la página)", () => {
     renderViewer({
       score: 0.82,
       riskLevel: "ALTO",
       review: { concordancia: "discrepa", lung_rads: "4A", conducta: null },
     });
     const panel = screen.getByRole("complementary", { name: "Panel del caso" });
+    expect(panel).not.toHaveTextContent("82.0%");
+    expect(panel).not.toHaveTextContent("Resultado IA");
+    expect(panel).toHaveTextContent("Discrepa del resultado IA");
+    expect(panel).toHaveTextContent("Los marcadores todavía no se guardan");
+  });
+
+  it("en pantalla completa muestra score, riesgo y el aviso de apoyo diagnóstico", () => {
+    renderViewer({ score: 0.82, riskLevel: "ALTO", review: null });
+    fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+    const panel = screen.getByRole("complementary", { name: "Panel del caso" });
     expect(panel).toHaveTextContent("82.0%");
     expect(panel).toHaveTextContent("ALTO");
     expect(panel).toHaveTextContent("Probabilidad estimada por el modelo, no severidad.");
     // En pantalla completa el aviso de la página queda tapado: el panel lo repite.
     expect(panel).toHaveTextContent("Apoyo diagnóstico: no reemplaza el criterio del especialista.");
-    expect(panel).toHaveTextContent("Discrepa del resultado IA");
-    expect(panel).toHaveTextContent("Los marcadores todavía no se guardan");
   });
 
   it("sin valoración lo dice", () => {
