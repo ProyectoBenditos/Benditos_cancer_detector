@@ -55,3 +55,19 @@ export function clampTranslate(
     ty: clamp(t.ty, stage.h * (1 - scale), 0),
   };
 }
+
+/**
+ * Transform que deja el punto `p` (unidades del stage sin transformar) en el
+ * centro del stage con el scale dado, ya acotado para no mostrar bordes vacíos.
+ */
+export function centerTransform(
+  p: { x: number; y: number },
+  scale: number,
+  stage: { w: number; h: number },
+): { tx: number; ty: number } {
+  return clampTranslate(
+    { tx: stage.w / 2 - scale * p.x, ty: stage.h / 2 - scale * p.y },
+    scale,
+    stage,
+  );
+}
