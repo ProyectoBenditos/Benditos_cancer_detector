@@ -114,6 +114,10 @@ export function MarkerPanel({
           <p className="text-xs text-slate-500 viewer-full:text-slate-400">
             Probabilidad estimada por el modelo, no severidad.
           </p>
+          {/* En pantalla completa el aviso de la página queda tapado: el panel lo repite. */}
+          <p className="text-xs font-medium text-slate-600 viewer-full:text-slate-300">
+            Apoyo diagnóstico: no reemplaza el criterio del especialista.
+          </p>
         </section>
       )}
 

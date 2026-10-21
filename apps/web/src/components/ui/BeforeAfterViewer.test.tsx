@@ -275,6 +275,8 @@ describe("BeforeAfterViewer — panel", () => {
     expect(panel).toHaveTextContent("82.0%");
     expect(panel).toHaveTextContent("ALTO");
     expect(panel).toHaveTextContent("Probabilidad estimada por el modelo, no severidad.");
+    // En pantalla completa el aviso de la página queda tapado: el panel lo repite.
+    expect(panel).toHaveTextContent("Apoyo diagnóstico: no reemplaza el criterio del especialista.");
     expect(panel).toHaveTextContent("Discrepa del resultado IA");
     expect(panel).toHaveTextContent("Los marcadores todavía no se guardan");
   });
