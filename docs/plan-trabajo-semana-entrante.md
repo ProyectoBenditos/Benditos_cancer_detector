@@ -357,7 +357,7 @@ Los negativos del entrenamiento son cortes **sin nódulo** (sección 3.2 de este
 
 ## 10. Mejora del Visor: Marcadores con Notas, Herramientas y Pantalla Completa
 
-> **Estado (20 oct 2026): ✅ Fases A y B terminadas.** Fase A: PR #18, plan en [2026-10-20-visor-fase-a.md](superpowers/plans/2026-10-20-visor-fase-a.md); corrige los problemas 1, 2, 4 y 5 de la sección 10.2 y agrega la ayuda con `?`. Fase B: rama `feat/visor-fase-b`, plan en [2026-10-20-visor-fase-b.md](superpowers/plans/2026-10-20-visor-fase-b.md); paleta de herramientas, brillo/contraste, marcadores con notas y panel del caso dentro de la pantalla completa (problema 3). **Siguiente: Fase C** (persistencia en `upload_annotations`).
+> **Estado (21 oct 2026): ✅ Fases A, B y C terminadas.** Fase A: PR #18, plan en [2026-10-20-visor-fase-a.md](superpowers/plans/2026-10-20-visor-fase-a.md). Fase B: plan en [2026-10-20-visor-fase-b.md](superpowers/plans/2026-10-20-visor-fase-b.md); paleta de herramientas, brillo/contraste, marcadores con notas y panel del caso dentro de la pantalla completa (problema 3). Fase C: plan en [2026-10-21-visor-fase-c.md](superpowers/plans/2026-10-21-visor-fase-c.md); tabla `upload_annotations` con RLS y guardado automático de los marcadores (requiere aplicar la migración `20261021120000_upload_annotations.sql` en el SQL Editor). **Siguiente: Fase D** (lectura ciega y modo práctica).
 >
 > **Prioridad:** es lo **primero** que se implementa en la plataforma. No depende del reentrenamiento del modelo ni de datos nuevos.
 > **Referentes:** Lunit INSIGHT MMG (producto comercial) y Lunit INSIGHT Challenge (visor de lectura con marcadores), más el artículo de freeCodeCamp sobre preprocesamiento.
@@ -491,7 +491,7 @@ Nueva tabla `upload_annotations`, una fila por marcador. Sigue el mismo patrón 
 |---|---|---|---|
 | **A. Correcciones** ✅ | Problemas 1, 2, 4 y 5 de la sección 10.2: tamaño en pantalla completa, tema oscuro, Espacio solo con foco en el visor, modo expandido para iPhone y modal de ayuda `?`. El problema 3 pasa a la Fase B | `BeforeAfterViewer.tsx`, `viewerKeys.ts`, `useViewerFullscreen.ts`, `ViewerHelpDialog.tsx`, `globals.css` (variante `viewer-full:`) | Hecho (PR #18) |
 | **B. Herramientas y marcadores (solo en el navegador)** ✅ | Paleta de herramientas, brillo/contraste, pins con notas, panel lateral (incluye el problema 3: panel dentro de pantalla completa) y conversión de coordenadas con tests | `BeforeAfterViewer.tsx` (dividir en `ViewerToolbar`, `MarkerLayer`, `MarkerPanel`), nuevo `markerMath.ts` + `markerMath.test.ts` | Hecho (rama `feat/visor-fase-b`) |
-| **C. Persistencia** | Migración `upload_annotations` con RLS, server actions, carga inicial en `uploads/[id]/page.tsx` y en el flujo de subida | `supabase/migrations/2026XXXX_upload_annotations.sql`, `uploads/[id]/actions.ts`, `uploads/[id]/page.tsx`, `upload/page.tsx` | 1–2 días |
+| **C. Persistencia** ✅ | Migración `upload_annotations` con RLS, server actions, carga inicial en `uploads/[id]/page.tsx` y en el flujo de subida | `supabase/migrations/2026XXXX_upload_annotations.sql`, `uploads/[id]/actions.ts`, `uploads/[id]/page.tsx`, `upload/page.tsx` | Hecho (rama `feat/visor-fase-c`) |
 | **D. Lectura ciega y modo práctica** | Preferencia por médico; selección de casos LIDC; comparación con la anotación de referencia | Nueva ruta `/platform/practica` | 3–4 días |
 | **E. Visor DICOM real (futuro)** | Cornerstone3D: serie completa, WW/WL real con presets, herramientas nativas (`ArrowAnnotateTool`, `LengthTool`, `BidirectionalTool`) y exportación como DICOM SR | Depende de la sección 7.4, punto 3 (subir la serie DICOM completa) | Proyecto aparte |
 
@@ -512,7 +512,7 @@ Nueva tabla `upload_annotations`, una fila por marcador. Sigue el mismo patrón 
 * [x] ¿En pantalla completa la imagen cabe entera en una pantalla 16:9 sin hacer scroll?
 * [x] ¿La pantalla completa incluye el panel lateral (score, marcadores y valoración) con tema oscuro?
 * [x] ¿Espacio activa normalmente los botones fuera del visor?
-* [ ] ¿Los marcadores mantienen su posición anatómica tras zoom, pan, pantalla completa y recarga? (zoom, pan y pantalla completa: sí; recarga: Fase C)
+* [ ] ¿Los marcadores mantienen su posición anatómica tras zoom, pan, pantalla completa y recarga? (zoom, pan y pantalla completa: sí; recarga: implementada en la Fase C, falta comprobarla tras aplicar la migración)
 * [x] ¿Las notas nunca aparecen en logs ni en la imagen exportada sin consentimiento explícito?
 * [x] ¿La herramienta Medir está desactivada cuando no hay `PixelSpacing`?
 * [x] ¿Todo el visor se puede operar con teclado y los pins tienen nombre accesible?
