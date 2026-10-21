@@ -53,6 +53,14 @@ describe("BeforeAfterViewer — teclado", () => {
   });
 });
 
+describe("BeforeAfterViewer — etiquetas", () => {
+  it("el deslizador de opacidad tiene nombre accesible", () => {
+    renderViewer();
+    fireEvent.click(screen.getByRole("radio", { name: /Superpuesto/ }));
+    expect(screen.getByRole("slider", { name: "Intensidad del mapa de calor" })).toBeInTheDocument();
+  });
+});
+
 describe("BeforeAfterViewer — ayuda", () => {
   it("? con el visor enfocado abre la ayuda dentro del visor", () => {
     const visor = renderViewer();
