@@ -1,0 +1,20 @@
+{
+  "architecture": "OncoScan 2.0 (DenseNet-121 + LIDC Domain + Clinical MLP + XGBoost + TTA 4x)",
+  "split_type": "Strict Patient-Level Zero-Leakage Split",
+  "test_samples": 357,
+  "operating_threshold": 0.35,
+  "sensitivity_recall": 0.9507,
+  "specificity": 0.8571,
+  "auc_roc": 0.9684,
+  "auprc": 0.9784,
+  "f1_score": 0.9234,
+  "precision": 0.8977,
+  "accuracy": 0.9104,
+  "brier_score": 0.0774,
+  "confusion_matrix": {
+    "TP": 193,
+    "TN": 132,
+    "FP": 22,
+    "FN": 10
+  }
+}

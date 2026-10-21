@@ -1,0 +1,20 @@
+{
+  "dataset": "Comprehensive Lung Cancer Imaging Dataset (CLID v1.0.0 - ice778)",
+  "architecture": "DenseNet-121 Histological Subtype Classifier (128x128 CLAHE)",
+  "classes": [
+    "adenocarcinoma",
+    "large_cell",
+    "normal",
+    "squamous_cell"
+  ],
+  "test_samples": 208,
+  "multiclass_accuracy": 0.7548,
+  "binary_cancer_vs_normal": {
+    "sensitivity_recall": 0.9939,
+    "specificity": 0.9767,
+    "TP": 164,
+    "TN": 42,
+    "FP": 1,
+    "FN": 1
+  }
+}
