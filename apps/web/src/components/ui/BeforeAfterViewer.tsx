@@ -6,6 +6,7 @@ import {
   Download,
   Eye,
   EyeOff,
+  Keyboard,
   Layers,
   Maximize2,
   Minimize2,
@@ -19,6 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
 import { useViewerFullscreen } from "./useViewerFullscreen";
+import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 
 type BeforeAfterViewerProps = {
@@ -125,6 +127,8 @@ export function BeforeAfterViewer({
   const [cleanNoise, setCleanNoise] = useState(true);
   const [showAi, setShowAi] = useState(initialShowAi);
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
+  const closeHelp = useCallback(() => setHelpOpen(false), []);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const {
@@ -224,6 +228,9 @@ export function BeforeAfterViewer({
   // Los atajos se escuchan solo dentro del visor (no en window): fuera de él,
   // Espacio y las flechas conservan su comportamiento normal.
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    // Con la ayuda abierta el teclado es del modal (Esc lo cierra a él, no la
+    // pantalla completa).
+    if (helpOpen) return;
     const action = resolveViewerKey(e, {
       isContainer: e.target === e.currentTarget,
       isFormControl: isFormControlTarget(e.target),
@@ -247,6 +254,10 @@ export function BeforeAfterViewer({
       case "toggleAi":
         e.preventDefault();
         setShowAi((prev) => !prev);
+        break;
+      case "openHelp":
+        e.preventDefault();
+        setHelpOpen(true);
         break;
       case "panUp":
         e.preventDefault();
@@ -430,6 +441,9 @@ export function BeforeAfterViewer({
                 label="Descargar imagen"
               >
                 <Download className="h-4 w-4 text-emerald-600 viewer-full:text-emerald-400" aria-hidden="true" />
+              </ToolbarButton>
+              <ToolbarButton onClick={() => setHelpOpen(true)} label="Atajos de teclado (?)">
+                <Keyboard className="h-4 w-4" aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 onClick={toggleFullscreen}
@@ -708,6 +722,8 @@ export function BeforeAfterViewer({
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
+
+          <ViewerHelpDialog open={helpOpen} onClose={closeHelp} />
         </div>
       </CardContent>
     </Card>

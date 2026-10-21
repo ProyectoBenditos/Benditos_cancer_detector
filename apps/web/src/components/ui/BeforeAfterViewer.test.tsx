@@ -52,3 +52,28 @@ describe("BeforeAfterViewer — teclado", () => {
     expect(fireEvent.keyDown(slider, { key: "ArrowRight" })).toBe(true);
   });
 });
+
+describe("BeforeAfterViewer — ayuda", () => {
+  it("? con el visor enfocado abre la ayuda dentro del visor", () => {
+    const visor = renderViewer();
+    fireEvent.keyDown(visor, { key: "?" });
+    const dialog = screen.getByRole("dialog", { name: "Atajos del visor" });
+    expect(dialog).toHaveTextContent("Mostrar u ocultar la IA (con el visor enfocado)");
+    expect(visor).toContainElement(dialog);
+  });
+
+  it("el botón de la barra abre la ayuda", () => {
+    renderViewer();
+    fireEvent.click(screen.getByRole("button", { name: "Atajos de teclado (?)" }));
+    expect(screen.getByRole("dialog", { name: "Atajos del visor" })).toBeInTheDocument();
+  });
+
+  it("Esc con la ayuda abierta en modo expandido cierra solo la ayuda", () => {
+    const visor = renderViewer();
+    fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+    fireEvent.keyDown(visor, { key: "?" });
+    fireEvent.keyDown(screen.getByRole("dialog", { name: "Atajos del visor" }), { key: "Escape" });
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(visor).toHaveAttribute("data-fullscreen", "true");
+  });
+});

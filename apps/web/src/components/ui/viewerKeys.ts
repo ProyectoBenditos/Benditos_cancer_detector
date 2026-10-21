@@ -35,6 +35,19 @@ const SIMPLE_KEYS: Record<string, ViewerAction> = {
   ArrowRight: "panRight",
 };
 
+/** Atajos que muestra el modal de ayuda. Mantener en sincronía con resolveViewerKey. */
+export const VIEWER_SHORTCUTS: ReadonlyArray<{ keys: string; description: string }> = [
+  { keys: "Rueda del ratón", description: "Acercar o alejar hacia el cursor" },
+  { keys: "Arrastrar", description: "Mover la imagen (con zoom aplicado)" },
+  { keys: "+ / −", description: "Acercar / alejar" },
+  { keys: "Flechas", description: "Mover la imagen" },
+  { keys: "0", description: "Restablecer zoom y posición" },
+  { keys: "Espacio", description: "Mostrar u ocultar la IA (con el visor enfocado)" },
+  { keys: "F", description: "Pantalla completa" },
+  { keys: "Esc", description: "Salir de pantalla completa" },
+  { keys: "?", description: "Mostrar esta ayuda" },
+];
+
 export function resolveViewerKey(e: KeyInput, target: KeyTarget): ViewerAction | null {
   // Ctrl/Cmd/Alt + tecla pertenece al navegador (p. ej. Ctrl+0 = zoom de página).
   if (e.ctrlKey || e.metaKey || e.altKey) return null;
