@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
+import { useViewerFullscreen } from "./useViewerFullscreen";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 
 type BeforeAfterViewerProps = {
@@ -113,10 +114,15 @@ export function BeforeAfterViewer({
   const [splitPosition, setSplitPosition] = useState(initialSplit);
   const [cleanNoise, setCleanNoise] = useState(true);
   const [showAi, setShowAi] = useState(initialShowAi);
-  const [isFullscreen, setIsFullscreen] = useState(false);
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
 
   const containerRef = useRef<HTMLDivElement>(null);
+  const {
+    mode: fullscreenMode,
+    isFullscreen,
+    toggle: toggleFullscreen,
+    exit: exitFullscreen,
+  } = useViewerFullscreen(containerRef);
   const opacityId = useId();
   const splitId = useId();
 
@@ -205,21 +211,6 @@ export function BeforeAfterViewer({
 
   const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
-  useEffect(() => {
-    const onChange = () =>
-      setIsFullscreen(document.fullscreenElement === containerRef.current);
-    document.addEventListener("fullscreenchange", onChange);
-    return () => document.removeEventListener("fullscreenchange", onChange);
-  }, []);
-
-  const toggleFullscreen = () => {
-    if (document.fullscreenElement) {
-      void document.exitFullscreen();
-    } else {
-      void containerRef.current?.requestFullscreen();
-    }
-  };
-
   // Los atajos se escuchan solo dentro del visor (no en window): fuera de él,
   // Espacio y las flechas conservan su comportamiento normal.
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -239,6 +230,9 @@ export function BeforeAfterViewer({
         break;
       case "toggleFullscreen":
         toggleFullscreen();
+        break;
+      case "exitFullscreen":
+        exitFullscreen();
         break;
       case "toggleAi":
         e.preventDefault();
@@ -336,8 +330,11 @@ export function BeforeAfterViewer({
           aria-label="Visor de tomografía y mapa de calor Grad-CAM"
           tabIndex={0}
           onKeyDown={onKeyDown}
-          className="rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary data-[fullscreen=true]:flex data-[fullscreen=true]:h-full data-[fullscreen=true]:flex-col data-[fullscreen=true]:justify-center data-[fullscreen=true]:bg-white data-[fullscreen=true]:p-6"
+          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary data-[fullscreen=true]:flex data-[fullscreen=true]:h-full data-[fullscreen=true]:flex-col data-[fullscreen=true]:justify-center data-[fullscreen=true]:bg-white data-[fullscreen=true]:p-6 ${
+            fullscreenMode === "expanded" ? "fixed inset-0 z-50 overflow-auto rounded-none" : ""
+          }`}
           data-fullscreen={isFullscreen}
+          data-fullscreen-mode={fullscreenMode}
         >
           {/* Barra de herramientas superior */}
           <div className="mb-4 flex flex-wrap items-center justify-between gap-3">

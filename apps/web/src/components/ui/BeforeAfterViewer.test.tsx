@@ -36,6 +36,16 @@ describe("BeforeAfterViewer — teclado", () => {
     expect(screen.getByText("TAC Pura")).toBeInTheDocument();
   });
 
+  it("pantalla completa sin API expande el visor y Esc lo cierra", () => {
+    const visor = renderViewer();
+    fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+    expect(visor).toHaveAttribute("data-fullscreen", "true");
+    expect(visor).toHaveAttribute("data-fullscreen-mode", "expanded");
+
+    fireEvent.keyDown(visor, { key: "Escape" });
+    expect(visor).toHaveAttribute("data-fullscreen", "false");
+  });
+
   it("Las flechas sobre la cortina no se bloquean", () => {
     renderViewer();
     const slider = screen.getByRole("slider", { name: "Posición de la cortina" });
