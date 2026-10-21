@@ -2,7 +2,7 @@
  * Estado de los marcadores del visor (reducer puro, testeado).
  * En la Fase B vive solo en el navegador; los valores de findingType y
  * aiAgreement son los del CHECK de la futura tabla upload_annotations (Fase C).
- * La nota es PHI: no se envía a console.* ni a logs.
+ * La nota es PHI: nunca se escribe en la consola del navegador ni en logs.
  */
 import { clamp } from "./panZoomMath";
 

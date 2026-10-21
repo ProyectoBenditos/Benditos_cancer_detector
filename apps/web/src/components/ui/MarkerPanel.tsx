@@ -189,9 +189,17 @@ export function MarkerPanel({
                     </div>
                   </div>
 
-                  {confirmId === m.id ? (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-700 viewer-full:text-slate-200">
-                      <span>¿Borrar el marcador {m.seq}?</span>
+                  {/* Grupo con la pregunta como nombre: al llegar el foco a «Cancelar»
+                      el lector de pantalla anuncia también qué se está confirmando.
+                      El editor no se desmonta mientras tanto (si se remontara, su foco
+                      inicial le quitaría el foco al botón de borrar al cancelar). */}
+                  {confirmId === m.id && (
+                    <div
+                      role="group"
+                      aria-labelledby={`${uid}-confirmar-${m.id}`}
+                      className="mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-700 viewer-full:text-slate-200"
+                    >
+                      <span id={`${uid}-confirmar-${m.id}`}>¿Borrar el marcador {m.seq}?</span>
                       <button
                         type="button"
                         onClick={() => confirmDelete(m)}
@@ -203,20 +211,19 @@ export function MarkerPanel({
                         ref={cancelRef}
                         type="button"
                         onClick={() => cancelDelete(m)}
-                        className="rounded-md border border-slate-300 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer viewer-full:border-slate-600 viewer-full:text-slate-200 viewer-full:hover:bg-slate-700 viewer-full:focus-visible:outline-sky-300"
+                        className="rounded-md border border-slate-300 px-2.5 py-1 font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer viewer-full:border-slate-400 viewer-full:text-slate-200 viewer-full:hover:bg-slate-700 viewer-full:focus-visible:outline-sky-300"
                       >
                         Cancelar
                       </button>
                     </div>
-                  ) : (
-                    selectedId === m.id && (
-                      <MarkerEditor
-                        key={m.id}
-                        marker={m}
-                        onChange={(patch) => dispatch({ type: "update", id: m.id, patch })}
-                        onClose={() => dispatch({ type: "select", id: null })}
-                      />
-                    )
+                  )}
+                  {selectedId === m.id && (
+                    <MarkerEditor
+                      key={m.id}
+                      marker={m}
+                      onChange={(patch) => dispatch({ type: "update", id: m.id, patch })}
+                      onClose={() => dispatch({ type: "select", id: null })}
+                    />
                   )}
                 </li>
               );

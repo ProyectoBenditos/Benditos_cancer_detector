@@ -330,7 +330,11 @@ describe("BeforeAfterViewer — panel", () => {
     addMarkerWithKeyboard(visor);
     fireEvent.click(screen.getByRole("button", { name: "Borrar marcador 1" }));
     expect(screen.getByRole("button", { name: /^Marcador 1/ })).toBeInTheDocument();
+    const confirmacion = screen.getByRole("group", { name: "¿Borrar el marcador 1?" });
+    expect(confirmacion).toContainElement(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByRole("button", { name: "Cancelar" })).toHaveFocus();
     fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByRole("button", { name: "Borrar marcador 1" })).toHaveFocus();
     expect(screen.getByRole("button", { name: /^Marcador 1/ })).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Borrar marcador 1" }));
     fireEvent.click(screen.getByRole("button", { name: "Borrar" }));

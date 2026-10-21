@@ -13,7 +13,7 @@ import {
 } from "./markerState";
 
 const FIELD =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary viewer-full:border-slate-600 viewer-full:bg-slate-800 viewer-full:text-slate-100 viewer-full:focus-visible:border-sky-300 viewer-full:focus-visible:ring-sky-300";
+  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary viewer-full:border-slate-400 viewer-full:bg-slate-800 viewer-full:text-slate-100 viewer-full:focus-visible:border-sky-300 viewer-full:focus-visible:ring-sky-300";
 const LABEL = "mb-1 block text-xs font-medium text-slate-700 viewer-full:text-slate-300";
 
 /**
