@@ -33,11 +33,17 @@ type Mode = "curtain" | "side" | "overlay";
 
 const PAN_STEP = 40;
 
+// Controles en reposo dentro de la pantalla completa oscura. brand-primary no
+// tiene contraste sobre fondo oscuro, por eso los acentos usan sky.
+const DARK_CONTROL =
+  "viewer-full:border-slate-700 viewer-full:bg-slate-800 viewer-full:text-slate-200 viewer-full:hover:bg-slate-700 viewer-full:hover:text-white";
+const DARK_PANEL = "viewer-full:border-slate-700 viewer-full:bg-slate-900 viewer-full:text-slate-300";
+
 type StageHandlers = ReturnType<typeof usePanZoom>["stageHandlers"];
 
 function Placeholder({ message }: { message: string }) {
   return (
-    <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500">
+    <div className="flex aspect-square items-center justify-center rounded-xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-500 viewer-full:border-slate-700 viewer-full:bg-slate-900 viewer-full:text-slate-400">
       {message}
     </div>
   );
@@ -57,17 +63,21 @@ function Stage({
   layerStyle: React.CSSProperties;
   children: React.ReactNode;
 }) {
+  // En pantalla completa el envoltorio ocupa el alto libre y el lienzo cuadrado
+  // se dimensiona por esa altura (no por el ancho), para no salirse de la pantalla.
   return (
-    <div
-      {...handlers}
-      role="img"
-      aria-label={ariaLabel}
-      className={`relative aspect-square w-full touch-none overflow-hidden rounded-xl border border-slate-200 bg-black select-none ${
-        canPan ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-      }`}
-    >
-      <div className="absolute inset-0" style={layerStyle}>
-        {children}
+    <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:items-center viewer-full:justify-center">
+      <div
+        {...handlers}
+        role="img"
+        aria-label={ariaLabel}
+        className={`relative aspect-square w-full touch-none overflow-hidden rounded-xl border border-slate-200 bg-black select-none viewer-full:h-full viewer-full:w-auto viewer-full:max-w-full viewer-full:border-slate-800 ${
+          canPan ? "cursor-grab active:cursor-grabbing" : "cursor-default"
+        }`}
+      >
+        <div className="absolute inset-0" style={layerStyle}>
+          {children}
+        </div>
       </div>
     </div>
   );
@@ -90,10 +100,10 @@ function ToolbarButton({
       onClick={onClick}
       aria-label={label}
       title={label}
-      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer ${
+      className={`flex h-9 w-9 items-center justify-center rounded-lg border transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:focus-visible:outline-sky-300 cursor-pointer ${
         active
-          ? "border-brand-primary bg-brand-primary/10 text-brand-primary"
-          : "border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-brand-primary"
+          ? "border-brand-primary bg-brand-primary/10 text-brand-primary viewer-full:border-sky-300 viewer-full:bg-sky-300/15 viewer-full:text-sky-200"
+          : `border-slate-200 bg-white text-slate-600 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
       }`}
     >
       {children}
@@ -317,9 +327,9 @@ export function BeforeAfterViewer({
   }, [beforeUrl, activeHeatmapSrc, opacity, mode, showAi]);
 
   const segBase =
-    "px-3 py-1.5 text-xs font-semibold rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer";
-  const segActive = "bg-brand-primary text-white shadow-sm";
-  const segIdle = "text-slate-600 hover:text-brand-primary";
+    "px-3 py-1.5 text-xs font-semibold rounded-md transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:focus-visible:outline-sky-300 cursor-pointer";
+  const segActive = "bg-brand-primary text-white shadow-sm viewer-full:bg-sky-300 viewer-full:text-slate-950";
+  const segIdle = "text-slate-600 hover:text-brand-primary viewer-full:text-slate-300 viewer-full:hover:text-white";
 
   return (
     <Card>
@@ -330,7 +340,7 @@ export function BeforeAfterViewer({
           aria-label="Visor de tomografía y mapa de calor Grad-CAM"
           tabIndex={0}
           onKeyDown={onKeyDown}
-          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary data-[fullscreen=true]:flex data-[fullscreen=true]:h-full data-[fullscreen=true]:flex-col data-[fullscreen=true]:justify-center data-[fullscreen=true]:bg-white data-[fullscreen=true]:p-6 ${
+          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:flex viewer-full:h-dvh viewer-full:flex-col viewer-full:bg-slate-950 viewer-full:p-4 viewer-full:text-slate-100 viewer-full:focus-visible:outline-sky-300 ${
             fullscreenMode === "expanded" ? "fixed inset-0 z-50 overflow-auto rounded-none" : ""
           }`}
           data-fullscreen={isFullscreen}
@@ -342,7 +352,7 @@ export function BeforeAfterViewer({
             <div
               role="radiogroup"
               aria-label="Modo de visualización"
-              className="inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1"
+              className={`inline-flex gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1 ${DARK_PANEL}`}
             >
               <button
                 type="button"
@@ -378,7 +388,7 @@ export function BeforeAfterViewer({
 
             {/* Controles de Zoom, Parpadeo, Pantalla Completa y Descarga */}
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 tabular-nums">
+              <span className="text-xs font-semibold px-2 py-1 rounded-md bg-slate-100 text-slate-600 border border-slate-200 tabular-nums viewer-full:border-slate-700 viewer-full:bg-slate-800 viewer-full:text-slate-200">
                 {Math.round(scale * 100)}%
               </span>
               <ToolbarButton onClick={zoomIn} label="Acercar (+)">
@@ -399,7 +409,7 @@ export function BeforeAfterViewer({
                 className={`flex h-9 items-center gap-1.5 px-2.5 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
                   !showAi
                     ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
-                    : "border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary"
+                    : `border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
                 }`}
               >
                 {!showAi ? (
@@ -409,7 +419,7 @@ export function BeforeAfterViewer({
                   </>
                 ) : (
                   <>
-                    <Eye className="h-3.5 w-3.5 text-brand-primary" aria-hidden="true" />
+                    <Eye className="h-3.5 w-3.5 text-brand-primary viewer-full:text-sky-200" aria-hidden="true" />
                     <span>Parpadeo</span>
                   </>
                 )}
@@ -419,7 +429,7 @@ export function BeforeAfterViewer({
                 onClick={handleExport}
                 label="Descargar imagen"
               >
-                <Download className="h-4 w-4 text-emerald-600" aria-hidden="true" />
+                <Download className="h-4 w-4 text-emerald-600 viewer-full:text-emerald-400" aria-hidden="true" />
               </ToolbarButton>
               <ToolbarButton
                 onClick={toggleFullscreen}
@@ -435,9 +445,10 @@ export function BeforeAfterViewer({
           </div>
 
           {/* ── Visualizador Principal ── */}
+          <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
           {mode === "curtain" ? (
             beforeUrl ? (
-              <div className="relative">
+              <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
                   handlers={stageHandlers}
                   canPan={canPan}
@@ -519,15 +530,15 @@ export function BeforeAfterViewer({
                 </Stage>
 
                 {/* Deslizador de la cortina (0% = TAC Original, 100% = Detección IA) */}
-                <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1.5 px-1">
-                    <span className={splitPosition === 0 ? "text-brand-primary font-bold" : ""}>
+                <div className={`mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200 ${DARK_PANEL}`}>
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1.5 px-1 viewer-full:text-slate-300">
+                    <span className={splitPosition === 0 ? "text-brand-primary font-bold viewer-full:text-sky-200" : ""}>
                       ← TAC Original (0%)
                     </span>
-                    <span className="text-brand-primary font-bold">
+                    <span className="text-brand-primary font-bold viewer-full:text-sky-200">
                       IA Revelada: {splitPosition}%
                     </span>
-                    <span className={splitPosition === 100 ? "text-brand-primary font-bold" : ""}>
+                    <span className={splitPosition === 100 ? "text-brand-primary font-bold viewer-full:text-sky-200" : ""}>
                       Detección IA (100%) →
                     </span>
                   </div>
@@ -541,7 +552,7 @@ export function BeforeAfterViewer({
                     max={100}
                     value={splitPosition}
                     onChange={(e) => setSplitPosition(Number(e.target.value))}
-                    className="h-2.5 w-full cursor-pointer accent-brand-primary"
+                    className="h-2.5 w-full cursor-pointer accent-brand-primary viewer-full:accent-sky-300"
                     aria-valuetext={`${splitPosition} por ciento de IA revelada`}
                   />
                 </div>
@@ -550,9 +561,9 @@ export function BeforeAfterViewer({
               <Placeholder message="Vista previa de la tomografía no disponible" />
             )
           ) : mode === "side" ? (
-            <div className="grid gap-4 md:grid-cols-2">
-              <div>
-                <div className="mb-2 text-xs font-bold text-slate-700 uppercase tracking-wider text-center">
+            <div className="grid gap-4 md:grid-cols-2 viewer-full:min-h-0 viewer-full:flex-1">
+              <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-col">
+                <div className="mb-2 text-xs font-bold text-slate-700 uppercase tracking-wider text-center viewer-full:text-slate-300">
                   TAC Original
                 </div>
                 {beforeUrl ? (
@@ -574,8 +585,8 @@ export function BeforeAfterViewer({
                   <Placeholder message="TAC original no disponible" />
                 )}
               </div>
-              <div>
-                <div className="mb-2 text-xs font-bold text-brand-primary uppercase tracking-wider text-center">
+              <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-col">
+                <div className="mb-2 text-xs font-bold text-brand-primary uppercase tracking-wider text-center viewer-full:text-sky-200">
                   Detección IA (Grad-CAM)
                 </div>
                 {activeHeatmapSrc ? (
@@ -615,7 +626,7 @@ export function BeforeAfterViewer({
             </div>
           ) : (
             beforeUrl ? (
-              <div className="relative">
+              <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
                   handlers={stageHandlers}
                   canPan={canPan}
@@ -648,13 +659,13 @@ export function BeforeAfterViewer({
                 </Stage>
 
                 {/* Control de opacidad */}
-                <div className="mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5">
+                <div className={`mt-3 bg-slate-50 p-3 rounded-xl border border-slate-200 ${DARK_PANEL}`}>
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700 mb-1.5 viewer-full:text-slate-300">
                     <span className="flex items-center gap-1.5">
-                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500" />
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-slate-500 viewer-full:text-slate-400" />
                       Intensidad del mapa de calor
                     </span>
-                    <span className="font-bold tabular-nums text-brand-primary">
+                    <span className="font-bold tabular-nums text-brand-primary viewer-full:text-sky-200">
                       {Math.round(opacity * 100)}%
                     </span>
                   </div>
@@ -665,7 +676,7 @@ export function BeforeAfterViewer({
                     max={100}
                     value={Math.round(opacity * 100)}
                     onChange={(e) => setOpacity(Number(e.target.value) / 100)}
-                    className="h-2.5 w-full cursor-pointer accent-brand-primary"
+                    className="h-2.5 w-full cursor-pointer accent-brand-primary viewer-full:accent-sky-300"
                     aria-valuetext={`${Math.round(opacity * 100)} por ciento`}
                   />
                 </div>
@@ -674,25 +685,26 @@ export function BeforeAfterViewer({
               <Placeholder message="Vista previa no disponible" />
             )
           )}
+          </div>
 
           {/* ── Opciones Sencillas Inferiores ── */}
-          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs viewer-full:border-slate-800">
             {/* Switch simple para limpiar ruido de fondo */}
             <label className="inline-flex items-center gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={cleanNoise}
                 onChange={(e) => setCleanNoise(e.target.checked)}
-                className="w-4 h-4 rounded text-brand-primary focus:ring-brand-primary accent-brand-primary cursor-pointer"
+                className="w-4 h-4 rounded text-brand-primary focus:ring-brand-primary accent-brand-primary cursor-pointer viewer-full:accent-sky-300"
               />
-              <span className="flex items-center gap-1 font-medium text-slate-700">
+              <span className="flex items-center gap-1 font-medium text-slate-700 viewer-full:text-slate-200">
                 <Sparkles className="w-3.5 h-3.5 text-amber-500" />
                 Enfocar nódulo (eliminar ruido de esquinas)
               </span>
             </label>
 
-            <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
-              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">Espacio</kbd>
+            <span className="text-slate-500 text-[11px] flex items-center gap-1.5 viewer-full:text-slate-400">
+              <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold viewer-full:bg-slate-700 viewer-full:text-slate-100">Espacio</kbd>
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>

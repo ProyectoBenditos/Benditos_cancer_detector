@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+/* Estilos del visor en pantalla completa (nativa o expandida): el contenedor
+   del visor lleva data-fullscreen="true". Es la única zona con tema oscuro,
+   como en una estación de lectura radiológica. */
+@custom-variant viewer-full (&:where([data-fullscreen="true"], [data-fullscreen="true"] *));
+
 :root {
   /* Forzamos light mode en toda la plataforma clínica.
      Razón: las alertas clínicas tienen perfil de color exacto que
