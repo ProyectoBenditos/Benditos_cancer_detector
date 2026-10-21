@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
+import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 
 type BeforeAfterViewerProps = {
   beforeUrl: string | null;
@@ -204,24 +205,6 @@ export function BeforeAfterViewer({
 
   const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
-  // Interacción de parpadeo global con tecla Espacio (Spacebar)
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement | null;
-      if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
-        return;
-      }
-
-      if (e.code === "Space" || e.key === " ") {
-        e.preventDefault();
-        setShowAi((prev) => !prev);
-      }
-    };
-
-    window.addEventListener("keydown", handleGlobalKeyDown);
-    return () => window.removeEventListener("keydown", handleGlobalKeyDown);
-  }, []);
-
   useEffect(() => {
     const onChange = () =>
       setIsFullscreen(document.fullscreenElement === containerRef.current);
@@ -237,35 +220,43 @@ export function BeforeAfterViewer({
     }
   };
 
+  // Los atajos se escuchan solo dentro del visor (no en window): fuera de él,
+  // Espacio y las flechas conservan su comportamiento normal.
   const onKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
-    switch (e.key) {
-      case "+":
-      case "=":
+    const action = resolveViewerKey(e, {
+      isContainer: e.target === e.currentTarget,
+      isFormControl: isFormControlTarget(e.target),
+    });
+    switch (action) {
+      case "zoomIn":
         zoomIn();
         break;
-      case "-":
+      case "zoomOut":
         zoomOut();
         break;
-      case "0":
+      case "reset":
         reset();
         break;
-      case "f":
-      case "F":
+      case "toggleFullscreen":
         toggleFullscreen();
         break;
-      case "ArrowUp":
+      case "toggleAi":
+        e.preventDefault();
+        setShowAi((prev) => !prev);
+        break;
+      case "panUp":
         e.preventDefault();
         panBy(0, PAN_STEP);
         break;
-      case "ArrowDown":
+      case "panDown":
         e.preventDefault();
         panBy(0, -PAN_STEP);
         break;
-      case "ArrowLeft":
+      case "panLeft":
         e.preventDefault();
         panBy(PAN_STEP, 0);
         break;
-      case "ArrowRight":
+      case "panRight":
         e.preventDefault();
         panBy(-PAN_STEP, 0);
         break;
@@ -705,7 +696,7 @@ export function BeforeAfterViewer({
 
             <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold">Espacio</kbd>
-              <span>Alterna parpadeo al instante entre TAC limpia e IA.</span>
+              <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
         </div>
