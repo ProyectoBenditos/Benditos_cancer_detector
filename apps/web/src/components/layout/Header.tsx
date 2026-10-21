@@ -1,9 +1,31 @@
-import { User } from "lucide-react";
+import { Menu, User } from "lucide-react";
 
-export function Header({ userEmail = "Usuario" }: { userEmail?: string }) {
+type HeaderProps = {
+  userEmail?: string;
+  menuId: string;
+  menuOpen: boolean;
+  onMenuClick: () => void;
+  menuButtonRef: React.Ref<HTMLButtonElement>;
+};
+
+export function Header({ userEmail = "Usuario", menuId, menuOpen, onMenuClick, menuButtonRef }: HeaderProps) {
   return (
-    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between px-6 sticky top-0 z-10 w-full">
-      <span className="text-lg font-bold text-brand-primary tracking-tight">OncoScan</span>
+    <header className="h-16 bg-white border-b border-slate-200 flex items-center justify-between gap-3 px-4 sm:px-6 w-full">
+      <div className="flex items-center gap-2">
+        {/* Solo en pantallas angostas: en escritorio el menú está siempre visible. */}
+        <button
+          ref={menuButtonRef}
+          type="button"
+          onClick={onMenuClick}
+          aria-label="Abrir menú"
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          className="-ml-2 flex h-10 w-10 items-center justify-center rounded-lg text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary cursor-pointer lg:hidden"
+        >
+          <Menu className="h-5 w-5" aria-hidden="true" />
+        </button>
+        <span className="text-lg font-bold text-brand-primary tracking-tight">OncoScan</span>
+      </div>
       <div className="flex items-center gap-3">
         <div className="w-8 h-8 bg-slate-200 rounded-full flex items-center justify-center text-slate-500">
           <User className="w-4 h-4" aria-hidden="true" />

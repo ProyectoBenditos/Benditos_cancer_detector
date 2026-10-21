@@ -1,5 +1,4 @@
-import { Sidebar } from "@/components/layout/Sidebar";
-import { Header } from "@/components/layout/Header";
+import { PlatformShell } from "@/components/layout/PlatformShell";
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
 
@@ -27,18 +26,8 @@ export default async function PlatformLayout({
   }
 
   return (
-    <div className="min-h-screen bg-brand-bg flex print:bg-white print:block">
-      <div className="print:hidden">
-        <Sidebar userRole={profile.role} />
-      </div>
-      <div className="flex-1 ml-64 flex flex-col min-h-screen relative print:ml-0 print:block print:min-h-0">
-        <div className="print:hidden">
-          <Header userEmail={user.email} />
-        </div>
-        <main className="p-8 flex-1 overflow-y-auto w-full print:p-0 print:overflow-visible">
-          {children}
-        </main>
-      </div>
-    </div>
+    <PlatformShell userRole={profile.role} userEmail={user.email}>
+      {children}
+    </PlatformShell>
   );
 }

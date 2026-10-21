@@ -122,7 +122,7 @@ export default async function InformeClinicoPage({ params }: PageProps) {
 
       {/* Hoja Médica Estandarizada */}
       <main
-        className="max-w-4xl mx-auto bg-white border border-slate-300 print:border-none shadow-sm print:shadow-none p-8 sm:p-12 print:p-0 print:max-w-none text-slate-800"
+        className="max-w-4xl mx-auto bg-white border border-slate-300 print:border-none shadow-sm print:shadow-none p-4 sm:p-8 md:p-12 print:p-0 print:max-w-none text-slate-800"
         style={{ WebkitPrintColorAdjust: "exact", printColorAdjust: "exact" }}
       >
         
