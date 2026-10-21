@@ -7,7 +7,8 @@ import { usePanZoom } from "./usePanZoom";
 import { useViewerFullscreen } from "./useViewerFullscreen";
 import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
-import type { ViewerTool } from "./viewerTools";
+import { useToolPointer } from "./useToolPointer";
+import { ADJUST_DEFAULT, adjustFilter, isDefaultAdjust, type Adjust, type ViewerTool } from "./viewerTools";
 import { DARK_PANEL, MEASURE_UNAVAILABLE, TOOL_LABELS, ViewerToolbar, type ViewMode } from "./ViewerToolbar";
 
 type BeforeAfterViewerProps = {
@@ -20,7 +21,7 @@ type BeforeAfterViewerProps = {
 
 const PAN_STEP = 40;
 
-type StageHandlers = ReturnType<typeof usePanZoom>["stageHandlers"];
+type StageHandlers = ReturnType<typeof useToolPointer>;
 
 function Placeholder({ message }: { message: string }) {
   return (
@@ -30,18 +31,24 @@ function Placeholder({ message }: { message: string }) {
   );
 }
 
-/** Contenedor interactivo (escucha rueda/puntero) con la capa transformada dentro. */
+/**
+ * Contenedor interactivo (escucha rueda/puntero) con la capa transformada dentro.
+ * Es un `group` y no un `img`: un `img` ocultaría a los lectores de pantalla los
+ * pins (botones) que viven dentro. `footer` se dibuja fuera de la capa, fijo.
+ */
 function Stage({
   handlers,
-  canPan,
+  cursorClass,
   ariaLabel,
   layerStyle,
+  footer,
   children,
 }: {
   handlers: StageHandlers;
-  canPan: boolean;
+  cursorClass: string;
   ariaLabel: string;
   layerStyle: React.CSSProperties;
+  footer?: React.ReactNode;
   children: React.ReactNode;
 }) {
   // En pantalla completa el envoltorio ocupa el alto libre y el lienzo cuadrado
@@ -50,15 +57,14 @@ function Stage({
     <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:items-center viewer-full:justify-center">
       <div
         {...handlers}
-        role="img"
+        role="group"
         aria-label={ariaLabel}
-        className={`relative aspect-square w-full touch-none overflow-hidden rounded-xl border border-slate-200 bg-black select-none viewer-full:h-full viewer-full:w-auto viewer-full:max-w-full viewer-full:border-slate-800 ${
-          canPan ? "cursor-grab active:cursor-grabbing" : "cursor-default"
-        }`}
+        className={`relative aspect-square w-full touch-none overflow-hidden rounded-xl border border-slate-200 bg-black select-none viewer-full:h-full viewer-full:w-auto viewer-full:max-w-full viewer-full:border-slate-800 ${cursorClass}`}
       >
         <div className="absolute inset-0" style={layerStyle}>
           {children}
         </div>
+        {footer}
       </div>
     </div>
   );
@@ -95,8 +101,42 @@ export function BeforeAfterViewer({
   const opacityId = useId();
   const splitId = useId();
 
-  const { scale, canPan, layerStyle, stageHandlers, zoomIn, zoomOut, panBy, reset } =
+  const { scale, canPan, layerStyle, stageHandlers: panHandlers, zoomIn, zoomOut, panBy, reset } =
     usePanZoom();
+
+  const [adjust, setAdjust] = useState<Adjust>(ADJUST_DEFAULT);
+  // El filtro de brillo/contraste se aplica solo a la TAC, nunca al mapa de calor.
+  const ctStyle: React.CSSProperties = { filter: adjustFilter(adjust) };
+
+  const stageHandlers = useToolPointer({
+    tool,
+    pan: panHandlers,
+    adjust,
+    onAdjust: setAdjust,
+    onClickAt: () => {},
+  });
+
+  const resetView = () => {
+    reset();
+    setAdjust(ADJUST_DEFAULT);
+  };
+
+  const cursorClass =
+    tool === "adjust"
+      ? "cursor-ns-resize"
+      : tool === "marker"
+        ? "cursor-crosshair"
+        : canPan
+          ? "cursor-grab active:cursor-grabbing"
+          : "cursor-default";
+
+  const stageFooter = (
+    <span className="pointer-events-none absolute bottom-2 left-2 z-30 rounded bg-slate-900/80 px-2 py-0.5 text-[10px] font-semibold tabular-nums text-white">
+      {`Zoom ${Math.round(scale * 100)}%`}
+      {!isDefaultAdjust(adjust) &&
+        ` · Brillo ${Math.round(adjust.brightness * 100)}% · Contraste ${Math.round(adjust.contrast * 100)}%`}
+    </span>
+  );
 
   // Arrastre del tirador de la cortina. Se mide contra la capa transformada (padre
   // del tirador), así la línea sigue al cursor también con zoom/pan aplicados.
@@ -214,7 +254,7 @@ export function BeforeAfterViewer({
         zoomOut();
         break;
       case "reset":
-        reset();
+        resetView();
         break;
       case "toggleFullscreen":
         toggleFullscreen();
@@ -347,7 +387,7 @@ export function BeforeAfterViewer({
             onToggleFullscreen={toggleFullscreen}
             onZoomIn={zoomIn}
             onZoomOut={zoomOut}
-            onReset={reset}
+            onReset={resetView}
             onExport={handleExport}
             onHelp={() => setHelpOpen(true)}
           />
@@ -359,7 +399,8 @@ export function BeforeAfterViewer({
               <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
                   handlers={stageHandlers}
-                  canPan={canPan}
+                  cursorClass={cursorClass}
+                  footer={stageFooter}
                   ariaLabel="Comparativa en cortina: imagen original vs detección IA"
                   layerStyle={layerStyle}
                 >
@@ -367,6 +408,7 @@ export function BeforeAfterViewer({
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={beforeUrl}
+                    style={ctStyle}
                     alt="Estudio tomográfico original"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
@@ -383,6 +425,7 @@ export function BeforeAfterViewer({
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src={beforeUrl}
+                        style={ctStyle}
                         alt=""
                         aria-hidden="true"
                         draggable={false}
@@ -477,13 +520,15 @@ export function BeforeAfterViewer({
                 {beforeUrl ? (
                   <Stage
                     handlers={stageHandlers}
-                    canPan={canPan}
+                    cursorClass={cursorClass}
+                  footer={stageFooter}
                     ariaLabel="TAC original"
                     layerStyle={layerStyle}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={beforeUrl}
+                      style={ctStyle}
                       alt="TAC original"
                       draggable={false}
                       className="pointer-events-none absolute inset-0 h-full w-full object-contain"
@@ -500,13 +545,15 @@ export function BeforeAfterViewer({
                 {activeHeatmapSrc ? (
                   <Stage
                     handlers={stageHandlers}
-                    canPan={canPan}
+                    cursorClass={cursorClass}
+                  footer={stageFooter}
                     ariaLabel="Mapa de calor Grad-CAM"
                     layerStyle={layerStyle}
                   >
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={beforeUrl || activeHeatmapSrc}
+                      style={beforeUrl ? ctStyle : undefined}
                       alt="Base de tomografía"
                       draggable={false}
                       className="pointer-events-none absolute inset-0 h-full w-full object-contain"
@@ -537,13 +584,15 @@ export function BeforeAfterViewer({
               <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
                   handlers={stageHandlers}
-                  canPan={canPan}
+                  cursorClass={cursorClass}
+                  footer={stageFooter}
                   ariaLabel="Imagen con mapa de calor superpuesto"
                   layerStyle={layerStyle}
                 >
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={beforeUrl}
+                    style={ctStyle}
                     alt="TAC original"
                     draggable={false}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"

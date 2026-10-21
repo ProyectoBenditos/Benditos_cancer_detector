@@ -15,6 +15,16 @@ function renderViewer() {
 
 const space = { key: " ", code: "Space" };
 
+/** Indicador de zoom y brillo/contraste en la esquina del lienzo. */
+const canvasInfo = () => screen.getByText(/^Zoom \d+%/);
+
+/** Arrastre de (0,0) a (dx,dy) sobre el lienzo con eventos de puntero. */
+function dragOn(el: HTMLElement, dx: number, dy: number) {
+  fireEvent.pointerDown(el, { clientX: 0, clientY: 0, pointerId: 1 });
+  fireEvent.pointerMove(el, { clientX: dx, clientY: dy, pointerId: 1 });
+  fireEvent.pointerUp(el, { clientX: dx, clientY: dy, pointerId: 1 });
+}
+
 describe("BeforeAfterViewer — teclado", () => {
   it("Espacio fuera del visor no alterna la IA", () => {
     renderViewer();
@@ -145,6 +155,36 @@ describe("BeforeAfterViewer — herramientas", () => {
     expect(screen.getByRole("status")).toHaveTextContent("IA oculta");
     fireEvent.keyDown(visor, space);
     expect(screen.getByRole("status")).toHaveTextContent("IA visible");
+  });
+
+  it("el lienzo muestra el zoom en la esquina", () => {
+    renderViewer();
+    expect(screen.getByText("Zoom 100%")).toBeInTheDocument();
+  });
+
+  it("arrastrar con Brillo/Contraste ajusta solo la TAC; doble clic y 0 restablecen", () => {
+    const visor = renderViewer();
+    fireEvent.keyDown(visor, { key: "a" });
+    const stage = screen.getByRole("group", { name: /Comparativa en cortina/ });
+    dragOn(stage, 100, 0);
+    expect(canvasInfo()).toHaveTextContent("Zoom 100% · Brillo 100% · Contraste 150%");
+    expect(screen.getByAltText("Estudio tomográfico original").style.filter).toBe("brightness(1) contrast(1.5)");
+    expect(screen.getByAltText("Detección IA superpuesta").style.filter).toBe("");
+
+    fireEvent.doubleClick(stage);
+    expect(canvasInfo()).toHaveTextContent(/^Zoom 100%$/);
+
+    dragOn(stage, 0, -100);
+    expect(canvasInfo()).toHaveTextContent("Brillo 150%");
+    fireEvent.keyDown(visor, { key: "0" });
+    expect(canvasInfo()).toHaveTextContent(/^Zoom 100%$/);
+  });
+
+  it("con Mover, arrastrar no cambia el brillo", () => {
+    renderViewer();
+    const stage = screen.getByRole("group", { name: /Comparativa en cortina/ });
+    dragOn(stage, 100, 0);
+    expect(canvasInfo()).toHaveTextContent(/^Zoom 100%$/);
   });
 
   it("el botón Parpadeo también anuncia", () => {
