@@ -51,6 +51,14 @@ flowchart TD
 ---
 
 ### Referencia 1: Google Research (2 de Octubre, 2026)
+
+> **Estado: ✅ Fase 1 implementada. No requiere trabajo esta semana.** La parte de privacidad ya está en producción:
+> * Desidentificación DICOM bajo PS 3.15 (`dc10d41`).
+> * Certificado de desidentificación con trazabilidad SHA-256 (`5efc789`, `28e81f9`).
+> * Documentación de la tabla de auditoría (`a3c5f4c`).
+>
+> La Fase 2 (aprendizaje federado entre hospitales) sigue siendo **trabajo futuro** (ver sección 7.3).
+
 * **Artículo:** *"Toward provably private learning from federated data"* (Google Research & University of Waterloo).
 * **Concepto Clave:** Demuestra cómo entrenar modelos de aprendizaje profundo a partir de fuentes distribuidas y sensibles sin centralizar los datos originales, garantizando privacidad mediante la combinación de **Federated Learning (FL)**, **Trusted Execution Environments (TEEs)** y **Privacidad Diferencial (DP)**.
 * **Aplicación Concreta en OncoScan:**
@@ -58,7 +66,7 @@ flowchart TD
      * **Anonimización DICOM:** Purgado estricto de PHI (`PatientName`, `PatientID`, `InstitutionName`) antes de guardar en almacenamiento persistente; solo se retienen metadatos de calibración física (`RescaleIntercept`, `RescaleSlope`, `WindowCenter`, `WindowWidth`).
      * **Cifrado Integral:** TLS 1.3 en tránsito (HTTPS) y AES-256 en reposo (Supabase Storage).
      * **Aislamiento por Médico:** Políticas de *Row-Level Security* (RLS) en PostgreSQL impiden que un centro de salud o médico acceda a estudios de otro.
-     * **Modo Cero-Retención (Zero-Retention Mode):** Para centros de alta sensibilidad, la imagen se procesa exclusivamente en la memoria RAM del microservicio de Hugging Face y se destruye inmediatamente tras generar el score y Grad-CAM.
+     * **Modo Cero-Retención (Zero-Retention Mode):** Para centros de alta sensibilidad, la imagen se procesa exclusivamente en la memoria RAM del servidor de IA dedicado en Oracle Cloud (`oncoscan-ai.duckdns.org`) y se destruye inmediatamente tras generar el score y Grad-CAM.
   2. **Hoja de Ruta Multicéntrica (Fase 2 - Evolutiva):**
      * Para futuros reentrenamientos colaborativos entre instituciones (ej. Hospital Universitario del Valle, Clínica Imbanaco y Fundación Valle del Lili), OncoScan adoptará agregación federada dentro de enclaves seguros (TEEs), garantizando que **ninguna tomografía pulmonar abandone los servidores locales del hospital**.
 
@@ -100,7 +108,7 @@ flowchart TD
      * La interfaz insignia de Lunit permite al radiólogo deslizar una cortina vertical entre la imagen nativa limpia y la imagen con el mapa de calor/contornos.
      * En OncoScan ya contamos con este componente (`BeforeAfterViewer.tsx`); la versión v1.2 lo potenciará integrando el mapa térmico de HiResCAM de alta resolución.
   4. **Procesamiento Efímero en Memoria:**
-     * Lunit garantiza en sus acuerdos comerciales que las imágenes clínicas de los clientes no se utilizan para reentrenar modelos sin consentimiento expreso y se procesan de forma transitoria en la memoria RAM del servidor de inferencia. OncoScan replica esta arquitectura con Hugging Face Spaces.
+     * Lunit garantiza en sus acuerdos comerciales que las imágenes clínicas de los clientes no se utilizan para reentrenar modelos sin consentimiento expreso y se procesan de forma transitoria en la memoria RAM del servidor de inferencia. OncoScan replica esta arquitectura en su servidor de IA dedicado en Oracle Cloud.
 
 ---
 
@@ -196,16 +204,16 @@ flowchart LR
    * Calcular la nueva Matriz de Confusión oficial.
    * Verificar cumplimiento: **FN $\le 15$**, **Sensibilidad $\ge 95\%$**, **AUC $\ge 0.950$**.
 
-### Viernes: Despliegue en Hugging Face Spaces & Frontend
+### Viernes: Despliegue en el Servidor de IA (Oracle Cloud) & Frontend
 1. **Actualización del Microservicio de Inferencia:**
-   * Clonar repositorio `luisdam-oncoscan-ai` en Hugging Face Spaces.
+   * Actualizar el servicio de inferencia en el servidor de Oracle Cloud (`oncoscan-ai.duckdns.org`).
    * Reemplazar archivo de pesos con `best_model_multimodal_v1.2.pth`.
    * Actualizar `app.py` con el pipeline de preprocesamiento (CLAHE + Letterbox + TTA + HiResCAM).
    * Probar endpoint `POST /predict` con casos de prueba conocidos y verificar respuesta 200 OK en $< 1.5$ segundos.
 2. **Sincronización en Aplicación Web (`apps/web`):**
    * Actualizar `apps/web/src/components/modelo/modelData.ts` con las métricas finales de `v1.2`.
    * Actualizar la matriz de confusión y curvas ROC en `/platform/modelo` y la landing page.
-   * Realizar prueba integral desde el navegador: Subida de tomografía $\rightarrow$ Backend Render $\rightarrow$ HF Spaces $\rightarrow$ Visor con HiResCAM.
+   * Realizar prueba integral desde el navegador: Subida de tomografía $\rightarrow$ Backend Render $\rightarrow$ Servidor IA Oracle $\rightarrow$ Visor con HiResCAM.
 
 ---
 
@@ -215,7 +223,7 @@ flowchart LR
 | :--- | :---: | :--- |
 | `notebooks/train_multimodal_v1.2.ipynb` | Jupyter / Python | Notebook en Kaggle con resolución $128\times 128$, CLAHE, Letterbox, Asymmetric Focal Loss y entrenamiento GPU. |
 | `kaggle_evaluation_script.py` | Python | Script de validación en batch de los 687 casos del test set para generar métricas oficiales. |
-| `hf_space/app.py` | Python / FastAPI | Microservicio en Hugging Face Spaces con soporte para pesos v1.2, TTA y HiResCAM. |
+| `hf_space/app.py` | Python / FastAPI | Microservicio de inferencia (servidor Oracle Cloud) con soporte para pesos v1.2, TTA y HiResCAM. |
 | `apps/web/src/components/modelo/modelData.ts` | TypeScript | Archivo fuente de verdad de métricas, matriz de confusión y curvas para la plataforma web. |
 | `docs/evaluacion-v1.1-plan-v1.2.md` | Markdown | Registrar el cierre de la versión 1.1 y archivar formalmente los resultados alcanzados por la versión 1.2. |
 
@@ -228,7 +236,7 @@ Antes de dar por concluida la actualización la próxima semana, se deberán ver
 * [ ] ¿La Sensibilidad clínica alcanzó o superó el 95.0%?
 * [ ] ¿El preprocesamiento preserva la relación de aspecto mediante Letterbox sin estirar nódulos?
 * [ ] ¿El mapa térmico HiResCAM está centrado exactamente sobre la región de interés y no en el fondo?
-* [ ] ¿El endpoint en Hugging Face responde en menos de 2 segundos en CPU?
+* [ ] ¿El endpoint del servidor de IA (Oracle Cloud) responde en menos de 2 segundos en CPU?
 * [ ] ¿Las métricas mostradas en la plataforma web coinciden exactamente con la evaluación empírica de los 687 casos?
 * [ ] ¿El guion para la médica patóloga está memorizado y claro para el equipo?
 
@@ -349,6 +357,8 @@ Los negativos del entrenamiento son cortes **sin nódulo** (sección 3.2 de este
 
 ## 10. Mejora del Visor: Marcadores con Notas, Herramientas y Pantalla Completa
 
+> **Estado (20 oct 2026): ✅ Fase A terminada** (PR #18, plan en [2026-10-20-visor-fase-a.md](superpowers/plans/2026-10-20-visor-fase-a.md)). Corrige los problemas 1, 2, 4 y 5 de la sección 10.2 y agrega la ayuda con `?`. **Siguiente: Fase B** (sección 10.7). El problema 3 queda para la Fase B.
+>
 > **Prioridad:** es lo **primero** que se implementa en la plataforma. No depende del reentrenamiento del modelo ni de datos nuevos.
 > **Referentes:** Lunit INSIGHT MMG (producto comercial) y Lunit INSIGHT Challenge (visor de lectura con marcadores), más el artículo de freeCodeCamp sobre preprocesamiento.
 
@@ -479,8 +489,8 @@ Nueva tabla `upload_annotations`, una fila por marcador. Sigue el mismo patrón 
 
 | Fase | Contenido | Archivos principales | Esfuerzo |
 |---|---|---|---|
-| **A. Correcciones** | Problemas 1 a 5 de la sección 10.2: tamaño en pantalla completa, tema oscuro, Espacio solo con foco en el visor, modo expandido para iPhone y modal de ayuda `?` | `BeforeAfterViewer.tsx` | 1 día |
-| **B. Herramientas y marcadores (solo en el navegador)** | Paleta de herramientas, brillo/contraste, pins con notas, panel lateral y conversión de coordenadas con tests | `BeforeAfterViewer.tsx` (dividir en `ViewerToolbar`, `MarkerLayer`, `MarkerPanel`), nuevo `markerMath.ts` + `markerMath.test.ts` | 2–3 días |
+| **A. Correcciones** ✅ | Problemas 1, 2, 4 y 5 de la sección 10.2: tamaño en pantalla completa, tema oscuro, Espacio solo con foco en el visor, modo expandido para iPhone y modal de ayuda `?`. El problema 3 pasa a la Fase B | `BeforeAfterViewer.tsx`, `viewerKeys.ts`, `useViewerFullscreen.ts`, `ViewerHelpDialog.tsx`, `globals.css` (variante `viewer-full:`) | Hecho (PR #18) |
+| **B. Herramientas y marcadores (solo en el navegador)** | Paleta de herramientas, brillo/contraste, pins con notas, panel lateral (incluye el problema 3: panel dentro de pantalla completa) y conversión de coordenadas con tests | `BeforeAfterViewer.tsx` (dividir en `ViewerToolbar`, `MarkerLayer`, `MarkerPanel`), nuevo `markerMath.ts` + `markerMath.test.ts` | 2–3 días |
 | **C. Persistencia** | Migración `upload_annotations` con RLS, server actions, carga inicial en `uploads/[id]/page.tsx` y en el flujo de subida | `supabase/migrations/2026XXXX_upload_annotations.sql`, `uploads/[id]/actions.ts`, `uploads/[id]/page.tsx`, `upload/page.tsx` | 1–2 días |
 | **D. Lectura ciega y modo práctica** | Preferencia por médico; selección de casos LIDC; comparación con la anotación de referencia | Nueva ruta `/platform/practica` | 3–4 días |
 | **E. Visor DICOM real (futuro)** | Cornerstone3D: serie completa, WW/WL real con presets, herramientas nativas (`ArrowAnnotateTool`, `LengthTool`, `BidirectionalTool`) y exportación como DICOM SR | Depende de la sección 7.4, punto 3 (subir la serie DICOM completa) | Proyecto aparte |
@@ -492,11 +502,16 @@ Nueva tabla `upload_annotations`, una fila por marcador. Sigue el mismo patrón 
 - prueba manual en una pantalla 16:9, en móvil y en iPhone;
 - comprobar que un pin queda en el mismo punto de la anatomía tras hacer zoom, pan, entrar a pantalla completa y recargar.
 
+**Pendientes que deja la Fase A (resolver en la Fase B):**
+- El selector de modos (`role="radiogroup"`) no se recorre con flechas, como pide el patrón ARIA de radio. Se resuelve al reemplazarlo por la paleta de herramientas.
+- Alternar la IA con Espacio no se anuncia a lectores de pantalla. Falta una región `aria-live="polite"`.
+- En el modo expandido, Tab puede llevar el foco a la página tapada. Falta contener el foco dentro del visor.
+
 ### 10.8 Lista de chequeo del visor
 
-* [ ] ¿En pantalla completa la imagen cabe entera en una pantalla 16:9 sin hacer scroll?
+* [x] ¿En pantalla completa la imagen cabe entera en una pantalla 16:9 sin hacer scroll?
 * [ ] ¿La pantalla completa incluye el panel lateral (score, marcadores y valoración) con tema oscuro?
-* [ ] ¿Espacio activa normalmente los botones fuera del visor?
+* [x] ¿Espacio activa normalmente los botones fuera del visor?
 * [ ] ¿Los marcadores mantienen su posición anatómica tras zoom, pan, pantalla completa y recarga?
 * [ ] ¿Las notas nunca aparecen en logs ni en la imagen exportada sin consentimiento explícito?
 * [ ] ¿La herramienta Medir está desactivada cuando no hay `PixelSpacing`?
