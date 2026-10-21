@@ -76,7 +76,7 @@ export function MarkerPanel({
   return (
     <aside
       aria-label="Panel del caso"
-      className={`rounded-xl border border-slate-200 bg-slate-50 p-4 max-lg:viewer-full:p-3 ${DARK_PANEL}`}
+      className={`rounded-xl border border-slate-200 bg-slate-50 p-4 max-lg:viewer-full:p-3 max-lg:viewer-full:shadow-2xl ${DARK_PANEL}`}
     >
       {/* Solo en pantalla completa y por debajo de lg: el panel pasa a hoja inferior plegable. */}
       {isFullscreen && (

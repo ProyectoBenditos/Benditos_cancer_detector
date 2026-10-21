@@ -501,7 +501,7 @@ export function BeforeAfterViewer({
           aria-label="Visor de tomografía y mapa de calor Grad-CAM"
           tabIndex={0}
           onKeyDown={onKeyDown}
-          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:flex viewer-full:h-dvh viewer-full:flex-col viewer-full:bg-slate-950 viewer-full:p-4 viewer-full:text-slate-100 viewer-full:focus-visible:outline-sky-300 ${
+          className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:flex viewer-full:h-dvh viewer-full:flex-col viewer-full:overflow-y-auto viewer-full:bg-slate-950 viewer-full:p-4 viewer-full:text-slate-100 viewer-full:focus-visible:outline-sky-300 ${
             fullscreenMode === "expanded" ? "fixed inset-0 z-50 overflow-auto rounded-none" : ""
           }`}
           data-fullscreen={isFullscreen}
@@ -802,15 +802,18 @@ export function BeforeAfterViewer({
               </span>
             </label>
 
-            <span className="text-slate-500 text-[11px] flex items-center gap-1.5 viewer-full:text-slate-400">
+            <span className="text-slate-500 text-[11px] hidden sm:flex items-center gap-1.5 viewer-full:text-slate-400">
               <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold viewer-full:bg-slate-700 viewer-full:text-slate-100">Espacio</kbd>
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
           </div>
 
-          {/* ── Panel del caso (también en pantalla completa) ── */}
-          <div className="lg:w-72 lg:shrink-0 viewer-full:min-h-0 lg:viewer-full:w-80 lg:viewer-full:overflow-y-auto">
+          {/* ── Panel del caso (también en pantalla completa) ──
+              En pantalla completa por debajo de lg es una hoja inferior que flota
+              sobre la imagen: así abrirla no le quita altura al lienzo. */}
+          <div className="hidden h-14 shrink-0 max-lg:viewer-full:block" aria-hidden="true" />
+          <div className="lg:w-72 lg:shrink-0 viewer-full:min-h-0 lg:viewer-full:w-80 lg:viewer-full:overflow-y-auto max-lg:viewer-full:fixed max-lg:viewer-full:inset-x-0 max-lg:viewer-full:bottom-0 max-lg:viewer-full:z-40 max-lg:viewer-full:p-2">
             <MarkerPanel
               summary={summary}
               markers={markersState.markers}
