@@ -82,7 +82,7 @@ export default async function PacientesPage({
       {!patients || patients.length === 0 ? (
         displayQ ? (
           <Card>
-            <CardContent className="p-12 flex flex-col items-center text-center">
+            <CardContent className="p-8 sm:p-12 flex flex-col items-center text-center">
               <Search
                 className="w-12 h-12 text-slate-300 mb-4"
                 aria-hidden="true"
@@ -103,7 +103,7 @@ export default async function PacientesPage({
           </Card>
         ) : (
           <Card>
-            <CardContent className="p-12 flex flex-col items-center text-center">
+            <CardContent className="p-8 sm:p-12 flex flex-col items-center text-center">
               <Users
                 className="w-12 h-12 text-slate-300 mb-4"
                 aria-hidden="true"

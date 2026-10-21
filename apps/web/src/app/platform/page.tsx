@@ -82,7 +82,7 @@ export default async function PlatformPage() {
     return (
         <PageContainer>
             {/* Hero banner */}
-            <div className="bg-brand-primary text-white px-8 py-8 mb-8 rounded-2xl">
+            <div className="bg-brand-primary text-white px-5 py-6 sm:px-8 sm:py-8 mb-8 rounded-2xl">
                 <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-1">OncoScan AI — MVP v1.0</p>
                 <h1 className="text-2xl md:text-3xl font-extrabold text-white leading-tight">
                     Dashboard General
