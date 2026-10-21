@@ -1,13 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 
-import { BeforeAfterViewer } from "./BeforeAfterViewer";
+import { BeforeAfterViewer, type ViewerSummary } from "./BeforeAfterViewer";
 
-function renderViewer() {
+function renderViewer(summary?: ViewerSummary) {
   render(
     <>
       <button type="button">Guardar valoración</button>
-      <BeforeAfterViewer beforeUrl="/estudio.png" heatmapBase64="AAAA" />
+      <BeforeAfterViewer beforeUrl="/estudio.png" heatmapBase64="AAAA" summary={summary} />
     </>
   );
   return screen.getByRole("group", { name: /Visor de tomografía/ });
@@ -261,5 +261,89 @@ describe("BeforeAfterViewer — marcadores", () => {
     addMarkerWithKeyboard(visor);
     fireEvent.click(screen.getByRole("radio", { name: /Lado a lado/ }));
     expect(screen.getAllByRole("button", { name: /^Marcador 1/ })).toHaveLength(1);
+  });
+});
+
+describe("BeforeAfterViewer — panel", () => {
+  it("muestra score, riesgo y valoración resumida", () => {
+    renderViewer({
+      score: 0.82,
+      riskLevel: "ALTO",
+      review: { concordancia: "discrepa", lung_rads: "4A", conducta: null },
+    });
+    const panel = screen.getByRole("complementary", { name: "Panel del caso" });
+    expect(panel).toHaveTextContent("82.0%");
+    expect(panel).toHaveTextContent("ALTO");
+    expect(panel).toHaveTextContent("Probabilidad estimada por el modelo, no severidad.");
+    expect(panel).toHaveTextContent("Discrepa del resultado IA");
+    expect(panel).toHaveTextContent("Los marcadores todavía no se guardan");
+  });
+
+  it("sin valoración lo dice", () => {
+    renderViewer({ score: 0.3, riskLevel: "BAJO", review: null });
+    expect(screen.getByRole("complementary", { name: "Panel del caso" })).toHaveTextContent(
+      "Sin valoración registrada."
+    );
+  });
+
+  it("un marcador nuevo abre su editor con el foco en el tipo y la nota se limita a 1000", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    expect(screen.getByRole("combobox", { name: "Tipo de hallazgo" })).toHaveFocus();
+    expect(screen.getByRole("textbox", { name: "Nota" })).toHaveAttribute("maxLength", "1000");
+  });
+
+  it("editar la nota actualiza la fila y el nombre del pin", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.change(screen.getByRole("combobox", { name: "Tipo de hallazgo" }), {
+      target: { value: "solido" },
+    });
+    fireEvent.change(screen.getByRole("textbox", { name: "Nota" }), { target: { value: "Borde liso" } });
+    expect(screen.getByRole("button", { name: "Marcador 1: nódulo sólido, Borde liso" })).toBeInTheDocument();
+    expect(screen.getByText("1000", { exact: false })).toHaveTextContent("10/1000");
+  });
+
+  it("el tamaño acepta decimales que empiezan por 0 y se muestra en la fila", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    const mm = screen.getByRole("spinbutton", { name: "Tamaño estimado (mm, opcional)" });
+    fireEvent.change(mm, { target: { value: "0" } });
+    expect(mm).toHaveValue(0);
+    fireEvent.change(mm, { target: { value: "0.5" } });
+    expect(screen.getByRole("complementary", { name: "Panel del caso" })).toHaveTextContent("0.5 mm");
+  });
+
+  it("escribir atajos en la nota no cambia de herramienta ni alterna la IA", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    const nota = screen.getByRole("textbox", { name: "Nota" });
+    for (const key of ["h", "a", "0", "f", "?", " ", "Enter"]) fireEvent.keyDown(nota, { key });
+    expect(screen.getByRole("radio", { name: "Marcador (M)" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.queryByText("TAC Pura")).not.toBeInTheDocument();
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: /^Marcador \d/ })).toHaveLength(1);
+  });
+
+  it("borrar pide confirmación", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.click(screen.getByRole("button", { name: "Borrar marcador 1" }));
+    expect(screen.getByRole("button", { name: /^Marcador 1/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByRole("button", { name: /^Marcador 1/ })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Borrar marcador 1" }));
+    fireEvent.click(screen.getByRole("button", { name: "Borrar" }));
+    expect(screen.queryByRole("button", { name: /^Marcador 1/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("Marcador 1 borrado");
+  });
+
+  it("seleccionar un pin abre su editor en el panel", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.click(screen.getByRole("button", { name: "Listo" }));
+    expect(screen.queryByRole("textbox", { name: "Nota" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /^Marcador 1/ }));
+    expect(screen.getByRole("textbox", { name: "Nota" })).toBeInTheDocument();
   });
 });

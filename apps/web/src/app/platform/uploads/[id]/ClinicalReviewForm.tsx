@@ -46,7 +46,8 @@ export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: 
     const defaultNotes = state.fields?.notes ?? initialNotes;
 
     return (
-        <Card className="mb-6">
+        // id + tabIndex: destino de «Ir al formulario completo» desde el panel del visor.
+        <Card id="valoracion" tabIndex={-1} className="mb-6 scroll-mt-20 outline-none">
             <CardContent className="p-6">
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-9 h-9 bg-brand-primary/10 rounded-lg flex items-center justify-center shrink-0">

@@ -9,20 +9,36 @@ import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
 import { MarkerLayer } from "./MarkerLayer";
-import { stageToNormalized, visibleCenter, type Size } from "./markerMath";
-import { MARKERS_INITIAL, markersReducer } from "./markerState";
+import { normalizedToStage, stageToNormalized, visibleCenter, type Size } from "./markerMath";
+import { MARKERS_INITIAL, markersReducer, type Marker } from "./markerState";
+import { MarkerPanel } from "./MarkerPanel";
+import type { RiskLevel } from "./RiskBadge";
+import type { UploadReview } from "@/lib/uploadReview";
 import { ADJUST_DEFAULT, adjustFilter, isDefaultAdjust, type Adjust, type ViewerTool } from "./viewerTools";
 import { DARK_PANEL, MEASURE_UNAVAILABLE, TOOL_LABELS, ViewerToolbar, type ViewMode } from "./ViewerToolbar";
+
+/** Datos del caso que muestra el panel lateral (score, riesgo y valoración resumida). */
+export type ViewerSummary = {
+  /** Score de la IA entre 0 y 1. */
+  score: number | null;
+  riskLevel: RiskLevel | null;
+  review: Pick<UploadReview, "concordancia" | "lung_rads" | "conducta"> | null;
+  /** id del formulario completo de valoración en la página. */
+  reviewAnchorId?: string;
+};
 
 type BeforeAfterViewerProps = {
   beforeUrl: string | null;
   heatmapBase64: string | null;
+  summary?: ViewerSummary;
   initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
 };
 
 const PAN_STEP = 40;
+/** Zoom al centrar un marcador desde el panel. */
+const CENTER_ZOOM = 3;
 
 type StageHandlers = ReturnType<typeof useToolPointer>;
 
@@ -76,6 +92,7 @@ function Stage({
 export function BeforeAfterViewer({
   beforeUrl,
   heatmapBase64,
+  summary,
   initialMode = "curtain",
   initialSplit = 50,
   initialShowAi = true,
@@ -115,6 +132,7 @@ export function BeforeAfterViewer({
     reset,
     getTransform,
     getStageSize,
+    centerOn,
   } = usePanZoom();
 
   // Marcadores (solo en el navegador en la Fase B). El tamaño natural del PNG
@@ -129,6 +147,20 @@ export function BeforeAfterViewer({
     setAnnouncement(`Marcador ${markersState.nextSeq} agregado`);
     dispatchMarkers({ type: "add", x: n.x, y: n.y });
   };
+  const centerOnMarker = (m: Marker) => {
+    centerOn(normalizedToStage(m, getStageSize(), natural), CENTER_ZOOM);
+  };
+
+  // Sale de pantalla completa y lleva al formulario completo de valoración.
+  const goToReview = () => {
+    exitFullscreen();
+    requestAnimationFrame(() => {
+      const el = document.getElementById(summary?.reviewAnchorId ?? "valoracion");
+      el?.scrollIntoView?.({ block: "start" });
+      el?.focus();
+    });
+  };
+
   const markerLayer = (focusable: boolean) => (
     <MarkerLayer
       markers={markersState.markers}
@@ -421,6 +453,9 @@ export function BeforeAfterViewer({
           data-fullscreen={isFullscreen}
           data-fullscreen-mode={fullscreenMode}
         >
+          {/* Imagen a la izquierda y panel del caso a la derecha (debajo en móvil). */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:gap-6 viewer-full:min-h-0 viewer-full:flex-1">
+          <div className="min-w-0 flex-1 viewer-full:flex viewer-full:min-h-0 viewer-full:flex-col">
           {/* Barra de herramientas superior */}
           <ViewerToolbar
             mode={mode}
@@ -717,6 +752,21 @@ export function BeforeAfterViewer({
               <kbd className="px-1.5 py-0.5 rounded bg-slate-200 text-slate-700 font-mono text-[10px] font-bold viewer-full:bg-slate-700 viewer-full:text-slate-100">Espacio</kbd>
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
+          </div>
+          </div>
+
+          {/* ── Panel del caso (también en pantalla completa) ── */}
+          <div className="lg:w-72 lg:shrink-0">
+            <MarkerPanel
+              summary={summary}
+              markers={markersState.markers}
+              selectedId={markersState.selectedId}
+              dispatch={dispatchMarkers}
+              onCenter={centerOnMarker}
+              onGoToReview={goToReview}
+              onAnnounce={setAnnouncement}
+            />
+          </div>
           </div>
 
           <p role="status" aria-live="polite" className="sr-only">
