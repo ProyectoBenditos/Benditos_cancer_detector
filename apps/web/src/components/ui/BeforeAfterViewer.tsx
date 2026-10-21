@@ -494,7 +494,7 @@ export function BeforeAfterViewer({
 
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardContent className="p-4 sm:p-6">
         <div
           ref={containerRef}
           role="group"
