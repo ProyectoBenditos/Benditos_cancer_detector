@@ -6,7 +6,7 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { buttonVariants } from "@/components/ui/Button";
-import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { asRiskLevel, RiskBadge } from "@/components/ui/RiskBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
@@ -19,11 +19,6 @@ import { AnonymizationCertificate, type AnonymizationAuditData } from "@/compone
 type PageProps = {
     params: Promise<{ id: string }>;
 };
-
-function asRiskLevel(level: string | null | undefined): RiskLevel | null {
-    if (level === "ALTO" || level === "MEDIO" || level === "BAJO") return level;
-    return null;
-}
 
 function InfoItem({ label, value }: { label: string; value: React.ReactNode }) {
     return (
@@ -229,7 +224,21 @@ export default async function UploadDetailPage({ params }: PageProps) {
             {/* Visualizador antes / después (Grad-CAM) */}
             {isAnalyzed && upload.ai_heatmap_base64 && (
                 <div className="mb-6">
-                    <BeforeAfterViewer beforeUrl={beforeUrl} heatmapBase64={upload.ai_heatmap_base64} />
+                    <BeforeAfterViewer
+                        beforeUrl={beforeUrl}
+                        heatmapBase64={upload.ai_heatmap_base64}
+                        summary={{
+                            score: upload.ai_score,
+                            riskLevel: asRiskLevel(upload.ai_risk_level),
+                            review: review
+                                ? {
+                                      concordancia: review.concordancia,
+                                      lung_rads: review.lung_rads,
+                                      conducta: review.conducta,
+                                  }
+                                : null,
+                        }}
+                    />
                     <p className="text-xs text-slate-500 mt-2 px-1">
                         Mapa de calor generado con{" "}
                         <SourceLink href={REFERENCES.gradcam.url}>Grad-CAM (Selvaraju et al., 2017)</SourceLink>: indica las

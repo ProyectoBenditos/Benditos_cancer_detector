@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  centerTransform,
   clamp,
   clampTranslate,
   MAX_SCALE,
@@ -68,5 +69,18 @@ describe("clampTranslate", () => {
     const r = clampTranslate({ tx: -500, ty: -500 }, 2, stage);
     expect(r.tx).toBe(-100);
     expect(r.ty).toBe(-100);
+  });
+});
+
+describe("centerTransform", () => {
+  const stage = { w: 400, h: 400 };
+
+  it("centra el punto en el stage", () => {
+    expect(centerTransform({ x: 200, y: 200 }, 2, stage)).toEqual({ tx: -200, ty: -200 });
+  });
+
+  it("respeta los límites del pan", () => {
+    expect(centerTransform({ x: 0, y: 0 }, 2, stage)).toEqual({ tx: 0, ty: 0 });
+    expect(centerTransform({ x: 400, y: 400 }, 2, stage)).toEqual({ tx: -400, ty: -400 });
   });
 });

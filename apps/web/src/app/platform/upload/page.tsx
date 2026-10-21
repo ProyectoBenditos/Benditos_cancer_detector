@@ -11,6 +11,7 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
@@ -526,6 +527,11 @@ export default function UploadDicomPage() {
                                 <BeforeAfterViewer
                                     beforeUrl={analysisResult.original_signed_url ?? null}
                                     heatmapBase64={analysisResult.heatmap_base64}
+                                    summary={{
+                                        score: analysisResult.score,
+                                        riskLevel: asRiskLevel(analysisResult.nivel_riesgo),
+                                        review: null,
+                                    }}
                                 />
                             </div>
                         )}

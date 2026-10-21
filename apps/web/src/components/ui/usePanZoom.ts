@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  centerTransform,
   clamp,
   clampTranslate,
   MAX_SCALE,
@@ -61,7 +62,7 @@ export function usePanZoom() {
 
   const onPointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
     if (tRef.current.scale <= MIN_SCALE) return;
-    e.currentTarget.setPointerCapture(e.pointerId);
+    e.currentTarget.setPointerCapture?.(e.pointerId);
     dragging.current = {
       startX: e.clientX,
       startY: e.clientY,
@@ -83,7 +84,7 @@ export function usePanZoom() {
   }, []);
 
   const onPointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
-    if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+    if (e.currentTarget.hasPointerCapture?.(e.pointerId)) {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
     dragging.current = null;
@@ -116,6 +117,23 @@ export function usePanZoom() {
 
   const reset = useCallback(() => setT(INITIAL), []);
 
+  // Lecturas para los event handlers (marcadores): transform comprometida y
+  // medidas del último stage registrado.
+  const getTransform = useCallback(() => tRef.current, []);
+  const getStageSize = useCallback(() => {
+    const el = lastStage.current;
+    return { w: el?.clientWidth ?? 0, h: el?.clientHeight ?? 0 };
+  }, []);
+
+  /** Deja el punto `p` (unidades del stage sin transformar) en el centro, con el scale dado. */
+  const centerOn = useCallback(
+    (p: { x: number; y: number }, scale: number) => {
+      const s = clamp(scale, MIN_SCALE, MAX_SCALE);
+      setT({ scale: s, ...centerTransform(p, s, getStageSize()) });
+    },
+    [getStageSize],
+  );
+
   const layerStyle: React.CSSProperties = {
     transform: `translate(${t.tx}px, ${t.ty}px) scale(${t.scale})`,
     transformOrigin: "0 0",
@@ -130,5 +148,8 @@ export function usePanZoom() {
     zoomOut,
     panBy,
     reset,
+    getTransform,
+    getStageSize,
+    centerOn,
   };
 }

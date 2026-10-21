@@ -2,6 +2,12 @@ import React from "react";
 
 export type RiskLevel = "ALTO" | "MEDIO" | "BAJO";
 
+/** Normaliza el texto que guarda la BD o devuelve la IA; cualquier otro valor es null. */
+export function asRiskLevel(level: string | null | undefined): RiskLevel | null {
+  if (level === "ALTO" || level === "MEDIO" || level === "BAJO") return level;
+  return null;
+}
+
 export interface RiskBadgeProps {
   level: RiskLevel | null;
 }
