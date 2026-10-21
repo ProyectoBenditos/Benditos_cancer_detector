@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
+import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/actions";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 
@@ -531,6 +532,13 @@ export default function UploadDicomPage() {
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),
                                         review: null,
+                                    }}
+                                    // Estudio recién creado: sin marcadores guardados todavía.
+                                    annotations={{
+                                        uploadId: analysisResult.dicom_id,
+                                        initial: [],
+                                        save: saveAnnotationAction,
+                                        remove: deleteAnnotationAction,
                                     }}
                                 />
                             </div>
