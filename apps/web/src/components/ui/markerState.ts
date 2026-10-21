@@ -103,6 +103,16 @@ export function markersReducer(state: MarkersState, action: MarkerAction): Marke
   }
 }
 
+/**
+ * Estado inicial desde marcadores guardados: ordenados por seq, el siguiente
+ * número es el mayor + 1 y sin selección.
+ */
+export function markersStateFrom(markers: Marker[]): MarkersState {
+  const sorted = [...markers].sort((a, b) => a.seq - b.seq);
+  const maxSeq = sorted.length > 0 ? sorted[sorted.length - 1].seq : 0;
+  return { markers: sorted, selectedId: null, nextSeq: maxSeq + 1 };
+}
+
 export function findingLabel(t: FindingType | null): string {
   return FINDING_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? "Sin clasificar";
 }
