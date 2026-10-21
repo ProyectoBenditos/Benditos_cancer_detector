@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { FileText } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -121,12 +122,22 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 title={upload.original_name}
                 description="Registro completo del estudio y resultado del análisis IA."
                 action={
-                    <Link
-                        href="/platform/uploads"
-                        className={buttonVariants({ variant: "secondary", size: "md" })}
-                    >
-                        ← Volver al historial
-                    </Link>
+                    <div className="flex flex-wrap items-center gap-2.5">
+                        <Link
+                            href="/platform/uploads"
+                            className={buttonVariants({ variant: "secondary", size: "md" })}
+                        >
+                            ← Volver al historial
+                        </Link>
+                        {isAnalyzed && (
+                            <Link
+                                href={`/platform/uploads/${upload.id}/informe`}
+                                className={buttonVariants({ variant: "primary", size: "md" })}
+                            >
+                                <FileText className="w-4 h-4 mr-1.5" /> Ver Informe Estandarizado
+                            </Link>
+                        )}
+                    </div>
                 }
             />
 
@@ -228,7 +239,13 @@ export default async function UploadDetailPage({ params }: PageProps) {
             )}
 
             {/* Valoración del especialista */}
-            {isAnalyzed && <ClinicalReviewForm uploadId={upload.id} initial={review} />}
+            {isAnalyzed && (
+                <ClinicalReviewForm
+                    uploadId={upload.id}
+                    initial={review}
+                    defaultLobarLocation={((upload.clinical_features as Record<string, unknown> | null)?.lobar_location as string | undefined) ?? null}
+                />
+            )}
 
             {/* Metadata de inferencia */}
             {isAnalyzed && (upload.model_version || upload.inference_time_ms != null || upload.predicted_at) && (

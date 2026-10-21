@@ -12,6 +12,8 @@ import {
     CONCORDANCIA_OPTIONS,
     CONDUCTA_OPTIONS,
     LUNG_RADS_OPTIONS,
+    LOBAR_LOCATIONS,
+    extractLobarLocation,
     NODULE_SIZE_MAX_MM,
     NOTES_MAX_LENGTH,
     type UploadReview,
@@ -26,14 +28,22 @@ const HINT_CLASS = "mt-1 text-xs text-slate-500";
 type Props = {
     uploadId: string;
     initial: UploadReview | null;
+    defaultLobarLocation?: string | null;
 };
 
-export function ClinicalReviewForm({ uploadId, initial }: Props) {
+export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: Props) {
     const [state, formAction, pending] = useActionState<ReviewState, FormData>(saveUploadReviewAction, {});
     const lastSaved = state.savedAt ?? initial?.updated_at ?? null;
+
+    // Extraer localización lobar y notas limpias de initial?.notes
+    const { lobarLocation: initialLobar, cleanNotes: initialNotes } = extractLobarLocation(initial?.notes);
+
     // Tras enviar (con éxito o error) se repuebla con lo enviado; antes, con lo guardado en BD.
     const value = (key: string, saved: string | number | null | undefined) =>
         state.fields?.[key] ?? (saved == null ? "" : String(saved));
+
+    const defaultLobar = state.fields?.lobar_location ?? (initialLobar || defaultLobarLocation || "");
+    const defaultNotes = state.fields?.notes ?? initialNotes;
 
     return (
         <Card className="mb-6">
@@ -125,21 +135,49 @@ export function ClinicalReviewForm({ uploadId, initial }: Props) {
                         </div>
                     </div>
 
-                    <div>
-                        <label htmlFor="conducta" className={LABEL_CLASS}>
-                            Conducta / seguimiento <span className="text-slate-400 font-normal">(opcional)</span>
-                        </label>
-                        <select
-                            id="conducta"
-                            name="conducta"
-                            defaultValue={value("conducta", initial?.conducta)}
-                            className={FIELD_CLASS}
-                        >
-                            <option value="">Sin definir</option>
-                            {CONDUCTA_OPTIONS.map((o) => (
-                                <option key={o.value} value={o.value}>{o.label}</option>
-                            ))}
-                        </select>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label htmlFor="lobar_location" className={LABEL_CLASS}>
+                                Localización Lobar Anatómica <span className="text-slate-400 font-normal">(opcional)</span>
+                            </label>
+                            <select
+                                id="lobar_location"
+                                name="lobar_location"
+                                defaultValue={defaultLobar}
+                                className={FIELD_CLASS}
+                                aria-describedby="lobar_location-hint"
+                            >
+                                <option value="">Sin especificar — Pendiente de marcación</option>
+                                {LOBAR_LOCATIONS.map((l) => (
+                                    <option key={l.value} value={l.value}>
+                                        {l.label}
+                                    </option>
+                                ))}
+                            </select>
+                            <p id="lobar_location-hint" className={HINT_CLASS}>
+                                Ilumina automáticamente el lóbulo seleccionado en el dibujo anatómico del informe clínico.
+                            </p>
+                        </div>
+
+                        <div>
+                            <label htmlFor="conducta" className={LABEL_CLASS}>
+                                Conducta / seguimiento <span className="text-slate-400 font-normal">(opcional)</span>
+                            </label>
+                            <select
+                                id="conducta"
+                                name="conducta"
+                                defaultValue={value("conducta", initial?.conducta)}
+                                className={FIELD_CLASS}
+                            >
+                                <option value="">Sin definir</option>
+                                {CONDUCTA_OPTIONS.map((o) => (
+                                    <option key={o.value} value={o.value}>{o.label}</option>
+                                ))}
+                            </select>
+                            <p className={HINT_CLASS}>
+                                Conducta médica sugerida según criterios GPC 36 / Fleischner.
+                            </p>
+                        </div>
                     </div>
 
                     <div>
@@ -149,9 +187,9 @@ export function ClinicalReviewForm({ uploadId, initial }: Props) {
                         <textarea
                             id="notes"
                             name="notes"
-                            rows={5}
+                            rows={4}
                             maxLength={NOTES_MAX_LENGTH}
-                            defaultValue={value("notes", initial?.notes)}
+                            defaultValue={defaultNotes}
                             className={`${FIELD_CLASS} resize-y`}
                             placeholder="Hallazgos, correlación clínica, antecedentes relevantes, plan acordado..."
                         />

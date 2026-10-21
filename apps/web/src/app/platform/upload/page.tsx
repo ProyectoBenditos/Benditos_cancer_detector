@@ -13,6 +13,7 @@ import { Modal } from "@/components/ui/Modal";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
+import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 
 type UploadResponse = {
     message: string;
@@ -86,6 +87,7 @@ export default function UploadDicomPage() {
     const [errorMsg, setErrorMsg]       = useState("");
     const [successData, setSuccessData] = useState<UploadResponse | null>(null);
     const [features, setFeatures]       = useState<ClinicalFeatures>(DEFAULT_FEATURES);
+    const [lobarLocation, setLobarLocation] = useState<string>("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
 
     const [modalOpen, setModalOpen]       = useState(false);
@@ -221,7 +223,10 @@ export default function UploadDicomPage() {
                         Authorization: `Bearer ${data.session.access_token}`,
                         "Content-Type": "application/json",
                     },
-                    body: JSON.stringify(features),
+                    body: JSON.stringify({
+                        ...features,
+                        lobar_location: lobarLocation || null,
+                    }),
                 },
                 150_000,
             );
@@ -394,7 +399,7 @@ export default function UploadDicomPage() {
                 </CardContent>
             </Card>
 
-            {/* PASO 2: Formulario features clínicas */}
+            {/* PASO 2: Formulario features clínicas y localización lobar */}
             {successData && !analysisResult && (
                 <Card className="mt-6">
                     <CardContent className="p-8">
@@ -402,9 +407,45 @@ export default function UploadDicomPage() {
                             Parámetros radiológicos
                         </h2>
                         <p className="text-sm text-slate-500 mb-6">
-                            Ingresa las 8 características clínicas del nódulo para el análisis IA.
+                            Ingresa la localización anatómica y las 8 características clínicas del nódulo para el análisis IA.
                         </p>
 
+                        {/* Selector de Localización Lobar Anatómica */}
+                        <div className="mb-6">
+                            <label htmlFor="upload-lobar-location" className="mb-2 block text-sm font-medium text-slate-700">
+                                Localización lobar anatómica <span className="text-slate-400 font-normal">(opcional)</span>
+                            </label>
+                            <select
+                                id="upload-lobar-location"
+                                value={lobarLocation}
+                                onChange={(e) => setLobarLocation(e.target.value)}
+                                className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none transition-all font-medium"
+                            >
+                                <option value="">Sin especificar / Pendiente de lectura anatómica</option>
+                                <optgroup label="Pulmón Derecho">
+                                    {LOBAR_LOCATIONS.filter((l) => l.side === "Pulmón Derecho").map((l) => (
+                                        <option key={l.value} value={l.value}>
+                                            {l.label}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                                <optgroup label="Pulmón Izquierdo">
+                                    {LOBAR_LOCATIONS.filter((l) => l.side === "Pulmón Izquierdo").map((l) => (
+                                        <option key={l.value} value={l.value}>
+                                            {l.label}
+                                        </option>
+                                    ))}
+                                </optgroup>
+                            </select>
+                            <p className="text-xs text-slate-400 mt-1">
+                                Lóbulo pulmonar donde se identifica la lesión para representarlo en el informe clínico.
+                            </p>
+                        </div>
+
+                        {/* Rasgos Morfológicos LIDC-IDRI */}
+                        <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider mb-4">
+                            Rasgos Morfológicos LIDC-IDRI (8 variables cuantitativas)
+                        </h3>
                         <div className="grid gap-6 md:grid-cols-2">
                             {FEATURE_LABELS.map(({ key, label, description }) => (
                                 <div key={key}>
@@ -495,16 +536,23 @@ export default function UploadDicomPage() {
 
                         <div className="mt-6 flex flex-col sm:flex-row gap-3">
                             <Link
+                                href={`/platform/uploads/${analysisResult.dicom_id}/informe`}
+                                className={buttonVariants({ variant: "primary", size: "md" })}
+                            >
+                                Ver Informe Estandarizado →
+                            </Link>
+                            <Link
                                 href={`/platform/uploads/${analysisResult.dicom_id}`}
                                 className={buttonVariants({ variant: "secondary", size: "md" })}
                             >
-                                Ver estudio en historial →
+                                Ver estudio en historial
                             </Link>
                             <Button
                                 onClick={() => {
                                     setSuccessData(null);
                                     setAnalysisResult(null);
                                     setFeatures(DEFAULT_FEATURES);
+                                    setLobarLocation("");
                                     setCaseRef("");
                                     setPatientId("");
                                     setErrorMsg("");
@@ -527,6 +575,7 @@ export default function UploadDicomPage() {
                         key={analysisResult.dicom_id}
                         uploadId={analysisResult.dicom_id}
                         initial={null}
+                        defaultLobarLocation={lobarLocation || null}
                     />
                 </div>
             )}

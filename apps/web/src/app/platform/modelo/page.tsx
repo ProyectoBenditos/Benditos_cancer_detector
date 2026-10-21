@@ -321,6 +321,57 @@ export default function ModeloPage() {
                 </CardContent>
             </Card>
 
+            {/* ── Hoja de Ruta: multimodal-v2.0 ────────────────────────────── */}
+            <Card className="mb-6 border-brand-primary/20 bg-gradient-to-br from-slate-50 via-white to-brand-primary/5">
+                <CardContent className="p-6">
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+                        <div>
+                            <span className="text-xs font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full">
+                                Hoja de Ruta • Fase 2 (En Planificación)
+                            </span>
+                            <h3 className="text-lg font-bold text-slate-900 mt-2">
+                                Próxima Versión: multimodal-v2.0
+                            </h3>
+                            <p className="text-xs text-slate-600 mt-0.5">
+                                Pipeline en cascada de dos etapas con segmentación volumétrica 3D y localización lobar automatizada.
+                            </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
+                            Roadmap Fase 2
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
+                                1. Ingesta Multislice 3D
+                            </p>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Procesamiento de tomografías completas (series continuas de 150 a 300 cortes en formato .zip/DICOM) con reconstrucción volumétrica isotrópica 1x1x1 mm.
+                            </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
+                                2. Segmentación Lobar 3D
+                            </p>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Acoplamiento de un modelo volumétrico de tórax (TotalSegmentator / nnU-Net) para delimitar los 5 lóbulos pulmonares y mapear el centroide del nódulo con certeza matemática.
+                            </p>
+                        </div>
+
+                        <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
+                            <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
+                                3. Distancia Pleural Automática
+                            </p>
+                            <p className="text-xs text-slate-600 leading-relaxed">
+                                Medición euclidiana a la pleura en milímetros para clasificar nódulos subpleurales (&lt; 5 mm) vs centrales, enriqueciendo el informe clínico según ACR Lung-RADS v2022.
+                            </p>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
             {/* ── Section: Privacidad y Desidentificación de Datos ─────────── */}
             <div id="privacidad-datos" className="scroll-mt-24 mb-6">
                 <SectionDivider title="Privacidad y Desidentificación de Datos" icon={<ShieldCheck className="w-5 h-5" />} />

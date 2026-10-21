@@ -3,21 +3,17 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   Upload,
-  Users,
   Activity,
   FileText,
   ShieldCheck,
   Stethoscope,
   ArrowRight,
   CheckCircle2,
-  Server,
-  Database,
-  Layout,
-  Globe,
   BriefcaseMedical,
   Code,
   User,
   ExternalLink,
+  Eye,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { HeroDemoViewer } from "@/components/landing/HeroDemoViewer";
@@ -28,13 +24,12 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-brand-bg text-slate-900 selection:bg-brand-danger/20 font-sans">
 
-      {/* 1. NAVBAR CLÍNICO */}
+      {/* 1. NAVBAR */}
       <nav
         aria-label="Navegación principal"
         className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200"
       >
         <div className="max-w-6xl mx-auto px-6 h-18 flex items-center justify-between">
-          {/* Logo oficial con isotipo + texto */}
           <Link
             href="/"
             className="flex items-center gap-2.5 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded-lg"
@@ -56,7 +51,6 @@ export default function LandingPage() {
             </div>
           </Link>
 
-          {/* Enlaces de navegación originales */}
           <div className="hidden md:flex items-center gap-7 text-sm font-medium text-slate-600">
             <a
               href="#about"
@@ -65,16 +59,16 @@ export default function LandingPage() {
               Acerca de
             </a>
             <a
+              href="#validation"
+              className="hover:text-brand-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded px-1 py-0.5"
+            >
+              Validación
+            </a>
+            <a
               href="#features"
               className="hover:text-brand-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded px-1 py-0.5"
             >
-              Características
-            </a>
-            <a
-              href="#architecture"
-              className="hover:text-brand-primary transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-primary rounded px-1 py-0.5"
-            >
-              Tecnología
+              Capacidades
             </a>
             <a
               href="#team"
@@ -84,7 +78,6 @@ export default function LandingPage() {
             </a>
           </div>
 
-          {/* Botón Ingresar */}
           <div>
             <Link
               href="/login"
@@ -97,35 +90,31 @@ export default function LandingPage() {
       </nav>
 
       <main>
-        {/* 2. HERO SECTION CON DEMOSTRACIÓN INTERACTIVA */}
+        {/* 2. HERO SECTION */}
         <header className="relative px-6 pt-12 pb-20 md:pt-16 md:pb-24 border-b border-slate-200">
           <div className="max-w-6xl mx-auto flex flex-col items-center text-center">
             
-            {/* Badge de Investigación */}
             <div className="mb-5 inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-1.5 text-xs font-semibold text-slate-700 shadow-2xs">
               <BriefcaseMedical className="w-3.5 h-3.5 mr-2 text-brand-danger" aria-hidden="true" />
-              Prototipo de Investigación Académica
+              Proyecto de Investigación Académica
             </div>
 
-            {/* H1 Principal con Rebranding */}
-            <h1 className="max-w-4xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-5 leading-[1.12]">
+            <h1 className="max-w-4xl text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight text-slate-900 mb-5 leading-[1.15]">
               Inteligencia Artificial para la{" "}
               <span className="text-brand-danger">
-                Detección Temprana
-              </span>
+                Estratificación de Riesgo
+              </span>{" "}
+              en Nódulos Pulmonares
             </h1>
 
-            {/* Subtítulo Original */}
             <p className="max-w-2xl text-base sm:text-lg text-slate-600 mb-5 leading-relaxed">
-              Plataforma de análisis de imágenes médicas enfocada en priorizar el riesgo oncológico de pulmón para entornos con recursos clínicos limitados.
+              Herramienta de soporte a la decisión clínica que procesa tomografías computarizadas de tórax y variables morfológicas estructuradas para asistir en la clasificación y evaluación de nódulos pulmonares sospechosos.
             </p>
 
-            {/* Aviso Clínico Original */}
             <p className="max-w-2xl text-xs sm:text-sm text-slate-600 mb-8 px-4 py-3 bg-white rounded-xl border border-slate-200 shadow-2xs">
-              <strong>Aviso Clínico:</strong> Esta solución es una herramienta de apoyo investigativo y no reemplaza el juicio clínico del especialista oncológico o neumólogo.
+              <strong>Aviso Clínico:</strong> Esta solución es una herramienta de apoyo analítico e investigativo. No constituye un diagnóstico médico definitivo y no reemplaza el juicio clínico del especialista.
             </p>
 
-            {/* Botones de Acción Originales */}
             <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
               <Link
                 href="/login"
@@ -141,7 +130,7 @@ export default function LandingPage() {
               </a>
             </div>
 
-            {/* Visor Clínico Interactivo con los 3 Modos (Cortina, Parpadeo manual con Espacio, Lado a lado) */}
+            {/* Visor Clínico Interactivo con Grad-CAM */}
             <div className="w-full max-w-xl">
               <HeroDemoViewer />
             </div>
@@ -149,7 +138,7 @@ export default function LandingPage() {
           </div>
         </header>
 
-        {/* 3. VALIDACIÓN DEL MODELO (LA NUEVA INFORMACIÓN SOLICITADA) */}
+        {/* 3. VALIDACIÓN DEL MODELO */}
         <section id="validation" className="scroll-mt-20 py-14 bg-brand-primary text-white">
           <div className="max-w-6xl mx-auto px-6">
             <div className="text-center max-w-2xl mx-auto mb-10">
@@ -157,12 +146,12 @@ export default function LandingPage() {
                 Validación Científica
               </span>
               <h2 className="text-2xl sm:text-3xl font-bold tracking-tight mt-3 text-white">
-                Rendimiento Clínico del Modelo Multimodal
+                Rendimiento del Modelo Multimodal
               </h2>
               <p className="text-slate-300 text-sm mt-2">
-                Evaluado sobre el dataset internacional{" "}
+                Arquitectura híbrida (ResNet-18 para la tomografía + MLP para 8 características clínicas estructuradas), evaluada sobre el benchmark internacional{" "}
                 <SourceLink href={REFERENCES.lidcData.url} tone="onDark">LIDC-IDRI</SourceLink>{" "}
-                con partición a nivel de paciente.
+                con partición estricta a nivel de paciente.
               </p>
             </div>
 
@@ -196,10 +185,10 @@ export default function LandingPage() {
                   687
                 </div>
                 <div className="text-xs font-semibold text-slate-300 uppercase tracking-wide">
-                  Tomografías de Test
+                  Casos de Prueba
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Casos de validación
+                  Partición por paciente
                 </p>
               </div>
 
@@ -218,24 +207,24 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 4. ACERCA DE (EL PROBLEMA DE LA DETECCIÓN TARDÍA) */}
+        {/* 4. ACERCA DE */}
         <section id="about" className="scroll-mt-20 px-6 py-20 bg-white border-b border-slate-200">
           <div className="max-w-6xl mx-auto flex flex-col md:flex-row gap-12 items-center">
             <div className="md:w-1/2">
               <h2 className="text-3xl font-bold text-slate-900 mb-5">
-                El Problema de la Detección Tardía
+                Soporte a la Decisión Clínica en Nódulos Pulmonares
               </h2>
               <p className="text-slate-600 text-base mb-4 leading-relaxed">
-                En Latinoamérica, el cáncer de pulmón se diagnostica frecuentemente en etapas avanzadas, reduciendo drásticamente las tasas de supervivencia. La escasez de especialistas y recursos para lectura oportuna de tomografías agrava esta situación.
+                La evaluación de nódulos pulmonares indeterminados en tomografías computarizadas presenta una marcada variabilidad inter-observador. La alta carga asistencial en los servicios de radiología dificulta la priorización ágil de estudios de alta sospecha.
               </p>
               <p className="text-slate-600 text-base mb-6 leading-relaxed">
-                Nuestra propuesta de valor radica en un sistema de pre-evaluación algorítmica que clasifica y prioriza estudios (DICOM) para que los radiólogos y neumólogos enfoquen su atención donde más se necesita, optimizando tiempo y salvando vidas.
+                OncoScan asiste al especialista analizando el estudio DICOM, cuantificando las características morfológicas del nódulo y aportando un mapa de explicabilidad visual (Grad-CAM), optimizando la toma de decisiones clínicas y el seguimiento del paciente.
               </p>
               <ul className="space-y-3">
                 {[
-                  "Optimización del tiempo especialista",
-                  "Interfaz diseñada para contextos clínicos reales",
-                  "Integración estándar con archivos DICOM",
+                  "Priorización asistida de estudios con nódulos sospechosos",
+                  "Explicabilidad visual basada en mapas de calor Grad-CAM",
+                  "Desidentificación y cadena de custodia bajo estándar DICOM PS 3.15",
                 ].map((item, i) => (
                   <li key={i} className="flex items-center text-slate-700 text-sm font-medium">
                     <CheckCircle2 className="w-4 h-4 text-emerald-600 mr-2.5 shrink-0" aria-hidden="true" />
@@ -252,8 +241,8 @@ export default function LandingPage() {
                     <Activity className="w-5 h-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base text-slate-900">Priorización de Riesgo Alto</h3>
-                    <p className="text-xs text-slate-600 mt-0.5">Reduce tiempos de espera del paciente</p>
+                    <h3 className="font-bold text-base text-slate-900">Estratificación de Riesgo</h3>
+                    <p className="text-xs text-slate-600 mt-0.5">Clasificación en riesgo Bajo, Medio o Alto</p>
                   </div>
                 </div>
 
@@ -262,8 +251,8 @@ export default function LandingPage() {
                     <ShieldCheck className="w-5 h-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base text-slate-900">Ambiente Seguro</h3>
-                    <p className="text-xs text-slate-600 mt-0.5">Datos encriptados (Supabase RLS)</p>
+                    <h3 className="font-bold text-base text-slate-900">Privacidad y Soberanía del Dato</h3>
+                    <p className="text-xs text-slate-600 mt-0.5">Desidentificación irreversible de PHI y zero-retention</p>
                   </div>
                 </div>
 
@@ -272,8 +261,8 @@ export default function LandingPage() {
                     <Stethoscope className="w-5 h-5" aria-hidden="true" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-base text-slate-900">Asistente, no reemplazo</h3>
-                    <p className="text-xs text-slate-600 mt-0.5">Diseñado con &ldquo;Second-Reader Paradigm&rdquo;</p>
+                    <h3 className="font-bold text-base text-slate-900">Soporte al Criterio Clínico</h3>
+                    <p className="text-xs text-slate-600 mt-0.5">Diseñado para asistir y complementar la decisión del especialista</p>
                   </div>
                 </div>
               </div>
@@ -281,23 +270,37 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 5. CARACTERÍSTICAS (MÓDULOS DEL SISTEMA) */}
+        {/* 5. CAPACIDADES DEL SISTEMA */}
         <section id="features" className="scroll-mt-20 px-6 py-20 border-b border-slate-200">
           <div className="max-w-6xl mx-auto text-center mb-14">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Módulos del Sistema</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">Capacidades del Sistema</h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-base">
-              Componentes construidos para garantizar eficiencia operativa y seguridad clínica.
+              Módulos orientados a garantizar rigor clínico, trazabilidad y explicabilidad diagnóstica.
             </p>
           </div>
 
-          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              { icon: <Upload className="w-5 h-5" aria-hidden="true" />, title: "Carga DICOM Segura", desc: "Subida de tomografías de tórax en formato estándar con extracción de metadatos." },
-              { icon: <Users className="w-5 h-5" aria-hidden="true" />, title: "Gestión de Pacientes", desc: "Registro y seguimiento de pacientes vinculados a sus estudios clínicos." },
-              { icon: <Activity className="w-5 h-5" aria-hidden="true" />, title: "Análisis con IA", desc: "Inferencia automática sobre imágenes: score de riesgo, nivel y recomendación clínica." },
-              { icon: <FileText className="w-5 h-5" aria-hidden="true" />, title: "Historial y Reportes", desc: "Trazabilidad completa de estudios, análisis y reportes exportables." },
-              { icon: <ShieldCheck className="w-5 h-5" aria-hidden="true" />, title: "Autenticación JWT", desc: "Acceso protegido exclusivo para médicos autorizados, con panel de administración." },
-              { icon: <Stethoscope className="w-5 h-5" aria-hidden="true" />, title: "Dashboard de Alertas", desc: "Panel clínico con clasificación de riesgo y priorización de casos para el especialista." },
+              {
+                icon: <Upload className="w-5 h-5" aria-hidden="true" />,
+                title: "Ingesta DICOM y Desidentificación",
+                desc: "Anonimización automática de cabeceras médicas bajo el estándar internacional DICOM PS 3.15 con auditoría SHA-256.",
+              },
+              {
+                icon: <Activity className="w-5 h-5" aria-hidden="true" />,
+                title: "Inferencia Multimodal IA",
+                desc: "Fusión de visión computacional (corte tomográfico) y 8 parámetros morfológicos (espiculación, calcificación, márgenes, etc.).",
+              },
+              {
+                icon: <Eye className="w-5 h-5" aria-hidden="true" />,
+                title: "Explicabilidad Grad-CAM",
+                desc: "Mapas de atención visual que destacan las áreas espaciales que motivaron la predicción del modelo de aprendizaje profundo.",
+              },
+              {
+                icon: <FileText className="w-5 h-5" aria-hidden="true" />,
+                title: "Trazabilidad y Reportes",
+                desc: "Historial completo de análisis con exportación estructurada y registro de concordancia clínica para el especialista.",
+              },
             ].map((feature, i) => (
               <Card key={i} className="bg-white border-slate-200 hover:border-slate-300 transition duration-200">
                 <CardContent className="p-6 flex flex-col items-start gap-3.5">
@@ -312,96 +315,60 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* 6. TECNOLOGÍA (ARQUITECTURA MODERNA) */}
-        <section id="architecture" className="scroll-mt-20 px-6 py-20 bg-white border-b border-slate-200">
-          <div className="max-w-6xl mx-auto mb-14 text-center">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Arquitectura Moderna</h2>
-            <p className="text-slate-600 max-w-2xl mx-auto text-base">
-              Stack tecnológico de punta que asegura escalabilidad, velocidad y fiabilidad en tiempo real.
-            </p>
-          </div>
-
-          <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4">
-            {[
-              { icon: <Layout className="w-8 h-8" aria-hidden="true" />, title: "Next.js 16", sub: "Frontend (React)" },
-              { icon: <Server className="w-8 h-8" aria-hidden="true" />, title: "FastAPI", sub: "Backend Python" },
-              { icon: <Database className="w-8 h-8" aria-hidden="true" />, title: "Supabase", sub: "Auth & DB" },
-              { icon: <Activity className="w-8 h-8" aria-hidden="true" />, title: "PyTorch", sub: "DL Framework" },
-            ].map((tech, i) => (
-              <div
-                key={i}
-                className="flex flex-col items-center justify-center p-6 bg-brand-bg border border-slate-200 rounded-2xl hover:border-slate-300 transition text-center group"
-              >
-                <div className="text-slate-600 group-hover:text-brand-primary transition mb-3">
-                  {tech.icon}
-                </div>
-                <h4 className="font-bold text-base text-slate-900">{tech.title}</h4>
-                <p className="text-xs text-slate-500 mt-0.5">{tech.sub}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* 7. CONTEXTO DE INVESTIGACIÓN ESTUDIANTIL */}
-        <section className="px-6 py-16 border-b border-slate-200">
-          <div className="max-w-3xl mx-auto text-center border p-8 sm:p-10 rounded-2xl border-slate-200 bg-white shadow-2xs">
-            <div className="w-12 h-12 mx-auto bg-slate-100 rounded-full flex items-center justify-center mb-4 text-brand-primary">
-              <Globe className="w-6 h-6" aria-hidden="true" />
-            </div>
-            <h2 className="text-2xl font-bold text-slate-900 mb-3">Contexto de Investigación Estudiantil</h2>
-            <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-5">
-              Este prototipo se ha desarrollado dentro de un ambiente académico controlado como parte de un proyecto universitario. Todas las pruebas se realizan con datasets oncológicos públicos y anonimizados (ej.{" "}
-              <SourceLink href={REFERENCES.lidcData.url}>LIDC-IDRI</SourceLink>).
-            </p>
-            <div className="inline-block px-3.5 py-1.5 bg-brand-danger/10 text-brand-danger rounded-lg text-xs font-semibold border border-brand-danger/20">
-              Proyecto Universitario — Versión Final
-            </div>
-          </div>
-        </section>
-
-        {/* 8. EQUIPO DESARROLLADOR (CON SILUETA INSTITUCIONAL DE PERSONA) */}
+        {/* 6. EQUIPO DEL PROYECTO */}
         <section id="team" className="scroll-mt-20 px-6 py-20 bg-white border-b border-slate-200">
           <div className="max-w-6xl mx-auto text-center mb-14">
-            <h2 className="text-3xl font-bold text-slate-900 mb-3">Equipo Desarrollador</h2>
+            <h2 className="text-3xl font-bold text-slate-900 mb-3">Equipo del Proyecto</h2>
             <p className="text-slate-600 max-w-2xl mx-auto text-base">
-              Investigadores y desarrolladores detrás de OncoScan.
+              Investigadores y desarrolladores detrás de la plataforma OncoScan.
             </p>
           </div>
 
-          <div className="max-w-5xl mx-auto flex flex-wrap justify-center gap-6 sm:gap-8">
+          <div className="max-w-4xl mx-auto flex flex-wrap justify-center gap-8 sm:gap-12">
             {[
-              { name: "Juan Esteban Aldana", role: "Backend Developer" },
-              { name: "Nicolás Chávez Oliveros", role: "Tech Lead & Data Engineer" },
-              { name: "Juan Pablo Sotelo Mejía", role: "Frontend & UI/UX" },
-              { name: "Luis De Ávila Mosquera.", role: "AI Engineer & QA" },
-              { name: "Juan Mateo Salas Arturo", role: "Project manager & DevOps" },
+              {
+                name: "Jair Enrique Sanclemente Castro",
+                role: "Docente Asesor / Director de Proyecto",
+              },
+              {
+                name: "Luis Alberto De Avila Mosquera",
+                role: "Investigador y Desarrollador",
+              },
+              {
+                name: "Juan Mateo Salas Arturo",
+                role: "Investigador y Desarrollador",
+              },
             ].map((member, i) => (
-              <div key={i} className="flex flex-col items-center group w-44">
-                <div className="w-20 h-20 mb-3 rounded-full bg-brand-bg border border-slate-200 overflow-hidden flex items-center justify-center text-slate-500 group-hover:border-brand-primary group-hover:text-brand-primary transition">
-                  <User className="w-8 h-8 stroke-[1.5]" aria-hidden="true" />
+              <div key={i} className="flex flex-col items-center group w-56">
+                <div className="w-24 h-24 mb-4 rounded-full bg-brand-bg border border-slate-200 overflow-hidden flex items-center justify-center text-slate-500 group-hover:border-brand-primary group-hover:text-brand-primary transition shadow-2xs">
+                  <User className="w-10 h-10 stroke-[1.5]" aria-hidden="true" />
                 </div>
-                <h4 className="font-bold text-sm text-slate-900 text-center leading-tight">{member.name}</h4>
-                <p className="text-xs text-brand-danger font-medium mt-1 text-center">{member.role}</p>
+                <h4 className="font-bold text-base text-slate-900 text-center leading-tight">
+                  {member.name}
+                </h4>
+                <p className="text-xs text-brand-danger font-semibold mt-1.5 text-center">
+                  {member.role}
+                </p>
               </div>
             ))}
           </div>
         </section>
 
-        {/* 9. INICIATIVA OPEN SOURCE */}
-        <section className="px-6 py-20 border-b border-slate-200">
+        {/* 7. REPOSITORIO DE CÓDIGO */}
+        <section className="px-6 py-16 border-b border-slate-200 bg-slate-50">
           <div className="max-w-3xl mx-auto text-center">
             <div className="w-12 h-12 mx-auto mb-4 bg-white border border-slate-200 rounded-xl flex items-center justify-center text-brand-primary shadow-2xs">
               <Code className="w-6 h-6" aria-hidden="true" />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 mb-3">Iniciativa Open Source</h2>
+            <h2 className="text-2xl font-bold text-slate-900 mb-2">Transparencia y Código Abierto</h2>
             <p className="text-slate-600 text-sm sm:text-base mb-6 leading-relaxed">
-              Creemos que la tecnología médica debe ser transparente y auditable. El código base de la plataforma OncoScan está disponible en el repositorio de la organización.
+              El código fuente de la plataforma OncoScan está disponible para revisión y reproducibilidad académica en GitHub.
             </p>
             <a
               href="https://github.com/ProyectoBenditos/Benditos_cancer_detector"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center px-6 py-3 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-semibold rounded-xl transition"
+              className="inline-flex items-center px-6 py-3 bg-brand-primary hover:bg-brand-primary-hover text-white text-sm font-semibold rounded-xl transition shadow-2xs"
             >
               <span>Ver Repositorio</span>
               <ExternalLink className="ml-2 w-4 h-4 opacity-80" aria-hidden="true" />
@@ -411,7 +378,7 @@ export default function LandingPage() {
 
       </main>
 
-      {/* 10. FOOTER CON DESCARGO CLÍNICO */}
+      {/* 8. FOOTER */}
       <footer className="px-6 py-12 bg-slate-950 text-slate-400 text-center md:text-left font-sans">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="flex flex-col items-center md:items-start">
@@ -427,8 +394,8 @@ export default function LandingPage() {
                 Onco<span className="text-brand-danger">Scan</span>
               </span>
             </div>
-            <p className="text-xs text-slate-500 max-w-sm">
-              Sistema de pre-evaluación algorítmica para riesgo oncológico. Proyecto universitario controlado.
+            <p className="text-xs text-slate-500 max-w-md">
+              Herramienta de software para la evaluación y estratificación del riesgo de malignidad en nódulos pulmonares. Proyecto de investigación académica.
             </p>
           </div>
           <div className="flex gap-4 text-xs font-medium text-slate-400">
@@ -443,7 +410,7 @@ export default function LandingPage() {
           </div>
         </div>
         <div className="max-w-6xl mx-auto mt-8 pt-8 border-t border-slate-800 text-xs text-slate-500 text-center">
-          © {new Date().getFullYear()} OncoScan by ProyectoBenditos. Todos los derechos reservados.
+          © {new Date().getFullYear()} OncoScan. Proyecto de Investigación Académica. Todos los derechos reservados.
         </div>
       </footer>
 

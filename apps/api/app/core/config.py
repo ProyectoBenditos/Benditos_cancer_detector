@@ -16,7 +16,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 SUPABASE_BUCKET_NAME = os.getenv("SUPABASE_BUCKET_NAME", "dicom-files")
 
-HF_API_BASE_URL = os.getenv("HF_API_BASE_URL", "https://oncoscan-ai.duckdns.org")
+_raw_hf_url = os.getenv("HF_API_BASE_URL", "https://oncoscan-ai.duckdns.org")
+if not _raw_hf_url or "hf.space" in _raw_hf_url:
+    HF_API_BASE_URL = "https://oncoscan-ai.duckdns.org"
+else:
+    HF_API_BASE_URL = _raw_hf_url
 HF_PREDICT_TIMEOUT = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
 ANONYMIZATION_SALT = os.getenv("ANONYMIZATION_SALT", "oncoscan-clinical-salt-v1")
 

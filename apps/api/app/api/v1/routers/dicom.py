@@ -43,6 +43,7 @@ class ClinicalFeatures(BaseModel):
     spiculation:   float = 1.0
     texture:       float = 5.0
     malignancy:    float = 3.0
+    lobar_location: Optional[str] = None
 
 
 def dicom_to_png_bytes(file_bytes: bytes) -> bytes:
@@ -274,7 +275,10 @@ async def analyze_dicom(
             png_bytes  = png_buffer.getvalue()
 
         # 4. Llamar al microservicio de IA (servidor dedicado Oracle Cloud)
-        hf_url  = f"{os.getenv('HF_API_BASE_URL', 'https://oncoscan-ai.duckdns.org')}/predict"
+        hf_base = os.getenv("HF_API_BASE_URL", "https://oncoscan-ai.duckdns.org")
+        if not hf_base or "hf.space" in hf_base:
+            hf_base = "https://oncoscan-ai.duckdns.org"
+        hf_url  = f"{hf_base.rstrip('/')}/predict"
         timeout = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
 
         files = {"imagen": ("imagen.png", png_bytes, "image/png")}
