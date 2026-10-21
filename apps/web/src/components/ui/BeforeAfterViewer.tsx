@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useRef, useState, useCallback } from "react";
+import { useEffect, useId, useMemo, useReducer, useRef, useState, useCallback } from "react";
 import { EyeOff, SlidersHorizontal, Sparkles } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { usePanZoom } from "./usePanZoom";
@@ -8,6 +8,9 @@ import { useViewerFullscreen } from "./useViewerFullscreen";
 import { ViewerHelpDialog } from "./ViewerHelpDialog";
 import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
+import { MarkerLayer } from "./MarkerLayer";
+import { stageToNormalized, visibleCenter, type Size } from "./markerMath";
+import { MARKERS_INITIAL, markersReducer } from "./markerState";
 import { ADJUST_DEFAULT, adjustFilter, isDefaultAdjust, type Adjust, type ViewerTool } from "./viewerTools";
 import { DARK_PANEL, MEASURE_UNAVAILABLE, TOOL_LABELS, ViewerToolbar, type ViewMode } from "./ViewerToolbar";
 
@@ -101,8 +104,42 @@ export function BeforeAfterViewer({
   const opacityId = useId();
   const splitId = useId();
 
-  const { scale, canPan, layerStyle, stageHandlers: panHandlers, zoomIn, zoomOut, panBy, reset } =
-    usePanZoom();
+  const {
+    scale,
+    canPan,
+    layerStyle,
+    stageHandlers: panHandlers,
+    zoomIn,
+    zoomOut,
+    panBy,
+    reset,
+    getTransform,
+    getStageSize,
+  } = usePanZoom();
+
+  // Marcadores (solo en el navegador en la Fase B). El tamaño natural del PNG
+  // hace falta para ubicar los pins sobre el rectángulo real de la imagen.
+  const [markersState, dispatchMarkers] = useReducer(markersReducer, MARKERS_INITIAL);
+  const [natural, setNatural] = useState<Size>({ w: 1, h: 1 });
+  const onCtLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    if (w > 0 && h > 0) setNatural({ w, h });
+  };
+  const addMarkerAt = (n: { x: number; y: number }) => {
+    setAnnouncement(`Marcador ${markersState.nextSeq} agregado`);
+    dispatchMarkers({ type: "add", x: n.x, y: n.y });
+  };
+  const markerLayer = (focusable: boolean) => (
+    <MarkerLayer
+      markers={markersState.markers}
+      selectedId={markersState.selectedId}
+      natural={natural}
+      scale={scale}
+      focusable={focusable}
+      onSelect={(id) => dispatchMarkers({ type: "select", id })}
+      onMove={(id, x, y) => dispatchMarkers({ type: "move", id, x, y })}
+    />
+  );
 
   const [adjust, setAdjust] = useState<Adjust>(ADJUST_DEFAULT);
   // El filtro de brillo/contraste se aplica solo a la TAC, nunca al mapa de calor.
@@ -113,7 +150,11 @@ export function BeforeAfterViewer({
     pan: panHandlers,
     adjust,
     onAdjust: setAdjust,
-    onClickAt: () => {},
+    // Un clic en una franja negra (fuera de la imagen) no crea marcador.
+    onClickAt: (p, stage) => {
+      const n = stageToNormalized(p, getTransform(), stage, natural);
+      if (n) addMarkerAt(n);
+    },
   });
 
   const resetView = () => {
@@ -278,6 +319,11 @@ export function BeforeAfterViewer({
       case "toolMeasure":
         selectTool("measure");
         break;
+      case "addMarker":
+        if (tool !== "marker") break;
+        e.preventDefault();
+        addMarkerAt(visibleCenter(getTransform(), getStageSize(), natural));
+        break;
       case "openHelp":
         e.preventDefault();
         setHelpOpen(true);
@@ -410,6 +456,7 @@ export function BeforeAfterViewer({
                     src={beforeUrl}
                     style={ctStyle}
                     alt="Estudio tomográfico original"
+                    onLoad={onCtLoad}
                     draggable={false}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   />
@@ -478,6 +525,7 @@ export function BeforeAfterViewer({
                       Parpadeo Activo: Mostrando TAC Pura (Presiona Espacio para ver IA)
                     </div>
                   )}
+                  {markerLayer(true)}
                 </Stage>
 
                 {/* Deslizador de la cortina (0% = TAC Original, 100% = Detección IA) */}
@@ -530,9 +578,11 @@ export function BeforeAfterViewer({
                       src={beforeUrl}
                       style={ctStyle}
                       alt="TAC original"
+                      onLoad={onCtLoad}
                       draggable={false}
                       className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                     />
+                    {markerLayer(true)}
                   </Stage>
                 ) : (
                   <Placeholder message="TAC original no disponible" />
@@ -573,6 +623,7 @@ export function BeforeAfterViewer({
                         IA en pausa (Espacio)
                       </div>
                     )}
+                    {markerLayer(false)}
                   </Stage>
                 ) : (
                   <Placeholder message="Mapa Grad-CAM no disponible" />
@@ -594,6 +645,7 @@ export function BeforeAfterViewer({
                     src={beforeUrl}
                     style={ctStyle}
                     alt="TAC original"
+                    onLoad={onCtLoad}
                     draggable={false}
                     className="pointer-events-none absolute inset-0 h-full w-full object-contain"
                   />
@@ -613,6 +665,7 @@ export function BeforeAfterViewer({
                       Parpadeo Activo: TAC Pura (Presiona Espacio para ver IA)
                     </div>
                   )}
+                  {markerLayer(true)}
                 </Stage>
 
                 {/* Control de opacidad */}

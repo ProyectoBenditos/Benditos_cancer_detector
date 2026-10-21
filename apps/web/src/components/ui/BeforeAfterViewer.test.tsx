@@ -193,3 +193,73 @@ describe("BeforeAfterViewer — herramientas", () => {
     expect(screen.getByRole("status")).toHaveTextContent("IA oculta");
   });
 });
+
+/** Da medidas al lienzo (jsdom no hace layout): 400×400 en (0,0). */
+function sizeStage(stage: HTMLElement, size = 400) {
+  Object.defineProperty(stage, "clientWidth", { configurable: true, value: size });
+  Object.defineProperty(stage, "clientHeight", { configurable: true, value: size });
+  stage.getBoundingClientRect = () => ({ left: 0, top: 0, width: size, height: size }) as DOMRect;
+}
+
+function addMarkerWithKeyboard(visor: HTMLElement) {
+  visor.focus();
+  fireEvent.keyDown(visor, { key: "m" });
+  fireEvent.keyDown(visor, { key: "Enter" });
+}
+
+describe("BeforeAfterViewer — marcadores", () => {
+  it("M + Enter agrega el marcador 1 en el centro", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    const pin = screen.getByRole("button", { name: /^Marcador 1: sin clasificar/ });
+    expect(pin.style.left).toBe("50%");
+    expect(pin.style.top).toBe("50%");
+    expect(screen.getByRole("status")).toHaveTextContent("Marcador 1 agregado");
+  });
+
+  it("Enter con la herramienta Mover no agrega marcador", () => {
+    const visor = renderViewer();
+    visor.focus();
+    fireEvent.keyDown(visor, { key: "Enter" });
+    expect(screen.queryByRole("button", { name: /^Marcador 1/ })).not.toBeInTheDocument();
+  });
+
+  it("un clic con Marcador agrega el pin donde se hizo clic; un arrastre no", () => {
+    const visor = renderViewer();
+    fireEvent.keyDown(visor, { key: "m" });
+    const stage = screen.getByRole("group", { name: /Comparativa en cortina/ });
+    sizeStage(stage);
+    dragOn(stage, 0, 0); // clic en (0,0) → esquina superior izquierda
+    const pin = screen.getByRole("button", { name: /^Marcador 1/ });
+    expect(pin.style.left).toBe("0%");
+    expect(pin.style.top).toBe("0%");
+    dragOn(stage, 100, 100);
+    expect(screen.queryByRole("button", { name: /^Marcador 2/ })).not.toBeInTheDocument();
+  });
+
+  it("las flechas sobre un pin lo mueven y no se propagan", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    const pin = screen.getByRole("button", { name: /^Marcador 1/ });
+    expect(fireEvent.keyDown(pin, { key: "ArrowRight" })).toBe(false);
+    expect(pin.style.left).toBe("51%");
+    fireEvent.keyDown(pin, { key: "ArrowUp" });
+    expect(pin.style.top).toBe("49%");
+  });
+
+  it("pulsar un pin no crea otro marcador", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    const pin = screen.getByRole("button", { name: /^Marcador 1/ });
+    fireEvent.pointerDown(pin, { clientX: 0, clientY: 0, pointerId: 1 });
+    fireEvent.pointerUp(pin, { clientX: 0, clientY: 0, pointerId: 1 });
+    expect(screen.getAllByRole("button", { name: /^Marcador \d/ })).toHaveLength(1);
+  });
+
+  it("en Lado a lado solo un juego de pins es focalizable", () => {
+    const visor = renderViewer();
+    addMarkerWithKeyboard(visor);
+    fireEvent.click(screen.getByRole("radio", { name: /Lado a lado/ }));
+    expect(screen.getAllByRole("button", { name: /^Marcador 1/ })).toHaveLength(1);
+  });
+});
