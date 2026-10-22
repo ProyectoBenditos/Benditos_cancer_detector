@@ -1,0 +1,39 @@
+{
+  "model": "MONAI wholeBody_ct_segmentation lowres SegResNet",
+  "source": {
+    "kind": "huggingface",
+    "url": "https://huggingface.co/MONAI/wholeBody_ct_segmentation",
+    "version": "0.2.9",
+    "commit": "13f6d33ae9de6664571d935ee647039f477c3fad"
+  },
+  "licence": {
+    "spdx": "Apache-2.0",
+    "verified_from": "https://huggingface.co/MONAI/wholeBody_ct_segmentation/raw/13f6d33ae9de6664571d935ee647039f477c3fad/LICENSE"
+  },
+  "intended_use": "research",
+  "weights": {
+    "pretrained": true,
+    "trained_on": ["TotalSegmentator"],
+    "url": "https://developer.download.nvidia.com/assets/Clara/monai/tutorials/model_zoo/model_lowres_wholebody_ct_segmentation.pt",
+    "md5": "dbdebeae650f4fb5ea7f4ad01e0d2431",
+    "sha256": "c3ab55eb979785fdcb30690872c210bbeee73d79a170c32fdaa1eca117779f90"
+  },
+  "task": { "model": "3d_ct_organ_segmentation", "study": "3d_ct_organ_segmentation" },
+  "reported_validation": [{
+    "dataset": "TotalSegmentator",
+    "metric": "mean_dice",
+    "source": "Official bundle configs/metadata.json at the pinned revision; reported by the publisher, not recomputed here"
+  }],
+  "developed_on": ["TotalSegmentator"],
+  "evaluation_arms": [],
+  "demonstration": {
+    "dataset": "3D Slicer CTChest",
+    "source_sha256": "4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+    "scope": "Local pipeline and visual registration demonstration; no independent clinical performance claim"
+  },
+  "hardware": {
+    "claimed": "CUDA-capable GPU with CPU accumulation of sliding windows",
+    "verified_on": "NVIDIA GeForce GTX 1650, 4 GB; Python 3.11; PyTorch 2.6.0+cu124; MONAI 1.4.0",
+    "verified": true
+  }
+}

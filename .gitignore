@@ -12,6 +12,13 @@ pnpm-lock.yaml
 __pycache__/
 *.pyc
 .venv/
+.venv-ml/
+apps/api/.cache/
+
+# Public source CT downloads; regenerated with scripts/prepare_lung_demo.py
+samples/real-lung/*.nrrd
+samples/real-lung/*.nii
+samples/real-lung/*.nii.gz
 env/
 venv/
 
@@ -43,4 +50,8 @@ docs/*.docx
 docs/_build_docx.py
 
 # Scripts locales no portables (rutas hardcoded a D:\Descargas)
-scripts/
+scripts/*
+!scripts/create_test_samples.py
+!scripts/prepare_lung_demo.py
+!scripts/start_local_services.ps1
+!scripts/verify_volume_handoff.py

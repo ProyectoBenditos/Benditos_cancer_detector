@@ -1,0 +1,31 @@
+{
+  "scope": "Mock identity and storage; actual local API bridge and PyTorch/MONAI worker",
+  "source_slice_index": 69,
+  "model": "multimodal-v2.0-densenet-real",
+  "native_cam_shapes": [
+    [
+      4,
+      4
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "job_id": "ffec13c41eb0af65dc23ea1efb4f01d80da60a0b7c95a329f3241e8a2889da51",
+  "status": "ready",
+  "assets": {
+    "atlas": {
+      "status": 200,
+      "bytes": 8893761
+    },
+    "lobes": {
+      "status": 200,
+      "bytes": 53012
+    },
+    "heatmap": {
+      "status": 200,
+      "bytes": 267579
+    }
+  }
+}

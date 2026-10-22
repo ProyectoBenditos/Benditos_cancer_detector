@@ -1,5 +1,7 @@
 # OncoScan — Plataforma de Apoyo a la Detección Temprana de Cáncer Pulmonar
 
+> **Entrega del 22 de octubre de 2026:** para continuar el visor 3D, MONAI y el mapa de calor, empezar por [el documento de traspaso](docs/HANDOFF-2026-10-22.md). Incluye el estado local, evidencias, pesos externos, pendientes y [la ruta propuesta a producción](docs/volume-rendering/PRODUCCION.md). La descripción del MVP y sus despliegues históricos que sigue no acredita que el nuevo flujo ya esté publicado.
+
 Sistema académico de pre-evaluación algorítmica para cáncer de pulmón. Procesa imágenes DICOM, ejecuta un modelo de IA alojado en un servidor dedicado (Oracle Cloud) y presenta alertas clínicas estructuradas con nivel de riesgo y recomendación.
 
 > **Aviso clínico:** OncoScan es una herramienta de apoyo investigativo en un entorno académico controlado. No es un dispositivo médico certificado y no reemplaza el juicio del especialista oncológico o neumólogo.

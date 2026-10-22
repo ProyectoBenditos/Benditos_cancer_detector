@@ -1,0 +1,17 @@
+# Python 3.11. Install torch/torchvision from the CUDA 12.4 index first:
+# python -m pip install torch==2.6.0 torchvision==0.21.0 --index-url https://download.pytorch.org/whl/cu124
+torch==2.6.0
+torchvision==0.21.0
+monai==1.4.0
+numpy==1.26.4
+scipy==1.15.3
+nibabel==5.3.2
+pydicom==3.0.1
+opencv-python-headless==4.11.0.86
+xgboost==3.2.0
+Pillow==11.2.1
+fastapi==0.115.12
+uvicorn==0.34.2
+python-multipart==0.0.20
+httpx==0.28.1
+pynrrd==1.1.3

@@ -1,0 +1,39 @@
+{
+  "scope": "2D viewer unit regression checks and actual local PNG inference; no authenticated production E2E",
+  "viewer_component": "apps/web/src/components/ui/BeforeAfterViewer.tsx",
+  "study_tab_label": "Corte axial y activación",
+  "viewer_tests": {
+    "passed": 115,
+    "files": 8
+  },
+  "inference": {
+    "status": 200,
+    "source": "docs/modelo-v2-densenet/muestras_prueba/caso_01_nodulo.png",
+    "source_sha256": "c6aaaec0b5b77f91ed9571240b9d2d5f32e6a5fc1d915a71faa90ac3cb1d0447",
+    "model": "multimodal-v2.0-densenet-real",
+    "method": "HiResCAM",
+    "images": {
+      "mapa_base64": {
+        "format": "PNG",
+        "size": [
+          128,
+          128
+        ]
+      },
+      "scalar_base64": {
+        "format": "PNG",
+        "size": [
+          128,
+          128
+        ]
+      },
+      "overlay_base64": {
+        "format": "PNG",
+        "size": [
+          128,
+          128
+        ]
+      }
+    }
+  }
+}

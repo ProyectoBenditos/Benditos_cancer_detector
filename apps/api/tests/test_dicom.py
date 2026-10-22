@@ -158,3 +158,95 @@ def test_dicom_upload_dcm_modalidad_no_ct_devuelve_400(client, auth_headers):
     )
     assert response.status_code == 400
     assert "Modalidad MR no soportada" in response.json().get("detail", "")
+
+
+def test_dicom_upload_zip_multicorte_acepta_y_extrae_volumen(client, auth_headers, supabase_mock):
+    """Subir un .zip con múltiples cortes CT genera file_type='dicom_series' y metadata 3D."""
+    import zipfile
+
+    slice1 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+    slice2 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+    slice3 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        zf.writestr("slice_001.dcm", slice1)
+        zf.writestr("slice_002.dcm", slice2)
+        zf.writestr("slice_003.dcm", slice3)
+
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("serie_torax_160cortes.zip", zip_buf.getvalue(), "application/zip")},
+        data={"case_ref": "case-test-multislice-3d"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+
+    assert payload["filename"] == "serie_torax_160cortes.zip"
+    assert payload["file_type"] == "dicom_series"
+    assert payload["modality"] == "CT"
+    assert payload["patient_id_dicom"].startswith("ONC-PAT-")
+    assert payload["volume_metadata"] is not None
+    assert payload["volume_metadata"]["num_slices"] == 3
+    assert payload["volume_metadata"]["window_center"] == -600.0
+    assert payload["volume_metadata"]["window_width"] == 1500.0
+    assert supabase_mock.storage.from_().upload.called
+
+
+def test_dicom_upload_zip_sin_dicoms_devuelve_400(client, auth_headers):
+    """Subir un .zip que no contiene archivos DICOM devuelve error 400 explicativo."""
+    import zipfile
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        zf.writestr("documento.txt", b"este es un texto plano no dicom")
+
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("invalido.zip", zip_buf.getvalue(), "application/zip")},
+    )
+    assert response.status_code == 400
+    assert "no contiene cortes tomográficos" in response.json().get("detail", "")
+
+
+
+def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase_mock):
+    """Subir un .nii.gz 3D procesa cortes en HU, genera Texture Atlas y volumen 3D."""
+    import os
+    import nibabel as nib
+    import numpy as np
+    import tempfile
+
+    vol = np.zeros((64, 64, 5), dtype=np.float32) - 1000.0  # Aire
+    vol[16:48, 16:48, :] = -600.0  # Pulmón
+    vol[30:35, 30:35, 2] = 50.0   # Nódulo hiperdenso
+
+    nii = nib.Nifti1Image(vol, affine=np.eye(4))
+    with tempfile.NamedTemporaryFile(suffix=".nii.gz", delete=False) as tmp:
+        nib.save(nii, tmp.name)
+        tmp_name = tmp.name
+
+    try:
+        with open(tmp_name, "rb") as f:
+            nii_bytes = f.read()
+    finally:
+        if os.path.exists(tmp_name):
+            os.remove(tmp_name)
+
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("torax_volumen.nii.gz", nii_bytes, "application/gzip")},
+        data={"case_ref": "case-test-nii-001"},
+    )
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["filename"] == "torax_volumen.nii.gz"
+    assert payload["file_type"] == "nifti_volume"
+    assert payload["modality"] == "CT"
+    assert payload["volume_metadata"] is not None
+    assert payload["volume_metadata"]["num_slices"] == 5
+    assert payload["volume_metadata"]["format"] == "NIfTI-1"
+    assert supabase_mock.storage.from_().upload.called

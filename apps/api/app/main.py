@@ -7,6 +7,7 @@ from app.api.v1.routers.analysis import router as analysis_router
 from app.api.v1.routers.batch import router as batch_router
 from app.api.v1.routers.dicom import router as dicom_router
 from app.api.v1.routers.health import router as health_router
+from app.api.v1.routers.volume import router as volume_router
 from app.core.logging import configure_logging, log_event
 
 configure_logging(level=os.getenv("LOG_LEVEL", "INFO"))
@@ -32,6 +33,7 @@ app.add_middleware(
 
 app.include_router(health_router, prefix="/api/v1", tags=["health"])
 app.include_router(dicom_router, prefix="/api/v1", tags=["dicom"])
+app.include_router(volume_router, prefix="/api/v1", tags=["volume"])
 app.include_router(analysis_router, prefix="/api/v1", tags=["analysis"])
 app.include_router(batch_router, prefix="/api/v1/analysis", tags=["batch"])
 

@@ -1,0 +1,117 @@
+{
+  "pipeline_version": "monai-hirescam-volume-v2",
+  "study_key": "public-slicer-ctchest",
+  "source_sha256": "0643d597ff718cf5848e52f0b4416fb7333200460240be39891390458c9e64f3",
+  "volume_metadata": {
+    "num_slices": 139,
+    "rows": 384,
+    "columns": 384,
+    "pixel_spacing": [
+      1.0156253178914387,
+      1.0156253178914387
+    ],
+    "slice_spacing": 2.5,
+    "slice_thickness": 2.5,
+    "slice_order": "inferior_to_superior",
+    "coordinate_space": "render_voxel_column_row_slice",
+    "window_center": -600,
+    "window_width": 1500,
+    "hu_min": -1350,
+    "hu_max": 150,
+    "intensity_encoding": "lung_window_uint8"
+  },
+  "source_metadata": {
+    "num_slices": 139,
+    "rows": 512,
+    "columns": 512,
+    "pixel_spacing": [
+      0.7617189884185791,
+      0.7617189884185791
+    ],
+    "slice_spacing": 2.5,
+    "slice_thickness": 2.5,
+    "slice_order": "inferior_to_superior",
+    "coordinate_space": "render_voxel_column_row_slice",
+    "window_center": -600,
+    "window_width": 1500,
+    "hu_min": -1350,
+    "hu_max": 150,
+    "intensity_encoding": "lung_window_uint8"
+  },
+  "assets": {
+    "atlas": "atlas.png",
+    "lobes": "lobes.png",
+    "heatmap": "heatmap.png"
+  },
+  "segmentation": {
+    "method": "MONAI SegResNet wholeBody_ct_segmentation lowres",
+    "bundle_revision": "13f6d33ae9de6664571d935ee647039f477c3fad",
+    "checkpoint_md5": "dbdebeae650f4fb5ea7f4ad01e0d2431",
+    "checkpoint_sha256": "c3ab55eb979785fdcb30690872c210bbeee73d79a170c32fdaa1eca117779f90",
+    "sampling_mm": 3,
+    "device": "cuda",
+    "label_map": {
+      "15": 1,
+      "16": 2,
+      "17": 3,
+      "13": 4,
+      "14": 5
+    },
+    "grid": "same_as_render_ct",
+    "is_manual_ground_truth": false,
+    "preprocessing": "out-of-field values below -1500 HU replaced by -1000 HU before MONAI normalization",
+    "training_transforms": "NormalizeIntensity(nonzero), CropForeground(margin=10,k_divisible=96), GaussianSmooth(sigma=0.4), ScaleIntensity(-1,1)",
+    "implementation_version": "monai-lowres-training-preprocess-v4",
+    "roi_size": [
+      96,
+      96,
+      96
+    ],
+    "present_labels": [
+      1,
+      2,
+      3,
+      4,
+      5
+    ]
+  },
+  "attribution": {
+    "method": "HiResCAM",
+    "construction": "2D CAM computed independently on every lung slice",
+    "target": "multimodal_fusion_logit",
+    "explained_component": "neural_component_single_view",
+    "normalization": "single_global_max_over_masked_volume",
+    "native_layer_shapes": [
+      [
+        4,
+        4
+      ],
+      [
+        2,
+        2
+      ]
+    ],
+    "weights_sha256": {
+      "best_model_densenet_v2.pth": "04401199ae4d7abd84621b927de6bc683df092965efb2eefe2975908154542b4",
+      "domain_lidc_encoder.pth": "e3706d5fa4054f908fd3028bf8808b8be30a3255bb7702ce7157972aca47c422",
+      "best_model_clid_subtype.pth": "5062f4ab544da01c8c001b26808291ffbef5cd831a7dbec89607d0ec9a7a39d8",
+      "xgb_head_v2.json": "cface00fd8d28bcc4ec378c788ac6e8f40db2a9a7cedd0dbce3704d8e97967d0"
+    },
+    "positive_activation": true,
+    "is_tumor_segmentation": false
+  },
+  "peak_activation": {
+    "x": 141,
+    "y": 123,
+    "z": 117,
+    "label": "Pico de activación HiResCAM",
+    "is_lesion_detection": false
+  },
+  "duration_seconds": 13.92,
+  "sample_source": {
+    "name": "3D Slicer CTChest",
+    "url": "https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+    "source_sha256": "4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+    "purpose": "local visualization demonstration, not independent model validation"
+  }
+}

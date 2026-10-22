@@ -1,5 +1,7 @@
 # Deploy OncaScan MVP
 
+> **Actualización del 22 de octubre de 2026:** este documento conserva el despliegue histórico del MVP. El nuevo flujo TC + MONAI + HiResCAM 3D se ejecutó localmente y todavía no se ha desplegado. Para continuarlo consultar [la entrega técnica](HANDOFF-2026-10-22.md) y [la arquitectura propuesta de producción](volume-rendering/PRODUCCION.md). La API volumétrica actual solo acepta un worker en loopback; el servidor Oracle descrito abajo no se verificó como destino compatible de este nuevo pipeline.
+
 ## 1. Propósito
 
 Este documento registra la configuración de despliegue del MVP de OncaScan Platform, incluyendo frontend, backend, servicios asociados, variables de entorno, incidencias resueltas y validaciones realizadas. Su objetivo es dejar evidencia técnica verificable del sistema desplegado en un entorno académico controlado.

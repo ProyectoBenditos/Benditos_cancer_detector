@@ -10,6 +10,7 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
+import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
 import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
@@ -36,6 +37,17 @@ type AnalysisResult = {
     modelo_version: string;
     heatmap_base64?: string | null;
     original_signed_url?: string | null;
+    subtipo_histologico?: {
+        prediccion: string;
+        confianza: number;
+        sensibilidad_referencial?: number;
+        probabilidades?: Record<string, number>;
+        biomarcadores_recomendados?: string[];
+    } | null;
+    lobar_info?: {
+        codigo: string;
+        nombre: string;
+    } | null;
 };
 
 type ClinicalFeatures = {
@@ -333,12 +345,12 @@ export default function UploadDicomPage() {
                             </label>
                             <input
                                 type="file"
-                                accept=".dcm,.png,.jpg,.jpeg,application/dicom,image/png,image/jpeg"
+                                accept=".dcm,.zip,.nii,.nii.gz,.png,.jpg,.jpeg,application/dicom,application/zip,application/x-zip-compressed,image/png,image/jpeg"
                                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
                             <p className="text-xs text-slate-500 mt-2">
-                                Formatos compatibles: DICOM (.dcm), PNG y JPG. Tamaño máximo: 50MB.
+                                Formatos compatibles: DICOM (.dcm), Serie Multicorte (.zip), Volumen NIfTI (.nii, .nii.gz), PNG y JPG. Tamaño máximo: 50MB.
                             </p>
                             <p className="text-xs text-amber-600 mt-1 font-medium">
                                 ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos (OT, MR, CR, etc.) producirán resultados no válidos.
@@ -525,15 +537,24 @@ export default function UploadDicomPage() {
 
                         {analysisResult.heatmap_base64 && (
                             <div className="mt-6">
-                                <BeforeAfterViewer
+                                <StudyViewerTabs
+                                    uploadId={analysisResult.dicom_id}
                                     beforeUrl={analysisResult.original_signed_url ?? null}
                                     heatmapBase64={analysisResult.heatmap_base64}
+                                    fileType={
+                                        successData?.filename.toLowerCase().endsWith(".zip")
+                                            ? "dicom_series"
+                                            : successData?.filename.toLowerCase().includes(".nii")
+                                            ? "nifti_volume"
+                                            : "dicom"
+                                    }
+                                    lobarLocation={lobarLocation || "LSI"}
+                                    subtipoHistologico={analysisResult.subtipo_histologico ?? null}
                                     summary={{
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),
                                         review: null,
                                     }}
-                                    // Estudio recién creado: sin marcadores guardados todavía.
                                     annotations={{
                                         uploadId: analysisResult.dicom_id,
                                         initial: [],
@@ -541,6 +562,18 @@ export default function UploadDicomPage() {
                                         remove: deleteAnnotationAction,
                                     }}
                                 />
+                                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <div className="text-xs text-slate-600">
+                                        <p className="font-semibold text-slate-800">Estudio procesado con OncoScan 2.0</p>
+                                        <p>Puedes acceder al informe anatomopatológico con biomarcadores y validar el caso.</p>
+                                    </div>
+                                    <Link
+                                        href={`/platform/uploads/${analysisResult.dicom_id}/informe`}
+                                        className={buttonVariants({ variant: "primary", size: "md" })}
+                                    >
+                                        Ver Informe Clínico Estandarizado
+                                    </Link>
+                                </div>
                             </div>
                         )}
 

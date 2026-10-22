@@ -44,7 +44,7 @@ export default function RiskDistributionChart() {
               <LabelList
                 dataKey="count"
                 position="top"
-                content={({ x, y, width, index }) => {
+                content={({ x, y, width, index }: { x?: number | string; y?: number | string; width?: number | string; index?: number }) => {
                   const entry = RISK_DISTRIBUTION[index as number];
                   if (!entry) return null;
                   return (

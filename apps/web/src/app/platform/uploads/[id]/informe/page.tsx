@@ -19,6 +19,7 @@ import { RiskGaugeBar } from "@/components/informe/RiskGaugeBar";
 import { MorphologyBars, type ClinicalFeatures } from "@/components/informe/MorphologyBars";
 import { ReportPrintControls } from "@/components/informe/ReportPrintControls";
 import { AnatomicalLungsDiagram } from "@/components/informe/AnatomicalLungsDiagram";
+import { HistologicalSubtypeCard, type SubtipoHistologicoData } from "@/components/informe/HistologicalSubtypeCard";
 import { extractLobarLocation, LOBAR_LOCATIONS } from "@/lib/uploadReview";
 
 type PageProps = {
@@ -94,6 +95,7 @@ export default async function InformeClinicoPage({ params }: PageProps) {
     upload.metadata_json?.source_sha256 ||
     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855";
 
+  const subtipoData = (upload.metadata_json?.subtipo_histologico as SubtipoHistologicoData | undefined) ?? null;
   const features = (upload.clinical_features || {}) as ClinicalFeatures;
   const noduleSizeMm = review?.nodule_size_mm ? `${review.nodule_size_mm} mm` : null;
   const lungRads = review?.lung_rads || (upload.ai_risk_level === "ALTO" ? "4B" : upload.ai_risk_level === "MEDIO" ? "3" : "2");
@@ -350,12 +352,10 @@ export default async function InformeClinicoPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
-              <strong className="text-slate-900">Orientación Morfopatológica (derivada de las variables del nódulo):</strong>
-              <p className="text-slate-700 mt-1 leading-relaxed">
-                {pathOrientation}
-              </p>
-            </div>
+            <HistologicalSubtypeCard
+              data={subtipoData}
+              pathOrientationFallback={pathOrientation}
+            />
 
             <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
               <strong className="text-slate-900">Pautas de Referencia para Abordaje y Biopsia (GPC No. 36 MinSalud / ACCP):</strong>
