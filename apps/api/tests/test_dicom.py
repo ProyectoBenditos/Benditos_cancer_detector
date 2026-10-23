@@ -215,6 +215,41 @@ def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase
     assert supabase_mock.storage.from_().upload.called
 
 
+def test_dicom_upload_nii_desidentifica_cabecera(client, auth_headers, supabase_mock):
+    """La cabecera NIfTI se limpia antes de guardar y la auditoría refleja lo limpiado."""
+    import gzip
+
+    import nibabel as nib
+    import numpy as np
+
+    img = nib.Nifti1Image(np.full((8, 8, 3), -600.0, dtype=np.float32), np.eye(4))
+    img.header["descrip"] = b"PACIENTE^PRUEBA"
+    nii_bytes = gzip.compress(img.to_bytes())
+
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("torax.nii.gz", nii_bytes, "application/gzip")},
+    )
+    assert response.status_code == 200
+
+    stored = supabase_mock.storage.from_().upload.call_args.kwargs["file"]
+    raw_stored = gzip.decompress(stored)
+    stored_img = nib.Nifti1Image.from_bytes(raw_stored)
+    assert bytes(stored_img.header["descrip"]).strip(b"\x00") == b""
+    assert b"PACIENTE" not in raw_stored
+
+    audit_rows = [
+        c.args[0]
+        for c in supabase_mock.table().insert.call_args_list
+        if c.args and "tags_cleared_count" in c.args[0]
+    ]
+    assert audit_rows, "no se insertó la auditoría"
+    assert audit_rows[0]["tags_cleared_count"] >= 1
+    # El archivo queda en Storage: no se afirma retención cero.
+    assert audit_rows[0]["zero_retention_verified"] is False
+
+
 def test_dicom_upload_tar_gz_devuelve_400(client, auth_headers):
     response = client.post(
         "/api/v1/dicom/upload",

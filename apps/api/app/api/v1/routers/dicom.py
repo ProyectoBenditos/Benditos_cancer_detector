@@ -1,5 +1,4 @@
 import asyncio
-import hashlib
 import io
 import math
 import os
@@ -20,6 +19,7 @@ from pydantic import BaseModel
 
 from app.core.config import SUPABASE_BUCKET_NAME
 from app.core.deidentifier import deidentify_dicom_bytes
+from app.services.nifti_deid import deidentify_nifti_bytes
 from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
@@ -262,7 +262,12 @@ async def upload_dicom(
         # ── Caso C: Volumen NIfTI (.NII / .NII.GZ) ────────────────────────────
         elif is_nifti:
             temp_path = None
-            suffix_nii = ".nii.gz" if file.filename.lower().endswith(".gz") else ".nii"
+            is_gz = file.filename.lower().endswith(".gz")
+            suffix_nii = ".nii.gz" if is_gz else ".nii"
+            try:
+                contents, audit_deid = deidentify_nifti_bytes(contents, gzipped=is_gz)
+            except ValueError as nii_err:
+                raise HTTPException(status_code=400, detail=str(nii_err))
             with tempfile.NamedTemporaryFile(delete=False, suffix=suffix_nii) as tmp:
                 tmp.write(contents)
                 temp_path = tmp.name
@@ -290,17 +295,7 @@ async def upload_dicom(
 
                 modality = "CT"
                 study_date = datetime.now(timezone.utc).strftime("%Y%m%d")
-                pseudonym = f"ONC-NII-{uuid4().hex[:8].upper()}"
-                patient_id_dicom = pseudonym
-                src_sha = hashlib.sha256(contents).hexdigest()
-                audit_deid = {
-                    "source_sha256": src_sha,
-                    "sanitized_sha256": src_sha,
-                    "pseudonymized_patient_id": pseudonym,
-                    "tags_cleared_count": 0,
-                    "deidentified_at": datetime.now(timezone.utc).isoformat(),
-                    "normative_compliance": "NIfTI PS-3.15 (Sin PHI en cabecera)",
-                }
+                patient_id_dicom = audit_deid["pseudonymized_patient_id"]
 
                 mid_idx = num_slices // 2
                 mid_img = Image.fromarray(slices_px[mid_idx]).convert("RGB")
@@ -308,7 +303,6 @@ async def upload_dicom(
                 mid_img.save(p_buf, format="PNG")
                 preview_bytes = p_buf.getvalue()
 
-                atlas_img = generate_texture_atlas(slices_px, target_slice_dim=128)
                 volume_meta = {
                     "is_multislice": True,
                     "num_slices": num_slices,
@@ -323,7 +317,6 @@ async def upload_dicom(
                     "intensity_encoding": "lung_window_uint8",
                     "hu_min": -1350.0,
                     "hu_max": 150.0,
-                    "atlas_dimensions": [atlas_img.width, atlas_img.height],
                     "format": "NIfTI-1",
                     "geometry_error": None if np.allclose(nii_obj.affine[:3, :3], np.diag(zooms[:3]), atol=1e-4)
                     else "El volumen NIfTI es oblicuo; requiere remuestreo axial antes del renderizado 3D.",
@@ -404,7 +397,7 @@ async def upload_dicom(
                     "sanitized_sha256": audit_deid["sanitized_sha256"],
                     "tags_cleared_count": audit_deid["tags_cleared_count"],
                     "normative_compliance": audit_deid["normative_compliance"],
-                    "zero_retention_verified": True,
+                    "zero_retention_verified": audit_deid.get("zero_retention_verified", False),
                 }).execute()
             except Exception as audit_err:
                 log_event("dicom_audit_log_insert_failed", error=str(audit_err))
