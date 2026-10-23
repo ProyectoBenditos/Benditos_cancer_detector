@@ -3,8 +3,11 @@
 from __future__ import annotations
 
 import io
+from types import SimpleNamespace
+
 import pydicom
 
+import app.api.v1.routers.dicom as dicom_module
 from tests.dicom_factory import make_test_dicom_bytes
 
 
@@ -285,3 +288,112 @@ def test_dicom_upload_zip_varias_series_devuelve_400(client, auth_headers):
     )
     assert response.status_code == 400
     assert "2 series CT" in response.json().get("detail", "")
+
+
+# ── /api/v1/dicom/analyze/{id}: contrato con el servicio de IA ───────────────
+
+V12_RESPONSE = {
+    "score": 0.7,
+    "nivel_riesgo": "ALTO",
+    "recomendacion": "r",
+    "modelo_version": "multimodal-v1.2",
+    "heatmap_base64": "QQ==",
+}
+
+
+def _prepare_analysis(supabase_mock, monkeypatch, *, original_name, file_type, file_bytes, metadata_json=None):
+    record = {
+        "id": "upload-uuid-test",
+        "user_id": "user-uuid-test",
+        "original_name": original_name,
+        "storage_path": "user-uuid-test/obj",
+        "preview_storage_path": None,
+        "file_type": file_type,
+        "metadata_json": metadata_json or {},
+    }
+    supabase_mock.table.return_value.execute.return_value = SimpleNamespace(data=record)
+    supabase_mock.storage.from_().download.return_value = file_bytes
+    supabase_mock.storage.from_().create_signed_url.return_value = {"signedURL": "https://signed.invalid"}
+
+    sent = []
+
+    async def fake_post_predict(file, features):
+        sent.append((file, features))
+        return dict(V12_RESPONSE)
+
+    monkeypatch.setattr(dicom_module, "post_predict", fake_post_predict)
+    return sent
+
+
+def _analyze(client, auth_headers):
+    return client.post("/api/v1/dicom/analyze/upload-uuid-test", headers=auth_headers, json={})
+
+
+def _updates(supabase_mock):
+    return [c.args[0] for c in supabase_mock.table().update.call_args_list if c.args]
+
+
+def test_analyze_dcm_envia_png_por_defecto(client, auth_headers, supabase_mock, monkeypatch):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    sent = _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    assert len(sent) == 1
+    file, features = sent[0]
+    assert file.content_type == "image/png"
+    assert file.content[:8] == b"\x89PNG\r\n\x1a\n"
+    assert "lobar_location" not in features
+    payload = response.json()
+    assert payload["modelo_version"] == "multimodal-v1.2"
+    assert payload["source_slice"] is None
+
+
+def test_analyze_dcm_envia_fuente_con_ai_input_mode_source(client, auth_headers, supabase_mock, monkeypatch):
+    monkeypatch.setenv("AI_INPUT_MODE", "source")
+    dcm = make_test_dicom_bytes()
+    sent = _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=dcm,
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    file, _ = sent[0]
+    assert file.content_type == "application/octet-stream"
+    assert file.content == dcm
+
+
+def test_analyze_respuesta_v12_sin_explicabilidad_guarda_heatmap(client, auth_headers, supabase_mock, monkeypatch):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["heatmap_base64"] == "QQ=="
+    assert any(u.get("ai_heatmap_base64") == "QQ==" for u in _updates(supabase_mock))
+
+
+def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, monkeypatch):
+    import zipfile
+
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        for i in range(5):
+            zf.writestr(f"slice_{i:04d}.dcm", make_test_dicom_bytes(series_uid="1.2.3.4", z=float(i)))
+    sent = _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="serie.zip", file_type="dicom_series", file_bytes=zip_buf.getvalue(),
+        metadata_json={"volume_metadata": {"num_slices": 5}},
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    assert sent[0][0].content_type == "image/png"
+    assert response.json()["source_slice"] == {"index": 2, "total": 5}
+    assert any(
+        (u.get("metadata_json") or {}).get("analysis_source_slice") == 2 for u in _updates(supabase_mock)
+    )

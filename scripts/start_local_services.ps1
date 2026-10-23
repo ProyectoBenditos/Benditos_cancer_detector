@@ -7,6 +7,7 @@ $logDirectory = Join-Path $apiDirectory '.cache/service-logs'
 New-Item -ItemType Directory -Path $logDirectory -Force | Out-Null
 $serviceRun = Get-Date -Format 'yyyyMMdd-HHmmss'
 $env:HF_API_BASE_URL = 'http://127.0.0.1:8001'
+$env:AI_INPUT_MODE = 'source'
 $env:LOCAL_ML_URL = 'http://127.0.0.1:8001'
 $env:NEXT_PUBLIC_API_URL = 'http://127.0.0.1:8000'
 

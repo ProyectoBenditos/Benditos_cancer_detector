@@ -1,4 +1,4 @@
-import asyncio
+import base64
 import io
 import math
 import os
@@ -23,6 +23,13 @@ from app.services.nifti_deid import deidentify_nifti_bytes
 from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
+from app.services.ai_contract import (
+    ai_input_mode,
+    build_inference_file,
+    normalize_ai_response,
+    post_predict,
+)
+from app.services.ct_window import apply_lung_window_hu, dicom_to_png_bytes
 from app.services.dicom_series import MAX_UPLOAD_BYTES, SeriesError, read_ct_series
 from app.services.upload_types import classify_upload, kind_of_record
 from app.services.volume_geometry import dicom_volume_metadata
@@ -49,70 +56,6 @@ class ClinicalFeatures(BaseModel):
     texture: float = 5.0
     malignancy: float = 3.0
     lobar_location: Optional[str] = None
-
-
-def apply_lung_window_hu(hu: np.ndarray, wc: float = -600.0, ww: float = 1500.0) -> np.ndarray:
-    """Aplica ventana pulmonar médica a un arreglo que ya está en unidades HU."""
-    hu_min = wc - (ww / 2.0)
-    hu_max = wc + (ww / 2.0)
-    hu_clipped = np.clip(hu, hu_min, hu_max)
-    norm = ((hu_clipped - hu_min) / (hu_max - hu_min) * 255.0).astype(np.uint8)
-    return norm
-
-
-def apply_lung_window(pixel_array: np.ndarray, dataset: pydicom.Dataset) -> np.ndarray:
-    """
-    Aplica RescaleSlope/Intercept en unidades Hounsfield (HU) y ventana pulmonar
-    médica estandarizada (-600 HU Centro, 1500 HU Ancho -> [-1350, +150] HU).
-    """
-    slope = float(getattr(dataset, "RescaleSlope", 1.0))
-    intercept = float(getattr(dataset, "RescaleIntercept", 0.0))
-    hu = pixel_array.astype(np.float32) * slope + intercept
-
-    # Ventana pulmonar canónica para parénquima y nódulos
-    wc = -600.0
-    ww = 1500.0
-
-    raw_wc = getattr(dataset, "WindowCenter", None)
-    raw_ww = getattr(dataset, "WindowWidth", None)
-    if raw_wc is not None:
-        try:
-            val = float(raw_wc[0]) if isinstance(raw_wc, (list, pydicom.multival.MultiValue)) else float(raw_wc)
-            if val < 0 and val > -1000:
-                wc = val
-        except Exception:
-            pass
-    if raw_ww is not None:
-        try:
-            val = float(raw_ww[0]) if isinstance(raw_ww, (list, pydicom.multival.MultiValue)) else float(raw_ww)
-            if 800 <= val <= 2000:
-                ww = val
-        except Exception:
-            pass
-
-    hu_min = wc - (ww / 2.0)
-    hu_max = wc + (ww / 2.0)
-    hu_clipped = np.clip(hu, hu_min, hu_max)
-    norm = ((hu_clipped - hu_min) / (hu_max - hu_min) * 255.0).astype(np.uint8)
-    return norm
-
-
-def dicom_to_png_bytes(file_bytes: bytes, slice_idx: Optional[int] = None) -> bytes:
-    """Convierte bytes de DICOM (single slice o multiframe) a PNG en ventana pulmonar."""
-    in_buf = io.BytesIO(file_bytes)
-    dataset = pydicom.dcmread(in_buf, force=True)
-    px = dataset.pixel_array
-
-    if px.ndim == 3:
-        idx = slice_idx if slice_idx is not None else px.shape[0] // 2
-        idx = max(0, min(idx, px.shape[0] - 1))
-        px = px[idx]
-
-    pixel_norm = apply_lung_window(px, dataset)
-    pil_img = Image.fromarray(pixel_norm).convert("RGB")
-    png_buffer = io.BytesIO()
-    pil_img.save(png_buffer, format="PNG")
-    return png_buffer.getvalue()
 
 
 def apply_atlas_window(pixels: np.ndarray, dataset: pydicom.Dataset) -> np.ndarray:
@@ -448,60 +391,27 @@ async def analyze_dicom(
 
     record = result.data
     storage_path = record["storage_path"]
-    record_kind = kind_of_record(record)
-    is_dicom = record_kind == "dicom"
-    is_zip = record_kind == "dicom_series"
-    is_nifti = record_kind == "nifti_volume"
+    kind = kind_of_record(record)
+    is_dicom = kind == "dicom"
+    is_zip = kind == "dicom_series"
+    is_nifti = kind == "nifti_volume"
 
     try:
         # Descargar de Storage
         file_bytes = supabase.storage.from_(SUPABASE_BUCKET_NAME).download(storage_path)
 
-        # The local worker extracts a canonical physical keyframe from the same
-        # source volume used for MONAI and the registered attribution atlas.
-        inference_bytes = file_bytes
-        inference_filename = record["original_name"]
-
-        # Inferencia con Microservicio Local / Servidor
-        hf_base = os.getenv("HF_API_BASE_URL", "http://127.0.0.1:8001")
-        if not hf_base or "hf.space" in hf_base:
-            hf_base = "http://127.0.0.1:8001"
-        hf_url = f"{hf_base.rstrip('/')}/predict"
-        timeout = float(os.getenv("HF_PREDICT_TIMEOUT", "120"))
-
-        files = {"imagen": (inference_filename, inference_bytes, "application/octet-stream")}
-        data = {
-            "subtlety": str(features.subtlety),
-            "calcification": str(features.calcification),
-            "sphericity": str(features.sphericity),
-            "margin": str(features.margin),
-            "lobulation": str(features.lobulation),
-            "spiculation": str(features.spiculation),
-            "texture": str(features.texture),
-            "malignancy": str(features.malignancy),
-        }
+        # PNG en ventana pulmonar por defecto (servidor de producción v1.2);
+        # archivo original solo con AI_INPUT_MODE=source (worker local v2).
+        inference_file = build_inference_file(kind, record["original_name"], file_bytes, ai_input_mode())
 
         t0 = time.monotonic()
-        ai_result = None
-        max_retries = 2
-        for attempt in range(max_retries + 1):
-            try:
-                async with httpx.AsyncClient(timeout=timeout) as client:
-                    response = await client.post(hf_url, files=files, data=data)
-                    response.raise_for_status()
-                    ai_result = response.json()
-                    break
-            except (httpx.ConnectError, httpx.TimeoutException):
-                if attempt < max_retries:
-                    await asyncio.sleep(2.0)
-                    continue
-                raise
-
-        if not ai_result:
+        raw_result = await post_predict(inference_file, features.model_dump(exclude={"lobar_location"}))
+        if not raw_result:
             raise HTTPException(status_code=502, detail="No se obtuvo respuesta del modelo de IA")
+        ai_result = normalize_ai_response(raw_result)
 
         inference_time_ms = int((time.monotonic() - t0) * 1000)
-        model_version = ai_result.get("modelo_version", "multimodal-v2.0-densenet")
+        model_version = ai_result.get("modelo_version") or os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
         predicted_at = datetime.now(timezone.utc).isoformat()
 
         # Extraer campos de OncoScan 2.0
@@ -509,22 +419,33 @@ async def analyze_dicom(
         nivel_riesgo = ai_result.get("nivel_riesgo")
         recomendacion = ai_result.get("recomendacion")
         subtipo_histologico = ai_result.get("subtipo_histologico")
-        explicabilidad = ai_result.get("explicabilidad", {})
-        heatmap_base64 = explicabilidad.get("overlay_base64") or ai_result.get("heatmap_base64")
+        explicabilidad = ai_result["explicabilidad"]
+        heatmap_base64 = ai_result["heatmap_base64"]
         lobar_info = ai_result.get("lobar_info")
 
-        import base64
-        keyframe = ai_result.get("keyframe_base64")
-        if keyframe:
-            png_bytes = base64.b64decode(keyframe, validate=True)
-        elif is_dicom:
-            png_bytes = dicom_to_png_bytes(file_bytes)
-        elif not (is_zip or is_nifti):
-            image_buffer = io.BytesIO()
-            Image.open(io.BytesIO(file_bytes)).convert("RGB").save(image_buffer, format="PNG")
-            png_bytes = image_buffer.getvalue()
-        else:
-            raise HTTPException(status_code=502, detail="El modelo no devolvió el corte canónico del volumen")
+        # Imagen "antes": el PNG enviado; en modo source, el corte que devuelve el worker.
+        png_bytes = inference_file.keyframe_png
+        if png_bytes is None:
+            keyframe = ai_result.get("keyframe_base64")
+            if keyframe:
+                png_bytes = base64.b64decode(keyframe, validate=True)
+            elif is_zip or is_nifti:
+                raise HTTPException(status_code=502, detail="El modelo no devolvió el corte canónico del volumen")
+            elif is_dicom:
+                png_bytes = dicom_to_png_bytes(file_bytes)
+
+        source_slice_index = (
+            inference_file.source_slice_index
+            if inference_file.source_slice_index is not None
+            else ai_result.get("source_slice_index")
+        )
+        volume_metadata = (record.get("metadata_json") or {}).get("volume_metadata") or {}
+        total_slices = volume_metadata.get("num_slices")
+        source_slice = (
+            {"index": source_slice_index, "total": total_slices}
+            if source_slice_index is not None and total_slices is not None
+            else None
+        )
 
         # Asegurar preview storage path
         preview_path = record.get("preview_storage_path")
@@ -557,7 +478,7 @@ async def analyze_dicom(
         meta_json = record.get("metadata_json") or {}
         meta_json["explicabilidad"] = {key: explicabilidad.get(key) for key in
             ("metodo", "target", "scope", "native_layer_shapes", "source_slice_index", "weights_sha256")}
-        meta_json["analysis_source_slice"] = ai_result.get("source_slice_index")
+        meta_json["analysis_source_slice"] = source_slice_index
         if subtipo_histologico:
             meta_json["subtipo_histologico"] = subtipo_histologico
         if lobar_info:
@@ -585,6 +506,7 @@ async def analyze_dicom(
             "heatmap_base64": heatmap_base64,
             "subtipo_histologico": subtipo_histologico,
             "lobar_info": lobar_info,
+            "source_slice": source_slice,
             "original_signed_url": original_signed_url,
         }
 
