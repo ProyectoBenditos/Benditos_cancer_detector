@@ -72,7 +72,7 @@ Solo se documentan nombres y valores de ejemplo sin secretos.
 
 | Contexto | Variable | Valor/acción en la topología recomendada |
 | --- | --- | --- |
-| API | `HF_API_BASE_URL` | `http://127.0.0.1:8001`, para que análisis 2D/volumen no use por defecto el servidor histórico. |
+| API | `HF_API_BASE_URL` | Con Oracle v1.2 se deja la URL de Oracle (`https://oncoscan-ai.duckdns.org`) y `AI_INPUT_MODE=png`. Solo con el worker v2 en la misma máquina se apunta a `http://127.0.0.1:8001` con `AI_INPUT_MODE=source`; `source` no aplica a Oracle. |
 | API | `LOCAL_ML_URL` | `http://127.0.0.1:8001`, para el nuevo flujo 3D. |
 | API | `HF_PREDICT_TIMEOUT` | Punto de partida 120 s; ajustar tras benchmark, no usarlo como timeout de todo el job volumétrico. |
 | API | `SUPABASE_URL` | Proyecto de staging/producción elegido por el equipo. |

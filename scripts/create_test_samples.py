@@ -19,7 +19,7 @@ from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
 import nibabel as nib
 
-OUTPUT_DIR = os.path.join(os.getcwd(), "samples")
+OUTPUT_DIR = os.path.join(os.getcwd(), "samples", "volume-rendering-v2")
 
 
 def generate_realistic_chest_ct_hu(dim: int = 512, z_ratio: float = 0.5, has_nodule: bool = True) -> np.ndarray:
