@@ -1,19 +1,18 @@
 import base64
 import io
-import math
 import os
 import tempfile
 import time
 import zipfile
 from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, Optional, Tuple
 from uuid import uuid4
 
 import httpx
 import numpy as np
 import pydicom
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
-from fastapi.responses import Response, StreamingResponse
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from fastapi.responses import Response
 from PIL import Image
 from pydantic import BaseModel
 
@@ -56,37 +55,6 @@ class ClinicalFeatures(BaseModel):
     texture: float = 5.0
     malignancy: float = 3.0
     lobar_location: Optional[str] = None
-
-
-def apply_atlas_window(pixels: np.ndarray, dataset: pydicom.Dataset) -> np.ndarray:
-    """Fixed atlas encoding, independent of scanner display presets."""
-    hu = pixels.astype(np.float32) * float(getattr(dataset, "RescaleSlope", 1.0))
-    hu += float(getattr(dataset, "RescaleIntercept", 0.0))
-    return apply_lung_window_hu(hu)
-
-
-def generate_texture_atlas(slices_px: List[np.ndarray], target_slice_dim: int = 128) -> Image.Image:
-    """
-    Empaqueta una serie de cortes axiales en una textura 2D en cuadrícula (Texture Atlas)
-    para el shader de raymarching en WebGL (Three.js), tal como el artefacto de 160 cortes.
-    """
-    num_slices = len(slices_px)
-    cols = int(math.ceil(math.sqrt(num_slices)))
-    rows = int(math.ceil(num_slices / cols))
-    atlas_w = cols * target_slice_dim
-    atlas_h = rows * target_slice_dim
-
-    atlas_img = Image.new("L", (atlas_w, atlas_h), color=0)
-    for i, slice_arr in enumerate(slices_px):
-        c = i % cols
-        r = i // cols
-        pil_slice = Image.fromarray(slice_arr).resize(
-            (target_slice_dim, target_slice_dim),
-            Image.Resampling.BILINEAR
-        )
-        atlas_img.paste(pil_slice, (c * target_slice_dim, r * target_slice_dim))
-
-    return atlas_img
 
 
 @router.post("/dicom/upload")
@@ -566,128 +534,3 @@ def _mark_analysis_error(dicom_id: str, ai_error: str | None = None) -> None:
     if ai_error is not None:
         update["ai_error"] = ai_error
     supabase.table("dicom_uploads").update(update).eq("id", dicom_id).execute()
-
-
-@router.get("/dicom/{dicom_id}/volume")
-async def get_volume_manifest(
-    dicom_id: str,
-    current_user: dict = Depends(get_current_user),
-):
-    """Retorna el manifiesto volumétrico para inicializar el Visor 3D Three.js."""
-    query = supabase.table("dicom_uploads").select("*").eq("id", dicom_id).eq("user_id", current_user["id"])
-
-    result = query.single().execute()
-
-    if not result.data or result.data.get("user_id") != current_user["id"]:
-        raise HTTPException(status_code=404, detail="Archivo tomográfico no encontrado")
-
-    record = result.data
-    meta = record.get("metadata_json") or {}
-    volume_meta = meta.get("volume_metadata") or {
-        "num_slices": 1,
-        "rows": None,
-        "columns": None,
-        "slice_thickness": None,
-        "pixel_spacing": None,
-        "z_start": 0.0,
-        "z_end": 0.0,
-        "window_center": -600.0,
-        "window_width": 1500.0,
-    }
-
-    return {
-        "dicom_id": dicom_id,
-        "original_name": record["original_name"],
-        "file_type": record["file_type"],
-        "modality": record["modality"],
-        "study_date": record["study_date"],
-        "patient_id_dicom": record["patient_id_dicom"],
-        "volume_metadata": volume_meta,
-        "atlas_endpoint": f"/api/v1/dicom/{dicom_id}/atlas",
-        "subtipo_histologico": meta.get("subtipo_histologico"),
-        "lobar_info": meta.get("lobar_info"),
-    }
-
-
-@router.get("/dicom/{dicom_id}/atlas")
-async def get_volume_atlas(
-    dicom_id: str,
-    slice_size: int = Query(128, ge=64, le=512),
-    current_user: dict = Depends(get_current_user),
-):
-    """
-    Genera y transmite en streaming la textura 2D en cuadrícula (Texture Atlas)
-    para el shader de raymarching de Three.js (WebGL).
-    """
-    query = supabase.table("dicom_uploads").select("*").eq("id", dicom_id).eq("user_id", current_user["id"])
-
-    result = query.single().execute()
-
-    if not result.data or result.data.get("user_id") != current_user["id"]:
-        raise HTTPException(status_code=404, detail="Archivo no encontrado")
-
-    record = result.data
-    storage_path = record["storage_path"]
-    file_bytes = supabase.storage.from_(SUPABASE_BUCKET_NAME).download(storage_path)
-
-    slices_norm: List[np.ndarray] = []
-    file_ext = os.path.splitext(record["original_name"])[1].lower()
-
-    if file_ext == ".zip" or record.get("file_type") == "dicom_series":
-        with zipfile.ZipFile(io.BytesIO(file_bytes), "r") as zf:
-            datasets = [pydicom.dcmread(io.BytesIO(zf.read(name)))
-                        for name in sorted(zf.namelist()) if name.lower().endswith(".dcm")]
-            # Sort by physical Z, including older archives whose filenames are
-            # not numbered by anatomy. This matches the upload metadata order.
-            datasets.sort(key=lambda ds: float(ds.ImagePositionPatient[2])
-                          if getattr(ds, "ImagePositionPatient", None) is not None
-                          else float(getattr(ds, "SliceLocation", getattr(ds, "InstanceNumber", 0))))
-            for ds in datasets:
-                slices_norm.append(apply_atlas_window(ds.pixel_array, ds))
-    elif file_ext in {".nii", ".gz"} or record.get("file_type") == "nifti_volume":
-        suffix_n = ".nii.gz" if file_ext == ".gz" else ".nii"
-        temp_n = None
-        with tempfile.NamedTemporaryFile(delete=False, suffix=suffix_n) as tmp_f:
-            tmp_f.write(file_bytes)
-            temp_n = tmp_f.name
-        try:
-            import nibabel as nib
-            nii_vol = nib.as_closest_canonical(nib.load(temp_n, mmap=False))
-            v_mat = nii_vol.get_fdata(dtype=np.float32)
-            if v_mat.ndim == 4:
-                v_mat = v_mat[:, :, :, 0]
-            for s_idx in range(v_mat.shape[2]):
-                slices_norm.append(apply_lung_window_hu(v_mat[::-1, ::-1, s_idx].T))
-        finally:
-            if temp_n and os.path.exists(temp_n):
-                os.remove(temp_n)
-    elif file_ext == ".dcm":
-        ds = pydicom.dcmread(io.BytesIO(file_bytes))
-        px = ds.pixel_array
-        if px.ndim == 3:
-            for s_idx in range(px.shape[0]):
-                slices_norm.append(apply_atlas_window(px[s_idx], ds))
-        else:
-            slices_norm.append(apply_atlas_window(px, ds))
-    else:
-        pil_img = Image.open(io.BytesIO(file_bytes)).convert("L")
-        slices_norm.append(np.array(pil_img, dtype=np.uint8))
-
-    if not slices_norm:
-        raise HTTPException(status_code=400, detail="No se pudieron extraer cortes para el Atlas volumétrico")
-
-    atlas_img = generate_texture_atlas(slices_norm, target_slice_dim=slice_size)
-    png_buf = io.BytesIO()
-    atlas_img.save(png_buf, format="PNG")
-    png_buf.seek(0)
-
-    return StreamingResponse(
-        png_buf,
-        media_type="image/png",
-        headers={
-            "Cache-Control": "private, no-store",
-            "X-Volume-Slices": str(len(slices_norm)),
-            "X-Volume-Cols": str(int(math.ceil(math.sqrt(len(slices_norm))))),
-            "X-Volume-Rows": str(int(math.ceil(len(slices_norm) / math.ceil(math.sqrt(len(slices_norm)))))),
-        },
-    )

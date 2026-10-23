@@ -7,6 +7,7 @@ from urllib.parse import urlsplit
 import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response
+from starlette.concurrency import run_in_threadpool
 
 from app.core.config import SUPABASE_BUCKET_NAME
 from app.core.security import get_current_user
@@ -64,7 +65,7 @@ async def status_from_worker(job_id):
 @router.post("/dicom/{dicom_id}/volume/prepare")
 async def prepare(dicom_id: str, user=Depends(get_current_user)):
     record = owned_study(dicom_id, user)
-    data = supabase.storage.from_(SUPABASE_BUCKET_NAME).download(record["storage_path"])
+    data = await run_in_threadpool(supabase.storage.from_(SUPABASE_BUCKET_NAME).download, record["storage_path"])
     try:
         async with httpx.AsyncClient(timeout=180) as client:
             response = await client.post(f"{local_ml_base()}/volumes",

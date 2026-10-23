@@ -43,8 +43,6 @@ def test_nifti_single_slice_is_not_invented_as_a_volume():
     ("/api/v1/dicom/example/volume/prepare", "post"),
     ("/api/v1/dicom/example/volume/jobs/abc", "get"),
     ("/api/v1/dicom/example/volume/artifacts/abc/heatmap.png", "get"),
-    ("/api/v1/dicom/example/volume", "get"),
-    ("/api/v1/dicom/example/atlas", "get"),
 ])
 def test_volume_artifacts_require_auth(client, path, method):
     assert getattr(client, method)(path).status_code == 401

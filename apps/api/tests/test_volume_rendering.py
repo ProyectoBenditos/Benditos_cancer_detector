@@ -1,12 +1,7 @@
 """Regression checks for the physical geometry and GPU atlas data contract."""
-import io
-import zipfile
-from types import SimpleNamespace
-
 import numpy as np
 import pydicom
 import pytest
-from PIL import Image
 from pydicom.dataset import FileDataset, FileMetaDataset
 from pydicom.uid import ExplicitVRLittleEndian
 
@@ -60,24 +55,8 @@ def test_missing_geometry_does_not_invent_millimetres():
     assert meta["slice_spacing"] is None
 
 
-def test_atlas_is_canonical_linear_hu_and_physically_ordered(client, supabase_mock, auth_headers):
-    archive = io.BytesIO()
-    with zipfile.ZipFile(archive, "w") as zf:
-        # Deliberately reverse filenames relative to anatomical Z.
-        for name, z, hu in [("a.dcm", 5, 40), ("b.dcm", 2.5, -780), ("c.dcm", 0, -1000)]:
-            output = io.BytesIO()
-            _slice(z, hu).save_as(output)
-            zf.writestr(name, output.getvalue())
-    record = {"original_name": "scan.zip", "file_type": "dicom_series", "storage_path": "test.zip", "user_id": "user-uuid-test"}
-    supabase_mock.table().execute.return_value = SimpleNamespace(data=record)
-    supabase_mock.storage.from_().download.return_value = archive.getvalue()
-    response = client.get("/api/v1/dicom/test/atlas?slice_size=64", headers=auth_headers)
-    assert response.status_code == 200
-    atlas = np.asarray(Image.open(io.BytesIO(response.content)))
-    assert atlas.shape == (128, 128)
-    expected = [int((hu + 1350) / 1500 * 255) for hu in [-1000, -780, 40]]
-    assert [atlas[32, 32], atlas[32, 96], atlas[96, 32]] == expected
-    assert atlas[96, 96] == 0  # Unused tile cannot contribute to the last slice.
+def test_endpoints_de_atlas_retirados(client, auth_headers):
+    assert client.get("/api/v1/dicom/x/atlas", headers=auth_headers).status_code == 404
 
 
 @pytest.mark.parametrize("oblique", [False, True])
