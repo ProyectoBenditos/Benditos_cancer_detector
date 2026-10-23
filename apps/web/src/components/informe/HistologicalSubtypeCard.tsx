@@ -64,7 +64,7 @@ export function HistologicalSubtypeCard({
               {(data.confianza * 100).toFixed(1)}% probabilidad del modelo
             </span>
             {data.sensibilidad_referencial != null && Number.isFinite(data.sensibilidad_referencial) && <span className="text-[10px] font-mono text-slate-500">
-              Sensibilidad: {(data.sensibilidad_referencial * 100).toFixed(2)}%
+              Sensibilidad en el conjunto de prueba CLID (no aplicable a estas TC): {(data.sensibilidad_referencial * 100).toFixed(2)}%
             </span>}
           </div>
         </div>

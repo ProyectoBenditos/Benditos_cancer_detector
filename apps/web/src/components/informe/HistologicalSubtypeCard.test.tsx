@@ -52,7 +52,12 @@ describe("HistologicalSubtypeCard", () => {
     const matches = screen.getAllByText("Adenocarcinoma Pulmonar");
     expect(matches.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText("94.2% probabilidad del modelo")).toBeInTheDocument();
-    expect(screen.getByText(/Sensibilidad: 99.39%/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Sensibilidad en el conjunto de prueba CLID (no aplicable a estas TC): 99.39%"
+      )
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/Sensibilidad: 99.39%/)).not.toBeInTheDocument();
     expect(screen.getByText("TTF-1 (+)")).toBeInTheDocument();
     expect(screen.getByText("p40 (-)")).toBeInTheDocument();
     expect(screen.getByText(/Alta espiculación/)).toBeInTheDocument();
