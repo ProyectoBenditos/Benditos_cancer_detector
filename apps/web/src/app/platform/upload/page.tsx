@@ -11,18 +11,19 @@ import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
 import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
-import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/actions";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
+import { validateUploadFile } from "@/lib/uploadFile";
 
 type UploadResponse = {
     message: string;
     dicom_id: string;
     user_id: string;
     filename: string;
+    file_type: string;
     storage_path: string;
     modality: string | null;
     study_date: string | null;
@@ -37,17 +38,7 @@ type AnalysisResult = {
     modelo_version: string;
     heatmap_base64?: string | null;
     original_signed_url?: string | null;
-    subtipo_histologico?: {
-        prediccion: string;
-        confianza: number;
-        sensibilidad_referencial?: number;
-        probabilidades?: Record<string, number>;
-        biomarcadores_recomendados?: string[];
-    } | null;
-    lobar_info?: {
-        codigo: string;
-        nombre: string;
-    } | null;
+    source_slice?: { index: number; total: number } | null;
 };
 
 type ClinicalFeatures = {
@@ -154,6 +145,12 @@ export default function UploadDicomPage() {
 
         if (!file) {
             setErrorMsg("Debes seleccionar un archivo.");
+            return;
+        }
+
+        const fileError = validateUploadFile(file);
+        if (fileError) {
+            toast.error(fileError);
             return;
         }
 
@@ -541,15 +538,10 @@ export default function UploadDicomPage() {
                                     uploadId={analysisResult.dicom_id}
                                     beforeUrl={analysisResult.original_signed_url ?? null}
                                     heatmapBase64={analysisResult.heatmap_base64}
-                                    fileType={
-                                        successData?.filename.toLowerCase().endsWith(".zip")
-                                            ? "dicom_series"
-                                            : successData?.filename.toLowerCase().includes(".nii")
-                                            ? "nifti_volume"
-                                            : "dicom"
-                                    }
-                                    lobarLocation={lobarLocation || "LSI"}
-                                    subtipoHistologico={analysisResult.subtipo_histologico ?? null}
+                                    fileType={successData?.file_type ?? null}
+                                    lobarLocation={lobarLocation || null}
+                                    sourceSlice={analysisResult.source_slice ?? null}
+                                    modelVersion={analysisResult.modelo_version}
                                     summary={{
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),

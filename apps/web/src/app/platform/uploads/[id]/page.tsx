@@ -9,7 +9,6 @@ import { buttonVariants } from "@/components/ui/Button";
 import { asRiskLevel, RiskBadge } from "@/components/ui/RiskBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
 import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
@@ -251,12 +250,20 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         beforeUrl={beforeUrl}
                         heatmapBase64={upload.ai_heatmap_base64}
                         fileType={upload.file_type}
-                        numSlices={upload.metadata_json?.volume_metadata?.num_slices ?? 1}
                         lobarLocation={
                             ((upload.clinical_features as Record<string, unknown> | null)?.lobar_location as string | undefined) ??
-                            upload.metadata_json?.lobar_info?.codigo ?? "LSI"
+                            upload.metadata_json?.lobar_info?.codigo ?? null
                         }
-                        subtipoHistologico={upload.metadata_json?.subtipo_histologico ?? null}
+                        sourceSlice={
+                            typeof upload.metadata_json?.analysis_source_slice === "number" &&
+                            typeof upload.metadata_json?.volume_metadata?.num_slices === "number"
+                                ? {
+                                      index: upload.metadata_json.analysis_source_slice,
+                                      total: upload.metadata_json.volume_metadata.num_slices,
+                                  }
+                                : null
+                        }
+                        modelVersion={upload.ai_model_version}
                         summary={{
                             score: upload.ai_score,
                             riskLevel: asRiskLevel(upload.ai_risk_level),

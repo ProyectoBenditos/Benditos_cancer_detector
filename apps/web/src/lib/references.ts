@@ -106,6 +106,13 @@ export const REFERENCES = {
             "Selvaraju RR, Cogswell M, Das A, et al. Grad-CAM: Visual Explanations from Deep Networks via Gradient-based Localization. ICCV 2017.",
         url: "https://arxiv.org/abs/1610.02391",
     },
+    hirescam: {
+        group: "metodos",
+        short: "HiResCAM (Draelos y Carin, 2020)",
+        citation:
+            "Draelos RL, Carin L. Use HiResCAM instead of Grad-CAM for faithful explanations of convolutional neural networks. arXiv:2011.08891, 2020.",
+        url: "https://arxiv.org/abs/2011.08891",
+    },
     inferenceService: {
         group: "metodos",
         short: "Servicio de inferencia (código)",
