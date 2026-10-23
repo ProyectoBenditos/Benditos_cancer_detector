@@ -400,7 +400,7 @@ async def analyze_dicom(
         # Descargar de Storage
         file_bytes = supabase.storage.from_(SUPABASE_BUCKET_NAME).download(storage_path)
 
-        # PNG en ventana pulmonar por defecto (servidor de producción v1.2);
+        # PNG con la normalización de main por defecto (servidor de producción v1.2);
         # archivo original solo con AI_INPUT_MODE=source (worker local v2).
         inference_file = build_inference_file(kind, record["original_name"], file_bytes, ai_input_mode())
 
@@ -411,7 +411,7 @@ async def analyze_dicom(
         ai_result = normalize_ai_response(raw_result)
 
         inference_time_ms = int((time.monotonic() - t0) * 1000)
-        model_version = ai_result.get("modelo_version") or os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
+        model_version = os.getenv("HF_MODEL_VERSION", "oncoscan-ai@multimodal-v1.2")
         predicted_at = datetime.now(timezone.utc).isoformat()
 
         # Extraer campos de OncoScan 2.0
@@ -462,7 +462,7 @@ async def analyze_dicom(
             "ai_score": score,
             "ai_risk_level": nivel_riesgo,
             "ai_recommendation": recomendacion,
-            "ai_model_version": model_version,
+            "ai_model_version": ai_result.get("modelo_version"),
             "ai_processed_at": datetime.now(timezone.utc).isoformat(),
             "ai_error": None,
             "upload_status": "analyzed",
@@ -500,7 +500,8 @@ async def analyze_dicom(
             "score": score,
             "nivel_riesgo": nivel_riesgo,
             "recomendacion": recomendacion,
-            "modelo_version": model_version,
+            "modelo_version": ai_result.get("modelo_version"),
+            "model_version": model_version,
             "inference_time_ms": inference_time_ms,
             "predicted_at": predicted_at,
             "heatmap_base64": heatmap_base64,

@@ -77,27 +77,47 @@ def dicom_to_png_bytes(file_bytes: bytes, slice_idx: Optional[int] = None) -> by
     return png_buffer.getvalue()
 
 
-def _gray_to_png(gray: np.ndarray) -> bytes:
-    buf = io.BytesIO()
-    Image.fromarray(gray).convert("RGB").save(buf, format="PNG")
-    return buf.getvalue()
+def model_input_png(pixels: np.ndarray) -> bytes:
+    """PNG de entrada al modelo, idéntico a la conversión de ``main`` y del análisis por lotes.
+
+    Estira el arreglo 2D crudo a 0-255 con su mínimo y máximo (sin HU ni ventana),
+    lo pasa a ``uint8`` y lo guarda como PNG RGB. Es la entrada que espera
+    multimodal-v1.2; cambiarla altera los scores.
+    """
+    pixel_array = pixels.astype(np.float32)
+    pixel_min, pixel_max = pixel_array.min(), pixel_array.max()
+    if pixel_max > pixel_min:
+        pixel_array = (pixel_array - pixel_min) / (pixel_max - pixel_min) * 255.0
+    pixel_array = pixel_array.astype(np.uint8)
+
+    png_buffer = io.BytesIO()
+    Image.fromarray(pixel_array).convert("RGB").save(png_buffer, format="PNG")
+    return png_buffer.getvalue()
+
+
+def dicom_to_model_png(file_bytes: bytes) -> bytes:
+    """``model_input_png`` de un ``.dcm``; si es multiframe, del frame central."""
+    dataset = pydicom.dcmread(io.BytesIO(file_bytes))
+    px = dataset.pixel_array
+    if px.ndim == 3:
+        px = px[px.shape[0] // 2]
+    return model_input_png(px)
 
 
 def volume_keyframe_png(kind: UploadKind, data: bytes) -> tuple[bytes, int]:
-    """PNG del corte axial central de un volumen y su índice 0-based.
+    """PNG de entrada al modelo (``model_input_png``) del corte axial central y su índice 0-based.
 
-    - ``dicom_series``: el corte central de ``read_ct_series`` (orden Z) con ``apply_lung_window``.
+    - ``dicom_series``: el ``pixel_array`` del corte ``n // 2`` de ``read_ct_series`` (orden Z).
     - ``nifti_volume``: el volumen canónico RAS, con la misma orientación que la
-      subida (``vol[::-1, ::-1, s].T``) y ``apply_lung_window_hu``; ``s = shape[2] // 2``.
+      subida (``vol[::-1, ::-1, s].T``); ``s = shape[2] // 2``.
     """
     if kind == "dicom_series":
         slices = read_ct_series(data)
         idx = len(slices) // 2
-        ds = slices[idx][2]
-        px = ds.pixel_array
+        px = slices[idx][2].pixel_array
         if px.ndim == 3:
             px = px[px.shape[0] // 2]
-        return _gray_to_png(apply_lung_window(px, ds)), idx
+        return model_input_png(px), idx
 
     if kind == "nifti_volume":
         import nibabel as nib
@@ -115,6 +135,6 @@ def volume_keyframe_png(kind: UploadKind, data: bytes) -> tuple[bytes, int]:
         if vol.ndim != 3:
             raise ValueError("El volumen NIfTI debe ser tridimensional (3D).")
         s = vol.shape[2] // 2
-        return _gray_to_png(apply_lung_window_hu(vol[::-1, ::-1, s].T)), s
+        return model_input_png(vol[::-1, ::-1, s].T), s
 
     raise ValueError(f"volume_keyframe_png no aplica al tipo {kind}")

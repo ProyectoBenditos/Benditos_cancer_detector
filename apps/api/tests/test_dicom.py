@@ -377,6 +377,24 @@ def test_analyze_respuesta_v12_sin_explicabilidad_guarda_heatmap(client, auth_he
     assert any(u.get("ai_heatmap_base64") == "QQ==" for u in _updates(supabase_mock))
 
 
+def test_analyze_guarda_model_version_como_main(client, auth_headers, supabase_mock, monkeypatch):
+    """`model_version` = HF_MODEL_VERSION; `ai_model_version` = `modelo_version` de la respuesta."""
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    monkeypatch.delenv("HF_MODEL_VERSION", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    update = next(u for u in _updates(supabase_mock) if "ai_model_version" in u)
+    assert update["model_version"] == "oncoscan-ai@multimodal-v1.2"
+    assert update["ai_model_version"] == "multimodal-v1.2"
+    payload = response.json()
+    assert payload["model_version"] == "oncoscan-ai@multimodal-v1.2"
+    assert payload["modelo_version"] == "multimodal-v1.2"
+
+
 def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, monkeypatch):
     import zipfile
 

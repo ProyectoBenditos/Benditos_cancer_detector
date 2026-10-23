@@ -1,7 +1,8 @@
 """Contrato con el servicio de inferencia.
 
-Por defecto (``AI_INPUT_MODE`` ausente o ``png``) se envía a ``/predict`` un PNG en
-ventana pulmonar, que es lo que espera el servidor de producción (multimodal-v1.2).
+Por defecto (``AI_INPUT_MODE`` ausente o ``png``) se envía a ``/predict`` un PNG con la
+misma normalización min-max de ``main``, que es lo que espera el servidor de
+producción (multimodal-v1.2).
 Con ``AI_INPUT_MODE=source`` se envía el archivo original, para el worker local v2,
 que extrae el corte por su cuenta y lo devuelve en ``keyframe_base64``.
 """
@@ -17,7 +18,7 @@ import httpx
 from PIL import Image
 
 from app.core import config
-from app.services.ct_window import dicom_to_png_bytes, volume_keyframe_png
+from app.services.ct_window import dicom_to_model_png, volume_keyframe_png
 from app.services.upload_types import UploadKind
 
 AiInputMode = Literal["png", "source"]
@@ -53,7 +54,7 @@ def build_inference_file(kind: UploadKind, original_name: str, data: bytes, mode
         return InferenceFile(original_name, data, "application/octet-stream", None, None)
 
     if kind == "dicom":
-        png = dicom_to_png_bytes(data)
+        png = dicom_to_model_png(data)
         return InferenceFile("imagen.png", png, "image/png", png, None)
     if kind in ("dicom_series", "nifti_volume"):
         png, idx = volume_keyframe_png(kind, data)
