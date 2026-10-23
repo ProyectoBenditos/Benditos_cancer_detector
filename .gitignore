@@ -55,3 +55,4 @@ scripts/*
 !scripts/prepare_lung_demo.py
 !scripts/start_local_services.ps1
 !scripts/verify_volume_handoff.py
+apps/api/scripts/
