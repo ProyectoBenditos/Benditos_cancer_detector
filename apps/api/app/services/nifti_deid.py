@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import gzip
 import hashlib
+import zlib
 from datetime import datetime, timezone
 from typing import Any, Dict, Tuple
 from uuid import uuid4
 
 import nibabel as nib
+
+from app.services.dicom_series import MAX_ZIP_UNCOMPRESSED_BYTES
 
 NIFTI_TEXT_FIELDS = ("descrip", "aux_file", "db_name")
 
@@ -16,7 +19,30 @@ _INVALID_MSG = "El archivo NIfTI no es válido."
 _NORMATIVE = "NIfTI: descrip, aux_file, db_name y extensiones de cabecera eliminados"
 
 
-def deidentify_nifti_bytes(data: bytes, *, gzipped: bool) -> Tuple[bytes, Dict[str, Any]]:
+_TOO_BIG_MSG = "El volumen NIfTI descomprimido supera el tamaño máximo permitido."
+
+
+class _TooBig(Exception):
+    pass
+
+
+def _bounded_gunzip(data: bytes, limit: int) -> bytes:
+    """Descomprime gzip sin superar ``limit`` bytes (protege de bombas de descompresión)."""
+    d = zlib.decompressobj(16 + zlib.MAX_WBITS)
+    out = d.decompress(data, limit + 1)
+    if len(out) > limit or d.unconsumed_tail:
+        raise _TooBig
+    if not d.eof:
+        raise ValueError("gzip truncado")
+    return out
+
+
+def deidentify_nifti_bytes(
+    data: bytes,
+    *,
+    gzipped: bool,
+    max_uncompressed: int = MAX_ZIP_UNCOMPRESSED_BYTES,
+) -> Tuple[bytes, Dict[str, Any]]:
     """Vacía los campos de texto libre y las extensiones de la cabecera NIfTI.
 
     Los vóxeles y el affine no se tocan. Regla de conteo de ``tags_cleared_count``:
@@ -29,7 +55,12 @@ def deidentify_nifti_bytes(data: bytes, *, gzipped: bool) -> Tuple[bytes, Dict[s
     source_sha256 = hashlib.sha256(data).hexdigest()
 
     try:
-        raw = gzip.decompress(data) if gzipped else data
+        if gzipped:
+            raw = _bounded_gunzip(data, max_uncompressed)
+        elif len(data) > max_uncompressed:
+            raise _TooBig
+        else:
+            raw = data
         img = nib.Nifti1Image.from_bytes(raw)
         header = img.header
 
@@ -45,6 +76,8 @@ def deidentify_nifti_bytes(data: bytes, *, gzipped: bool) -> Tuple[bytes, Dict[s
         clean = img.to_bytes()
         if gzipped:
             clean = gzip.compress(clean)
+    except _TooBig as exc:
+        raise ValueError(_TOO_BIG_MSG) from exc
     except Exception as exc:
         raise ValueError(_INVALID_MSG) from exc
 

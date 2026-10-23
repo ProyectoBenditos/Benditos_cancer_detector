@@ -83,6 +83,25 @@ def test_cabecera_sin_phi_cuenta_cero():
     assert audit["tags_cleared_count"] == 0
 
 
+def test_bomba_gzip_se_rechaza_sin_materializarla():
+    bomba = gzip.compress(bytes(2_000_000))
+    with pytest.raises(ValueError, match="supera el tamaño máximo"):
+        deidentify_nifti_bytes(bomba, gzipped=True, max_uncompressed=1_000_000)
+
+
+def test_archivo_bajo_el_limite_sigue_funcionando():
+    src = _bytes(_nifti_con_phi(), True)
+    out, audit = deidentify_nifti_bytes(src, gzipped=True, max_uncompressed=1_000_000)
+    assert audit["tags_cleared_count"] == 3
+    assert out.startswith(b"\x1f\x8b")
+
+
+def test_gzip_truncado_es_invalido():
+    src = _bytes(_nifti_con_phi(), True)
+    with pytest.raises(ValueError, match="El archivo NIfTI no es válido."):
+        deidentify_nifti_bytes(src[: len(src) // 2], gzipped=True)
+
+
 @pytest.mark.parametrize("gzipped", [True, False])
 def test_bytes_basura_lanza_value_error(gzipped):
     with pytest.raises(ValueError, match="El archivo NIfTI no es válido."):
