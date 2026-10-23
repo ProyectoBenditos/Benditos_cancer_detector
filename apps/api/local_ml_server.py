@@ -77,10 +77,15 @@ def start_volume(imagen: UploadFile = File(...), features_json: str = Form("{}")
             try:
                 prepare_volume(data, filename, features, study_key, CACHE / key, update)
                 jobs[key] = {"status": "ready", "progress": 1, "message": "Volumen preparado", "study_key": study_key}
-            except Exception as error:
+            except Exception:
                 import logging
                 logging.getLogger("oncoscan.ml").exception("Volume preparation failed")
-                jobs[key] = {"status": "error", "progress": 0, "message": str(error), "study_key": study_key}
+                jobs[key] = {
+                    "status": "error",
+                    "progress": 0,
+                    "message": "No se pudo preparar el volumen. Revise el registro local del servicio.",
+                    "study_key": study_key,
+                }
         executor.submit(work)
     return job_status(key)
 

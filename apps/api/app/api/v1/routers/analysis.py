@@ -291,8 +291,8 @@ def _persist_success(
             if key in payload and payload[key] is not None:
                 meta[key] = payload[key]
         update["metadata_json"] = meta
-    except Exception:
-        pass
+    except Exception as e:
+        log_event("analysis_metadata_read_failed", level="WARNING", error_type=type(e).__name__)
 
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()

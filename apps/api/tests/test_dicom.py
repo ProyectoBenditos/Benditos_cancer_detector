@@ -3,11 +3,16 @@
 from __future__ import annotations
 
 import io
+import logging
+from contextlib import contextmanager
 from types import SimpleNamespace
 
+import httpx
 import pydicom
+import pytest
 
 import app.api.v1.routers.dicom as dicom_module
+from app.core.logging import _JsonFormatter, hash_id
 from tests.dicom_factory import make_test_dicom_bytes
 
 
@@ -415,3 +420,181 @@ def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, 
     assert any(
         (u.get("metadata_json") or {}).get("analysis_source_slice") == 2 for u in _updates(supabase_mock)
     )
+
+
+# ── /api/v1/dicom/analyze/{id}: errores tipados y logs sin PHI ───────────────
+
+_FAKE_REQUEST = httpx.Request("POST", "https://ia.invalid/predict")
+
+
+def _prepare_failing_analysis(supabase_mock, monkeypatch, exc):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+
+    async def failing_post_predict(file, features):
+        raise exc
+
+    monkeypatch.setattr(dicom_module, "post_predict", failing_post_predict)
+
+
+def _ai_errors(supabase_mock):
+    return [u["ai_error"] for u in _updates(supabase_mock) if "ai_error" in u]
+
+
+@contextmanager
+def _capture_oncoscan_logs(caplog):
+    """`configure_logging` pone `propagate=False` en el logger `oncoscan`; se engancha el handler de caplog."""
+    oncoscan_logger = logging.getLogger("oncoscan")
+    previous_level = oncoscan_logger.level
+    oncoscan_logger.addHandler(caplog.handler)
+    oncoscan_logger.setLevel(logging.DEBUG)
+    try:
+        yield caplog.records
+    finally:
+        oncoscan_logger.removeHandler(caplog.handler)
+        oncoscan_logger.setLevel(previous_level)
+
+
+def _rendered(record):
+    """Texto que el logger emite en producción más los campos estructurados del registro."""
+    return _JsonFormatter().format(record) + repr(getattr(record, "extra_fields", {}))
+
+
+@pytest.mark.parametrize(
+    ("exc", "status", "detail", "ai_error"),
+    [
+        (
+            httpx.ConnectError("x"),
+            503,
+            "No se pudo conectar con el servicio de IA. Intenta de nuevo en unos segundos.",
+            "ConnectError",
+        ),
+        (
+            httpx.ReadTimeout("x"),
+            504,
+            "El servicio de IA tardó demasiado en responder. Intenta de nuevo.",
+            "TimeoutException",
+        ),
+        (
+            httpx.HTTPStatusError(
+                "x", request=_FAKE_REQUEST, response=httpx.Response(500, request=_FAKE_REQUEST)
+            ),
+            502,
+            "El servicio de IA respondió con error 500.",
+            "HTTPStatusError 500",
+        ),
+        (
+            httpx.RemoteProtocolError("x"),
+            502,
+            "Error comunicando con el servicio de IA.",
+            "RemoteProtocolError",
+        ),
+        (
+            RuntimeError("/ruta/secreta/paciente.dcm"),
+            500,
+            "Error en análisis",
+            "RuntimeError",
+        ),
+    ],
+    ids=["connect", "timeout", "http-status-500", "http-error", "inesperado"],
+)
+def test_analyze_errores_tipados(client, auth_headers, supabase_mock, monkeypatch, exc, status, detail, ai_error):
+    _prepare_failing_analysis(supabase_mock, monkeypatch, exc)
+    response = _analyze(client, auth_headers)
+    assert response.status_code == status, response.text
+    assert response.json()["detail"] == detail
+    assert _ai_errors(supabase_mock) == [ai_error]
+    assert any(u.get("upload_status") == "error" for u in _updates(supabase_mock))
+
+
+def test_analyze_volumen_sin_keyframe_en_modo_source_devuelve_502(client, auth_headers, supabase_mock, monkeypatch):
+    import zipfile
+
+    monkeypatch.setenv("AI_INPUT_MODE", "source")
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        for i in range(3):
+            zf.writestr(f"slice_{i:04d}.dcm", make_test_dicom_bytes(series_uid="1.2.3.4", z=float(i)))
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="serie.zip", file_type="dicom_series", file_bytes=zip_buf.getvalue(),
+        metadata_json={"volume_metadata": {"num_slices": 3}},
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 502, response.text
+    assert response.json()["detail"] == "El modelo no devolvió el corte canónico del volumen"
+    assert any(u.get("upload_status") == "error" for u in _updates(supabase_mock))
+
+
+def test_analyze_respuesta_vacia_de_la_ia_devuelve_502(client, auth_headers, supabase_mock, monkeypatch):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+
+    async def empty_post_predict(file, features):
+        return {}
+
+    monkeypatch.setattr(dicom_module, "post_predict", empty_post_predict)
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 502, response.text
+    assert response.json()["detail"] == "No se obtuvo respuesta del modelo de IA"
+
+
+def test_analyze_no_registra_ruta_en_logs(client, auth_headers, supabase_mock, monkeypatch, caplog):
+    _prepare_failing_analysis(supabase_mock, monkeypatch, RuntimeError("/ruta/secreta/paciente.dcm"))
+    with _capture_oncoscan_logs(caplog) as records:
+        response = _analyze(client, auth_headers)
+    assert response.status_code == 500
+    assert "/ruta/secreta" not in response.text
+    failed = [r for r in records if r.getMessage() == "dicom_analysis_failed"]
+    assert len(failed) == 1, "El fallo del análisis debe quedar registrado"
+    assert failed[0].levelname == "ERROR"
+    assert failed[0].extra_fields == {
+        "error_type": "RuntimeError",
+        "upload_id_hash": hash_id("upload-uuid-test"),
+    }
+    for record in records:
+        assert "/ruta/secreta" not in _rendered(record), record.getMessage()
+
+
+def test_analyze_signed_url_fallida_registra_solo_tipo_de_error(client, auth_headers, supabase_mock, monkeypatch, caplog):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+    supabase_mock.storage.from_().create_signed_url.side_effect = RuntimeError("/ruta/secreta/obj.preview.png")
+    with _capture_oncoscan_logs(caplog) as records:
+        response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    assert response.json()["original_signed_url"] is None
+    failed = [r for r in records if r.getMessage() == "signed_url_failed"]
+    assert len(failed) == 1
+    assert failed[0].levelname == "ERROR"
+    assert failed[0].extra_fields == {"error_type": "RuntimeError"}
+    for record in records:
+        assert "/ruta/secreta" not in _rendered(record), record.getMessage()
+
+
+def test_analyze_exitoso_registra_dicom_analysis_completed(client, auth_headers, supabase_mock, monkeypatch, caplog):
+    monkeypatch.delenv("AI_INPUT_MODE", raising=False)
+    monkeypatch.delenv("HF_MODEL_VERSION", raising=False)
+    _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name="estudio.dcm", file_type="dicom", file_bytes=make_test_dicom_bytes(),
+    )
+    with _capture_oncoscan_logs(caplog) as records:
+        response = _analyze(client, auth_headers)
+    assert response.status_code == 200, response.text
+    completed = [r for r in records if r.getMessage() == "dicom_analysis_completed"]
+    assert len(completed) == 1
+    fields = completed[0].extra_fields
+    assert fields["upload_id_hash"] == hash_id("upload-uuid-test")
+    assert fields["model_version"] == "oncoscan-ai@multimodal-v1.2"
+    assert isinstance(fields["inference_time_ms"], int)
+    assert set(fields) == {"upload_id_hash", "inference_time_ms", "model_version"}

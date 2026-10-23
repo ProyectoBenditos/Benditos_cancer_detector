@@ -343,7 +343,7 @@ async def upload_dicom(
                     "zero_retention_verified": audit_deid.get("zero_retention_verified", False),
                 }).execute()
             except Exception as audit_err:
-                log_event("dicom_audit_log_insert_failed", error=str(audit_err))
+                log_event("dicom_audit_log_insert_failed", error_type=type(audit_err).__name__)
 
         return {
             "message": "Archivo cargado y procesado correctamente",
@@ -486,6 +486,12 @@ async def analyze_dicom(
         update_data["metadata_json"] = meta_json
 
         supabase.table("dicom_uploads").update(update_data).eq("id", dicom_id).execute()
+        log_event(
+            "dicom_analysis_completed",
+            upload_id_hash=hash_id(dicom_id),
+            inference_time_ms=inference_time_ms,
+            model_version=model_version,
+        )
 
         before_path = preview_path if (is_dicom or is_zip or is_nifti) else storage_path
         original_signed_url = None
@@ -493,7 +499,7 @@ async def analyze_dicom(
             signed = supabase.storage.from_(SUPABASE_BUCKET_NAME).create_signed_url(before_path, 3600)
             original_signed_url = signed.get("signedURL") or signed.get("signedUrl")
         except Exception as e:
-            log_event("signed_url_failed", error=str(e))
+            log_event("signed_url_failed", level="ERROR", error_type=type(e).__name__)
 
         return {
             "dicom_id": dicom_id,
@@ -511,13 +517,55 @@ async def analyze_dicom(
             "original_signed_url": original_signed_url,
         }
 
+    # Mensajes fijos al cliente y en `ai_error`: nunca `str(e)`, que puede traer rutas o nombres de archivo.
+    except HTTPException as e:
+        _log_analysis_failed(dicom_id, e)
+        _mark_analysis_error(dicom_id)
+        raise
     except httpx.ConnectError as e:
-        error_msg = "No se pudo conectar con el microservicio de IA local o remoto. Verifica que local_ai_server esté activo en el puerto 8001."
-        supabase.table("dicom_uploads").update({"ai_error": f"ConnectError: {str(e)}", "upload_status": "error"}).eq("id", dicom_id).execute()
-        raise HTTPException(status_code=503, detail=error_msg)
+        _log_analysis_failed(dicom_id, e)
+        _mark_analysis_error(dicom_id, "ConnectError")
+        raise HTTPException(
+            status_code=503,
+            detail="No se pudo conectar con el servicio de IA. Intenta de nuevo en unos segundos.",
+        )
+    except httpx.TimeoutException as e:
+        _log_analysis_failed(dicom_id, e)
+        _mark_analysis_error(dicom_id, "TimeoutException")
+        raise HTTPException(
+            status_code=504,
+            detail="El servicio de IA tardó demasiado en responder. Intenta de nuevo.",
+        )
+    except httpx.HTTPStatusError as e:
+        _log_analysis_failed(dicom_id, e)
+        status = e.response.status_code
+        _mark_analysis_error(dicom_id, f"HTTPStatusError {status}")
+        raise HTTPException(status_code=502, detail=f"El servicio de IA respondió con error {status}.")
+    except httpx.HTTPError as e:
+        _log_analysis_failed(dicom_id, e)
+        _mark_analysis_error(dicom_id, type(e).__name__)
+        raise HTTPException(status_code=502, detail="Error comunicando con el servicio de IA.")
     except Exception as e:
-        supabase.table("dicom_uploads").update({"ai_error": str(e), "upload_status": "error"}).eq("id", dicom_id).execute()
-        raise HTTPException(status_code=500, detail=f"Error en análisis: {str(e)}")
+        _log_analysis_failed(dicom_id, e)
+        _mark_analysis_error(dicom_id, type(e).__name__)
+        raise HTTPException(status_code=500, detail="Error en análisis")
+
+
+def _log_analysis_failed(dicom_id: str, error: Exception) -> None:
+    log_event(
+        "dicom_analysis_failed",
+        level="ERROR",
+        error_type=type(error).__name__,
+        upload_id_hash=hash_id(dicom_id),
+    )
+
+
+def _mark_analysis_error(dicom_id: str, ai_error: str | None = None) -> None:
+    """Marca el estudio en error; `ai_error` solo admite valores fijos sin datos del paciente."""
+    update: dict = {"upload_status": "error"}
+    if ai_error is not None:
+        update["ai_error"] = ai_error
+    supabase.table("dicom_uploads").update(update).eq("id", dicom_id).execute()
 
 
 @router.get("/dicom/{dicom_id}/volume")
