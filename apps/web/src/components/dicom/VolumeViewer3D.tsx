@@ -5,6 +5,7 @@ import * as THREE from "three";
 import { Activity, Layers, Maximize2, Minimize2, RefreshCw } from "lucide-react";
 import { getVolumeGeometry, normalizeNodule, type VolumeMetadata } from "./volumeGeometry";
 import { VOLUME_VERTEX_SHADER, VOLUME_FRAGMENT_SHADER } from "./volumeShaders";
+import { volumeKeyAction } from "./volumeKeys";
 import { loadPublicVolume, prepareStudyVolume, type PreparedVolumeManifest } from "./volumeClient";
 
 interface VolumeViewer3DProps {
@@ -71,11 +72,20 @@ function VolumeViewerSession({
   const [renderError, setRenderError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [viewMode, setViewMode] = useState<"anatomy" | "lobes" | "heatmap">("heatmap");
+  const [viewMode, setViewMode] = useState<"anatomy" | "lobes" | "heatmap">("anatomy");
   const [heatOpacity, setHeatOpacity] = useState(0.7);
   const [heatThreshold, setHeatThreshold] = useState(0.6);
   const [preparation, setPreparation] = useState({ message: "Cargando el volumen…", progress: 0 });
   const [breathing, setBreathing] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined" || typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const sync = () => { setReducedMotion(query.matches); if (query.matches) setBreathing(false); };
+    sync();
+    query.addEventListener?.("change", sync);
+    return () => query.removeEventListener?.("change", sync);
+  }, []);
   const breathingRef = useRef(false);
   const [clip, setClip] = useState<[number, number, number]>([0.5, 0.5, 0.5]);
   const [density, setDensity] = useState(0.9);
@@ -266,15 +276,29 @@ function VolumeViewerSession({
                 className={`rounded-md px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:text-slate-500 ${selectedMode === mode.value ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"}`}>{mode.label}</button>
             ))}
           </div>
-          <button type="button" aria-pressed={breathing} onClick={() => setBreathing(!breathing)}
-            className={`flex items-center gap-1.5 rounded-md border px-3 py-1.5 ${breathing ? "border-sky-500 text-sky-300" : "border-slate-600 hover:bg-slate-800"}`}><Activity className="h-3.5 w-3.5" />Simular respiración</button>
+          <button type="button" aria-pressed={breathing} onClick={() => setBreathing(!breathing)} disabled={reducedMotion}
+            title={reducedMotion ? "Desactivado por la preferencia de movimiento reducido" : undefined}
+            className={`disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1.5 rounded-md border px-3 py-1.5 ${breathing ? "border-sky-500 text-sky-300" : "border-slate-600 hover:bg-slate-800"}`}><Activity className="h-3.5 w-3.5" />Simular respiración</button>
           <button type="button" onClick={resetView} aria-label="Restablecer vista" className="rounded-md border border-slate-600 p-1.5 hover:bg-slate-800"><RefreshCw className="h-4 w-4" /></button>
           <button type="button" onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
             className="rounded-md border border-slate-600 p-1.5 hover:bg-slate-800">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>
         </div>
       </div>
       <div className={`relative ${isFullscreen ? "min-h-0 flex-1" : "h-[420px] sm:h-[480px]"}`}>
-        <div ref={containerRef} role="img" aria-label="Volumen torácico 3D; arrastre para rotar y use la rueda para ampliar"
+        <div ref={containerRef} role="img" tabIndex={0}
+          aria-label="Volumen torácico 3D; arrastre o use las flechas para rotar, + y − para ampliar, 0 para restablecer"
+          onKeyDown={(e) => {
+            const action = volumeKeyAction(e.key);
+            if (!action) return;
+            e.preventDefault();
+            if (action.type === "rotate") {
+              rotation.current.x = THREE.MathUtils.clamp(rotation.current.x + action.dx, -1.4, 1.4);
+              rotation.current.y += action.dy;
+            } else if (action.type === "zoom") {
+              const camera = cameraRef.current;
+              if (camera) camera.position.z = THREE.MathUtils.clamp(camera.position.z + action.delta, 0.9, 4);
+            } else resetView();
+          }}
           onPointerDown={(e) => { drag.current = { x: e.clientX, y: e.clientY }; e.currentTarget.setPointerCapture(e.pointerId); }}
           onPointerMove={(e) => {
             if (!drag.current) return;
@@ -282,7 +306,7 @@ function VolumeViewerSession({
             rotation.current.x = THREE.MathUtils.clamp(rotation.current.x + (e.clientY - drag.current.y) * 0.008, -1.4, 1.4);
             drag.current = { x: e.clientX, y: e.clientY };
           }} onPointerUp={() => { drag.current = null; }} onPointerCancel={() => { drag.current = null; }}
-          className="h-full w-full touch-none cursor-grab active:cursor-grabbing" />
+          className="h-full w-full touch-none cursor-grab outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-sky-300 active:cursor-grabbing" />
         {(!resource || error) && <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-[#020610] p-6 text-center text-sm" role={error ? "alert" : "status"}>
           <p>{error || preparation.message}</p>
           {!error && <div className="h-1 w-64 max-w-full overflow-hidden rounded bg-slate-800" role="progressbar" aria-label="Preparación del volumen" aria-valuenow={Math.round(preparation.progress * 100)} aria-valuemin={0} aria-valuemax={100}><div className="h-full bg-sky-400 transition-all" style={{ width: `${Math.max(3, preparation.progress * 100)}%` }} /></div>}
@@ -290,8 +314,8 @@ function VolumeViewerSession({
         </div>}
       </div>
       {heatActive && <div className="flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-white/10 px-3 py-2.5 text-xs">
-        <label className="flex items-center gap-2">Intensidad del calor<input aria-label="Intensidad del mapa de calor" type="range" min="0" max="1" step="0.05" value={heatOpacity} onChange={(e) => setHeatOpacity(Number(e.target.value))} className="w-24 accent-[#D4004F]" /></label>
-        <label className="flex items-center gap-2">Umbral<input aria-label="Umbral del mapa de calor" type="range" min="0.05" max="0.9" step="0.05" value={heatThreshold} onChange={(e) => setHeatThreshold(Number(e.target.value))} className="w-24 accent-[#D4004F]" /><span className="w-7 font-mono text-slate-400">{heatThreshold.toFixed(2)}</span></label>
+        <label className="flex items-center gap-2">Intensidad del calor<input aria-label="Intensidad del mapa de calor" type="range" min="0" max="1" step="0.05" value={heatOpacity} onChange={(e) => setHeatOpacity(Number(e.target.value))} className="w-24 accent-sky-400" /></label>
+        <label className="flex items-center gap-2">Umbral<input aria-label="Umbral del mapa de calor" type="range" min="0.05" max="0.9" step="0.05" value={heatThreshold} onChange={(e) => setHeatThreshold(Number(e.target.value))} className="w-24 accent-sky-400" /><span className="w-7 font-mono text-slate-400">{heatThreshold.toFixed(2)}</span></label>
         <div className="ml-auto flex items-center gap-2 text-slate-300"><span>Baja</span><span className="h-1.5 w-20 rounded bg-gradient-to-r from-amber-400 to-[#D4004F]" /><span>Alta contribución</span></div>
         {resource?.manifest?.peak_activation && <button type="button" className="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:bg-slate-800"
           onClick={() => {

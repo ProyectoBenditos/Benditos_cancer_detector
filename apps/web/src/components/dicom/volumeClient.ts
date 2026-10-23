@@ -8,12 +8,18 @@ export interface PreparedVolumeManifest {
   peak_activation?: { x: number; y: number; z: number; label: string; is_lesion_detection: false } | null;
 }
 
+// El detalle del servidor puede contener texto de desarrollo; nunca se muestra al usuario.
+export function volumeErrorMessage(status: number, detail?: string): string {
+  void detail;
+  if (status === 503) return "El volumen 3D no está disponible en este entorno.";
+  if (status === 429) return "Hay otros volúmenes en preparación. Intenta de nuevo en unos minutos.";
+  if (status === 404) return "No se encontró el volumen de este estudio.";
+  return `No se pudo preparar el volumen (${status}).`;
+}
+
 async function requestJson(url: string, signal: AbortSignal, init: RequestInit = {}) {
   const response = await fetch(url, { ...init, signal, cache: "no-store" });
-  if (!response.ok) {
-    const error = await response.json().catch(() => null);
-    throw new Error(typeof error?.detail === "string" ? error.detail : `No se pudo preparar el volumen (${response.status}).`);
-  }
+  if (!response.ok) throw new Error(volumeErrorMessage(response.status));
   return response.json();
 }
 
