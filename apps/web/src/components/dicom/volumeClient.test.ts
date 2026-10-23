@@ -37,8 +37,11 @@ describe("registered volume delivery", () => {
     await expect(prepareStudyVolume("study", "http://127.0.0.1:8000", new AbortController().signal, vi.fn())).rejects.toThrow("origen");
   });
   it("surfaces a worker error instead of displaying a simulated heatmap", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply({ status: "error", message: "No hay soporte pulmonar" })));
-    await expect(prepareStudyVolume("study", "http://127.0.0.1:8000", new AbortController().signal, vi.fn())).rejects.toThrow("No hay soporte pulmonar");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply({ status: "error", message: "No hay soporte pulmonar. Inicie el servicio en el puerto 8001" })));
+    const failure = await prepareStudyVolume("study", "http://127.0.0.1:8000", new AbortController().signal, vi.fn()).catch((e: Error) => e);
+    expect((failure as Error).message).toBe("No se pudo preparar el volumen.");
+    expect((failure as Error).message).not.toContain("8001");
+    expect((failure as Error).message).not.toContain("soporte");
   });
 });
 

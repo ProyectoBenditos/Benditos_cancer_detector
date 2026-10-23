@@ -1,5 +1,19 @@
 import { describe, expect, it } from "vitest";
-import { volumeKeyAction } from "./volumeKeys";
+import { volumeKeyAction, volumeKeyActionFromEvent } from "./volumeKeys";
+
+describe("volumeKeyActionFromEvent", () => {
+  const base = { ctrlKey: false, metaKey: false, altKey: false };
+  it("passes plain keys through", () => {
+    expect(volumeKeyActionFromEvent({ key: "+", ...base })).toEqual({ type: "zoom", delta: -0.1 });
+  });
+  it("ignores browser shortcuts with Ctrl, Meta or Alt", () => {
+    for (const key of ["+", "-", "0", "ArrowLeft"]) {
+      expect(volumeKeyActionFromEvent({ key, ...base, ctrlKey: true })).toBeNull();
+      expect(volumeKeyActionFromEvent({ key, ...base, metaKey: true })).toBeNull();
+      expect(volumeKeyActionFromEvent({ key, ...base, altKey: true })).toBeNull();
+    }
+  });
+});
 
 describe("volumeKeyAction", () => {
   it("maps arrows to rotation", () => {

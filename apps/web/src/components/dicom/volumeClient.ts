@@ -45,7 +45,7 @@ export async function prepareStudyVolume(uploadId: string, base: string, signal:
   let job = await requestJson(`${endpoint}/prepare`, signal, { method: "POST", headers: await authHeaders() });
   const deadline = Date.now() + 30 * 60 * 1000;
   while (job.status !== "ready") {
-    if (job.status === "error") throw new Error(job.message || "Falló la preparación local del volumen.");
+    if (job.status === "error") throw new Error("No se pudo preparar el volumen.");
     if (Date.now() > deadline) throw new Error("La preparación sigue en curso. Reintente consultar el volumen.");
     progress({ message: job.message || "Preparando TC, lóbulos y mapa de calor en local…", progress: job.progress ?? 0 });
     await pause(signal);

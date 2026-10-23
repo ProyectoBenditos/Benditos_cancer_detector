@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { Activity, Layers, Maximize2, Minimize2, RefreshCw } from "lucide-react";
 import { getVolumeGeometry, normalizeNodule, type VolumeMetadata } from "./volumeGeometry";
 import { VOLUME_VERTEX_SHADER, VOLUME_FRAGMENT_SHADER } from "./volumeShaders";
-import { volumeKeyAction } from "./volumeKeys";
+import { volumeKeyActionFromEvent } from "./volumeKeys";
 import { loadPublicVolume, prepareStudyVolume, type PreparedVolumeManifest } from "./volumeClient";
 
 interface VolumeViewer3DProps {
@@ -288,7 +288,7 @@ function VolumeViewerSession({
         <div ref={containerRef} role="img" tabIndex={0}
           aria-label="Volumen torácico 3D; arrastre o use las flechas para rotar, + y − para ampliar, 0 para restablecer"
           onKeyDown={(e) => {
-            const action = volumeKeyAction(e.key);
+            const action = volumeKeyActionFromEvent(e);
             if (!action) return;
             e.preventDefault();
             if (action.type === "rotate") {

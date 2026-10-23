@@ -4,6 +4,12 @@ export type VolumeKeyAction =
   | { type: "reset" }
   | null;
 
+// Con Ctrl/Cmd/Alt la tecla es del navegador (zoom de página, atajos): no se intercepta.
+export function volumeKeyActionFromEvent(e: { key: string; ctrlKey: boolean; metaKey: boolean; altKey: boolean }): VolumeKeyAction {
+  if (e.ctrlKey || e.metaKey || e.altKey) return null;
+  return volumeKeyAction(e.key);
+}
+
 export function volumeKeyAction(key: string): VolumeKeyAction {
   switch (key) {
     case "ArrowLeft": return { type: "rotate", dx: 0, dy: -0.1 };
