@@ -20,6 +20,7 @@ import { MorphologyBars, type ClinicalFeatures } from "@/components/informe/Morp
 import { ReportPrintControls } from "@/components/informe/ReportPrintControls";
 import { AnatomicalLungsDiagram } from "@/components/informe/AnatomicalLungsDiagram";
 import { HistologicalSubtypeCard, type SubtipoHistologicoData } from "@/components/informe/HistologicalSubtypeCard";
+import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { extractLobarLocation, LOBAR_LOCATIONS } from "@/lib/uploadReview";
 
 type PageProps = {
@@ -354,6 +355,7 @@ export default async function InformeClinicoPage({ params }: PageProps) {
 
             <HistologicalSubtypeCard
               data={subtipoData}
+              riskLevel={asRiskLevel(upload.ai_risk_level)}
               pathOrientationFallback={pathOrientation}
             />
 

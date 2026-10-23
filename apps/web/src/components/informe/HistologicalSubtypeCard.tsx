@@ -1,5 +1,6 @@
 import React from "react";
 import { Microscope, Dna, AlertCircle } from "lucide-react";
+import type { RiskLevel } from "@/components/ui/RiskBadge";
 
 export interface SubtipoHistologicoData {
   prediccion: string;
@@ -11,14 +12,16 @@ export interface SubtipoHistologicoData {
 
 interface HistologicalSubtypeCardProps {
   data?: SubtipoHistologicoData | null;
+  riskLevel: RiskLevel | null;
   pathOrientationFallback?: string;
 }
 
 export function HistologicalSubtypeCard({
   data,
+  riskLevel,
   pathOrientationFallback,
 }: HistologicalSubtypeCardProps) {
-  if (!data) {
+  if (!data || (riskLevel !== "MEDIO" && riskLevel !== "ALTO")) {
     return (
       <div className="space-y-3">
         <div className="p-3 bg-slate-50 rounded-lg border border-slate-200">
@@ -57,14 +60,19 @@ export function HistologicalSubtypeCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 border border-emerald-200">
-              {(data.confianza * 100).toFixed(1)}% Confianza
+            <span className="text-[11px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-800 border border-slate-200">
+              {(data.confianza * 100).toFixed(1)}% probabilidad del modelo
             </span>
             {data.sensibilidad_referencial != null && Number.isFinite(data.sensibilidad_referencial) && <span className="text-[10px] font-mono text-slate-500">
               Sensibilidad: {(data.sensibilidad_referencial * 100).toFixed(2)}%
             </span>}
           </div>
         </div>
+
+        <p className="flex items-start gap-1.5 text-[11px] text-slate-800 bg-amber-50 border border-amber-200 rounded-md p-2 mb-3">
+          <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-px" aria-hidden="true" />
+          Clasificador entrenado con el dataset CLID; no se ha validado en LIDC-IDRI ni en tomografías de esta plataforma.
+        </p>
 
         {/* Distribución de Probabilidades por Subtipo */}
         <div className="space-y-2 mb-3">
