@@ -5,6 +5,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, LabelList,
 } from "recharts";
 import { RISK_DISTRIBUTION } from "./modelData";
+import IllustrativeNote from "./IllustrativeNote";
 
 export default function RiskDistributionChart() {
   return (
@@ -64,6 +65,9 @@ export default function RiskDistributionChart() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-3">
+        <IllustrativeNote />
       </div>
     </div>
   );

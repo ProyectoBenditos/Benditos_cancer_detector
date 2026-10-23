@@ -2,6 +2,7 @@
 
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { ROC_DATA, MODEL_METRICS } from './modelData';
+import IllustrativeNote from './IllustrativeNote';
 
 export default function ROCCurve() {
   return (
@@ -53,6 +54,12 @@ export default function ROCCurve() {
       </div>
       <div className="absolute right-8 bottom-16 bg-white/80 p-2 rounded-md border border-slate-200 font-semibold text-slate-700 shadow-sm">
         AUC = {MODEL_METRICS.aucRoc}
+      </div>
+      <div className="mt-3 flex flex-col gap-1">
+        <IllustrativeNote />
+        <p className="text-xs text-slate-500">
+          El AUC de 0,9684 proviene del reporte; los puntos dibujados son aproximados.
+        </p>
       </div>
     </div>
   );

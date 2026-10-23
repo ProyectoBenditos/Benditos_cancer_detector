@@ -73,7 +73,17 @@ export const ACCURACY_DATA: AccuracyDataPoint[] = [
   { epoch: 45, train: 0.9510, val: 0.9104 },
 ];
 
-// ─── ROC Curve (AUC = 0.9684 - Verified Patient-Level Test Set) ───────────
+// ─── Estado del modelo: qué versión documenta la página y cuál responde ──
+export const MODEL_STATUS = {
+  servingVersion: "multimodal-v1.2",
+  documentedVersion: "multimodal-v2.0-densenet",
+  documentedInProduction: false,
+} as const;
+
+// ─── Cohorte de prueba (patient-level, independiente de entrenamiento) ───
+export const TEST_COHORT = { samples: 357, patients: 56 } as const;
+
+// ─── ROC Curve (AUC = 0.9684; puntos ilustrativos, valores del reporte metrics_v2_report.json) ──
 export const ROC_DATA: ROCDataPoint[] = [
   { fpr: 0.000, tpr: 0.000 },
   { fpr: 0.010, tpr: 0.420 },
@@ -92,7 +102,7 @@ export const ROC_DATA: ROCDataPoint[] = [
   { fpr: 1.000, tpr: 1.000 },
 ];
 
-// ─── Confusion Matrix (Strict Patient-Level Split: N=357, Threshold=0.35) ──
+// ─── Confusion Matrix (357 muestras de 56 pacientes, Threshold=0.35) ──────
 export const CONFUSION_MATRIX = {
   tn: 132,
   fp: 22,
@@ -100,7 +110,7 @@ export const CONFUSION_MATRIX = {
   tp: 193,
 } as const;
 
-// ─── Risk Distribution (357 Patient Cases) ──────────────────────────────
+// ─── Risk Distribution (puntos ilustrativos) ─────────────────────────────
 export const RISK_DISTRIBUTION: RiskDistributionPoint[] = [
   { level: "BAJO",  count: 142, percentage: 39.8, color: "#10b981" },
   { level: "MEDIO", count: 34,  percentage: 9.5,  color: "#f59e0b" },
@@ -154,11 +164,11 @@ export const MODEL_METRICS = {
   f1Score: "0.9234",
   precision: "89.77%",
   brierScore: "0.0774",
-  testCases: "357",
+  testCases: "357 muestras (56 pacientes)",
   epochs: "45",
   operatingThreshold: "0.35",
   splitType: "Patient-Level Zero-Leakage (LIDC-IDRI)",
-  explainability: "HiResCAM 128×128 (Subpixel Element-wise Gradient)",
+  explainability: "HiResCAM (capas nativas 4×4 y 2×2, interpoladas)",
 } as const;
 
 // ─── Model 2: CLID Histopathological Subtype Classifier ─────────────────

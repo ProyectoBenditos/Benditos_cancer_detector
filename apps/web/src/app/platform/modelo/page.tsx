@@ -16,13 +16,11 @@ import {
     Eye,
     Activity,
     CheckCircle2,
-    Cpu,
-    Sparkles,
 } from "lucide-react";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { ReferenceList } from "@/components/referencias/ReferenceList";
 import { REFERENCES } from "@/lib/references";
-import { HISTOLOGICAL_SUBTYPES, CLID_METRICS, MODEL_METRICS } from "@/components/modelo/modelData";
+import { HISTOLOGICAL_SUBTYPES, CLID_METRICS, MODEL_METRICS, MODEL_STATUS } from "@/components/modelo/modelData";
 
 /* ─── Dynamic imports (client components, no SSR) ────────────────────── */
 const AccuracyChart = dynamic(
@@ -80,6 +78,15 @@ export default function ModeloPage() {
                 description="Arquitectura de IA multimodal de 2da generación, benchmark de validación sin fuga de datos y marco normativo."
             />
 
+            {!MODEL_STATUS.documentedInProduction && (
+                <AlertBanner
+                    variant="info"
+                    title="Modelo documentado aún no está en producción"
+                    description="Esta página describe OncoScan 2.0 (multimodal-v2.0-densenet). Los análisis de la plataforma los responde multimodal-v1.2."
+                    className="mb-6"
+                />
+            )}
+
             <AlertBanner
                 variant="warning"
                 title="Herramienta de apoyo diagnóstico"
@@ -103,7 +110,7 @@ export default function ModeloPage() {
                     <p className="text-white/80 text-sm mt-2 max-w-3xl leading-relaxed">
                         Arquitectura multimodal híbrida de segunda generación entrenada sobre consenso de 4 radiólogos (LIDC-IDRI) y validada bajo protocolo estricto <em>Patient-Level Zero-Leakage</em>.
                         Combina extracción profunda de características visuales en parénquima pulmonar (1024D), encoder contrastivo de dominio (64D) y prior clínico estructurado (32D) mediante un cabezal XGBoost calibrado (1120D).
-                        Incorpora mapas de calor de alta resolución <strong>HiResCAM 128×128</strong> y clasificación simultánea de <strong>4 subtipos histopatológicos</strong> (CLID) con 99.39% de sensibilidad oncológica.
+                        Incorpora mapas de calor de alta resolución <strong>HiResCAM</strong> y clasificación simultánea de <strong>4 subtipos histopatológicos</strong> (CLID) con 99.39% de sensibilidad oncológica.
                     </p>
                 </div>
             </div>
@@ -147,7 +154,7 @@ export default function ModeloPage() {
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
                                 <span>
-                                    <strong>Separación Estricta a Nivel Paciente (Zero-Leakage):</strong> Los 357 casos del conjunto de prueba independiente pertenecen a pacientes cuyos cortes tomográficos nunca fueron vistos durante el entrenamiento ni validación interna, garantizando generalización real en clínica.
+                                    <strong>Separación Estricta a Nivel Paciente (Zero-Leakage):</strong> Las 357 muestras del conjunto de prueba provienen de 56 pacientes que no se usaron en entrenamiento ni validación.
                                 </span>
                             </li>
                             <li className="flex gap-2">

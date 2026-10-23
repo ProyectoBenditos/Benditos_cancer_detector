@@ -5,6 +5,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, ReferenceLine,
 } from "recharts";
 import { SCORE_HISTOGRAM } from "./modelData";
+import IllustrativeNote from "./IllustrativeNote";
 
 const RISK_COLORS: Record<string, string> = {
   BAJO:  "#22c55e",
@@ -85,6 +86,9 @@ export default function ScoreDistribution() {
             />
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-3">
+        <IllustrativeNote />
       </div>
     </div>
   );

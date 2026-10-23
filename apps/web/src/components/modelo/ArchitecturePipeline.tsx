@@ -11,7 +11,6 @@ import {
   Microscope,
   Eye,
   CheckCircle2,
-  Sparkles,
 } from "lucide-react";
 
 export default function ArchitecturePipeline() {
@@ -34,7 +33,7 @@ export default function ArchitecturePipeline() {
               DenseNet-121 + LIDC Domain Encoder + Clinical MLP + XGBoost Head
             </h4>
             <p className="text-xs text-slate-500">
-              Arquitectura multimodal híbrida con 1120 dimensiones combinadas y mapa de explicabilidad HiResCAM 128×128.
+              Arquitectura multimodal híbrida con 1120 dimensiones combinadas y mapa de explicabilidad HiResCAM.
             </p>
           </div>
         </div>
@@ -63,7 +62,7 @@ export default function ArchitecturePipeline() {
               </p>
               <div className="mt-1 flex items-center gap-1 text-[10px] font-semibold text-brand-primary">
                 <Eye className="w-3 h-3" />
-                HiResCAM 128×128 a nivel de elemento
+                HiResCAM a nivel de elemento
               </div>
             </div>
 
@@ -185,7 +184,7 @@ export default function ArchitecturePipeline() {
               </div>
 
               <span className="text-[10px] text-slate-500 text-center block">
-                Zero Data Leakage a nivel paciente (357 casos test)
+                Separación a nivel paciente (357 muestras de 56 pacientes)
               </span>
             </div>
           </div>
