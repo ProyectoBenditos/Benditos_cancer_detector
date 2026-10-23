@@ -27,27 +27,33 @@ def test_lee_cortes_en_carpetas_y_sin_extension_ignorando_macosx():
     assert [item[0] for item in result] == [5.0, 10.0]
 
 
-def test_rechaza_demasiadas_entradas():
-    data = _zip({f"f{i}.txt": b"" for i in range(MAX_ZIP_ENTRIES + 1)})
-    with pytest.raises(SeriesError):
+def _fail_on_read(monkeypatch):
+    def fail(*args, **kwargs):
+        raise AssertionError("no debe leer el contenido antes de validar")
+
+    monkeypatch.setattr(zipfile.ZipFile, "read", fail)
+    monkeypatch.setattr(zipfile.ZipFile, "open", fail)
+
+
+def test_rechaza_demasiadas_entradas(monkeypatch):
+    data = _zip({f"f{i}.dcm": b"" for i in range(MAX_ZIP_ENTRIES + 1)})
+    _fail_on_read(monkeypatch)
+    with pytest.raises(SeriesError, match="más de 1000 archivos"):
         read_ct_series(data)
 
 
 def test_rechaza_tamano_descomprimido_excesivo(monkeypatch):
     data = _zip({"a.dcm": make_test_dicom_bytes()})
 
-    def fail(*args, **kwargs):
-        raise AssertionError("no debe leer el contenido antes de validar")
-
-    monkeypatch.setattr(zipfile.ZipFile, "read", fail)
-    monkeypatch.setattr(zipfile.ZipFile, "open", fail)
-    with pytest.raises(SeriesError):
+    _fail_on_read(monkeypatch)
+    with pytest.raises(SeriesError, match="tamaño máximo"):
         read_ct_series(data, max_uncompressed=1000)
 
 
-def test_rechaza_relacion_de_compresion_sospechosa():
-    data = _zip({"bomba.bin": b"\x00" * (10 * 1024 * 1024)}, compression=zipfile.ZIP_DEFLATED)
-    with pytest.raises(SeriesError):
+def test_rechaza_relacion_de_compresion_sospechosa(monkeypatch):
+    data = _zip({"bomba.dcm": b"\x00" * (10 * 1024 * 1024)}, compression=zipfile.ZIP_DEFLATED)
+    _fail_on_read(monkeypatch)
+    with pytest.raises(SeriesError, match="relación de compresión"):
         read_ct_series(data)
 
 
