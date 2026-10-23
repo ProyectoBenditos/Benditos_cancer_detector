@@ -8,11 +8,12 @@ from dataclasses import dataclass
 import io
 from pathlib import Path
 import tempfile
-import zipfile
 
 import nibabel as nib
 import numpy as np
 import pydicom
+
+from app.services.dicom_series import SIZE_LIMIT_MESSAGE, SeriesError, read_ct_series
 
 
 @dataclass
@@ -62,17 +63,13 @@ def read_ct(data: bytes, filename: str) -> CTVolume:
             path.write_bytes(data)
             return from_nifti(nib.load(path, mmap=False))
     if filename.lower().endswith(".zip"):
-        with zipfile.ZipFile(io.BytesIO(data)) as archive:
-            entries = [entry for entry in archive.infolist() if not entry.is_dir()
-                       and not entry.filename.startswith(("__MACOSX/", "."))]
-            if sum(entry.file_size for entry in entries) > 1_500_000_000:
-                raise ValueError("La serie excede el límite local de 1,5 GB descomprimidos.")
-            datasets = []
-            for entry in entries:
-                if entry.filename.lower().endswith(".dcm") or "." not in Path(entry.filename).name:
-                    ds = pydicom.dcmread(io.BytesIO(archive.read(entry)))
-                    if getattr(ds, "Modality", None) == "CT":
-                        datasets.append(ds)
+        try:
+            series = read_ct_series(data, max_uncompressed=1_500_000_000)
+        except SeriesError as error:
+            if str(error) == SIZE_LIMIT_MESSAGE:
+                raise ValueError("La serie excede el límite local de 1,5 GB descomprimidos.") from error
+            raise
+        datasets = [item[2] for item in series]
     elif filename.lower().endswith(".dcm"):
         datasets = [pydicom.dcmread(io.BytesIO(data))]
     else:

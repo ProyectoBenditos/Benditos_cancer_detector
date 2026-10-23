@@ -23,11 +23,11 @@ from app.core.deidentifier import deidentify_dicom_bytes
 from app.core.logging import hash_id, log_event
 from app.core.security import get_current_user
 from app.db.supabase_client import supabase
+from app.services.dicom_series import MAX_UPLOAD_BYTES, SeriesError, read_ct_series
+from app.services.upload_types import classify_upload, kind_of_record
 from app.services.volume_geometry import dicom_volume_metadata
 
 router = APIRouter()
-
-ALLOWED_EXTENSIONS = {".dcm", ".png", ".jpg", ".jpeg", ".zip", ".nii", ".gz"}
 
 REQUIRED_DICOM_TAGS = [
     "Modality",
@@ -157,19 +157,22 @@ async def upload_dicom(
         raise HTTPException(status_code=400, detail="Archivo no válido")
 
     file_ext = os.path.splitext(file.filename)[1].lower()
-    if file_ext not in ALLOWED_EXTENSIONS:
+    upload_kind = classify_upload(file.filename)
+    if upload_kind is None:
         raise HTTPException(
             status_code=400,
-            detail="Formato no soportado. Use .dcm, .zip, .png o .jpg"
+            detail="Formato no soportado. Use .dcm, .zip, .nii, .nii.gz, .png o .jpg"
         )
 
     contents = await file.read()
     if not contents:
         raise HTTPException(status_code=400, detail="Archivo vacío")
+    if len(contents) > MAX_UPLOAD_BYTES:
+        raise HTTPException(status_code=413, detail="El archivo supera el máximo de 50 MB.")
 
-    is_dicom = file_ext == ".dcm"
-    is_zip = file_ext == ".zip"
-    is_nifti = file_ext in {".nii", ".gz"} or file.filename.lower().endswith((".nii", ".nii.gz"))
+    is_dicom = upload_kind == "dicom"
+    is_zip = upload_kind == "dicom_series"
+    is_nifti = upload_kind == "nifti_volume"
     modality = None
     study_date = None
     patient_id_dicom = None
@@ -180,41 +183,11 @@ async def upload_dicom(
     try:
         # ── Caso A: Archivo .ZIP con Serie de Cortes DICOM ────────────────────
         if is_zip:
-            if not zipfile.is_zipfile(io.BytesIO(contents)):
-                raise HTTPException(status_code=400, detail="El archivo ZIP está dañado o no es un archivo válido.")
+            try:
+                extracted_slices = read_ct_series(contents)
+            except SeriesError as series_err:
+                raise HTTPException(status_code=400, detail=str(series_err))
 
-            extracted_slices: List[Tuple[float, bytes, pydicom.Dataset]] = []
-            with zipfile.ZipFile(io.BytesIO(contents), "r") as zf:
-                file_list = [f for f in zf.namelist() if not f.startswith("__MACOSX/") and not f.startswith(".")]
-                for fname in file_list:
-                    if fname.lower().endswith(".dcm") or not "." in os.path.basename(fname):
-                        slice_raw = zf.read(fname)
-                        try:
-                            ds = pydicom.dcmread(io.BytesIO(slice_raw), stop_before_pixels=False)
-                            if str(getattr(ds, "Modality", "")).strip() != "CT":
-                                continue
-
-                            # Determinar posición Z anatómica
-                            z_pos = 0.0
-                            if hasattr(ds, "ImagePositionPatient") and len(ds.ImagePositionPatient) >= 3:
-                                z_pos = float(ds.ImagePositionPatient[2])
-                            elif hasattr(ds, "SliceLocation") and ds.SliceLocation is not None:
-                                z_pos = float(ds.SliceLocation)
-                            elif hasattr(ds, "InstanceNumber") and ds.InstanceNumber is not None:
-                                z_pos = float(ds.InstanceNumber)
-
-                            extracted_slices.append((z_pos, slice_raw, ds))
-                        except Exception:
-                            continue
-
-            if not extracted_slices:
-                raise HTTPException(
-                    status_code=400,
-                    detail="El archivo .zip no contiene cortes tomográficos de tórax (CT) válidos en formato DICOM.",
-                )
-
-            # Ordenar cortes anatómicamente
-            extracted_slices.sort(key=lambda item: item[0])
             num_slices = len(extracted_slices)
 
             first_ds = extracted_slices[0][2]
@@ -378,7 +351,7 @@ async def upload_dicom(
             ".gz": "application/gzip",
         }
         content_type = content_type_map.get(file_ext, "application/octet-stream")
-        file_type = "dicom_series" if is_zip else ("nifti_volume" if is_nifti else ("dicom" if is_dicom else "image"))
+        file_type = upload_kind
 
         object_name = f"{current_user['id']}/{uuid4()}_{file.filename}"
 
@@ -482,14 +455,10 @@ async def analyze_dicom(
 
     record = result.data
     storage_path = record["storage_path"]
-    file_ext = os.path.splitext(record["original_name"])[1].lower()
-    is_dicom = file_ext == ".dcm"
-    is_zip = file_ext == ".zip" or record.get("file_type") == "dicom_series"
-    is_nifti = (
-        file_ext in {".nii", ".gz"}
-        or record.get("file_type") == "nifti_volume"
-        or record["original_name"].lower().endswith((".nii", ".nii.gz"))
-    )
+    record_kind = kind_of_record(record)
+    is_dicom = record_kind == "dicom"
+    is_zip = record_kind == "dicom_series"
+    is_nifti = record_kind == "nifti_volume"
 
     try:
         # Descargar de Storage

@@ -4,45 +4,8 @@ from __future__ import annotations
 
 import io
 import pydicom
-from pydicom.dataset import FileDataset, FileMetaDataset
-from pydicom.uid import ExplicitVRLittleEndian
 
-
-def _create_test_dicom_bytes(
-    modality: str = "CT",
-    patient_id: str = "CC-1144123456",
-    patient_name: str = "PEREZ^CARLOS ALBERTO",
-    study_date: str = "20261005",
-) -> bytes:
-    """Genera bytes de un archivo DICOM válido con los tags requeridos."""
-    file_meta = FileMetaDataset()
-    file_meta.MediaStorageSOPClassUID = "1.2.840.10008.5.1.4.1.1.2"
-    file_meta.MediaStorageSOPInstanceUID = "1.2.840.10008.5.1.4.1.1.2.999"
-    file_meta.TransferSyntaxUID = ExplicitVRLittleEndian
-
-    ds = FileDataset("test.dcm", {}, file_meta=file_meta, preamble=b"\x00" * 128)
-    ds.is_little_endian = True
-    ds.is_implicit_VR = False
-
-    ds.Modality = modality
-    ds.PatientID = patient_id
-    ds.PatientName = patient_name
-    ds.StudyInstanceUID = "1.2.840.10008.5.1.4.1.1.2.1"
-    ds.SOPInstanceUID = "1.2.840.10008.5.1.4.1.1.2.999"
-    ds.StudyDate = study_date
-    ds.Rows = 64
-    ds.Columns = 64
-    ds.BitsAllocated = 16
-    ds.BitsStored = 16
-    ds.HighBit = 15
-    ds.PixelRepresentation = 1
-    ds.SamplesPerPixel = 1
-    ds.PhotometricInterpretation = "MONOCHROME2"
-    ds.PixelData = b"\x00" * (64 * 64 * 2)
-
-    buf = io.BytesIO()
-    ds.save_as(buf)
-    return buf.getvalue()
+from tests.dicom_factory import make_test_dicom_bytes
 
 
 def test_dicom_upload_sin_auth_devuelve_401(client):
@@ -108,7 +71,7 @@ def test_dicom_upload_jpg_acepta_y_persiste(client, auth_headers, supabase_mock)
 
 def test_dicom_upload_dcm_desidentifica_en_origen_y_persiste(client, auth_headers, supabase_mock):
     """Subir un .dcm purga PHI, seudonimiza el ID del paciente y guarda bytes limpios."""
-    dcm_bytes = _create_test_dicom_bytes(
+    dcm_bytes = make_test_dicom_bytes(
         modality="CT",
         patient_id="CC-1144123456",
         patient_name="PEREZ^CARLOS ALBERTO",
@@ -149,7 +112,7 @@ def test_dicom_upload_dcm_desidentifica_en_origen_y_persiste(client, auth_header
 
 def test_dicom_upload_dcm_modalidad_no_ct_devuelve_400(client, auth_headers):
     """Subir un .dcm de resonancia (MR) o rayos X (XR) es rechazado."""
-    mr_bytes = _create_test_dicom_bytes(modality="MR")
+    mr_bytes = make_test_dicom_bytes(modality="MR")
 
     response = client.post(
         "/api/v1/dicom/upload",
@@ -164,9 +127,9 @@ def test_dicom_upload_zip_multicorte_acepta_y_extrae_volumen(client, auth_header
     """Subir un .zip con múltiples cortes CT genera file_type='dicom_series' y metadata 3D."""
     import zipfile
 
-    slice1 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
-    slice2 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
-    slice3 = _create_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+    slice1 = make_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+    slice2 = make_test_dicom_bytes(modality="CT", patient_id="CC-998877")
+    slice3 = make_test_dicom_bytes(modality="CT", patient_id="CC-998877")
 
     zip_buf = io.BytesIO()
     with zipfile.ZipFile(zip_buf, "w") as zf:
@@ -250,3 +213,40 @@ def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase
     assert payload["volume_metadata"]["num_slices"] == 5
     assert payload["volume_metadata"]["format"] == "NIfTI-1"
     assert supabase_mock.storage.from_().upload.called
+
+
+def test_dicom_upload_tar_gz_devuelve_400(client, auth_headers):
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("estudio.tar.gz", b"datos", "application/gzip")},
+    )
+    assert response.status_code == 400
+    assert "Formato no soportado" in response.json().get("detail", "")
+
+
+def test_dicom_upload_mayor_a_50mb_devuelve_413(client, auth_headers):
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("a.png", b"0" * (50 * 1024 * 1024 + 1), "image/png")},
+    )
+    assert response.status_code == 413
+    assert response.json().get("detail") == "El archivo supera el máximo de 50 MB."
+
+
+def test_dicom_upload_zip_varias_series_devuelve_400(client, auth_headers):
+    import zipfile
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        zf.writestr("a.dcm", make_test_dicom_bytes(series_uid="1.2.3.1", z=1.0))
+        zf.writestr("b.dcm", make_test_dicom_bytes(series_uid="1.2.3.2", z=2.0))
+
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("dos_series.zip", zip_buf.getvalue(), "application/zip")},
+    )
+    assert response.status_code == 400
+    assert "2 series CT" in response.json().get("detail", "")
