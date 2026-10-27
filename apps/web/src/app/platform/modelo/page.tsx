@@ -101,8 +101,10 @@ export default function ModeloPage() {
                 </div>
                 <div>
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <p className="text-xs text-white/80 font-bold uppercase tracking-widest">Versión activa</p>
-                        <span className="text-[10px] font-mono bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded-full font-bold">
+                        <p className="text-xs text-white/80 font-bold uppercase tracking-widest">
+                            {MODEL_STATUS.documentedInProduction ? "Versión activa" : "Versión documentada (no desplegada)"}
+                        </p>
+                        <span className="text-[10px] font-mono bg-slate-500/20 text-slate-200 border border-slate-400/30 px-2 py-0.5 rounded-full font-bold">
                             CALIBRADO A NIVEL PACIENTE
                         </span>
                     </div>
@@ -110,7 +112,7 @@ export default function ModeloPage() {
                     <p className="text-white/80 text-sm mt-2 max-w-3xl leading-relaxed">
                         Arquitectura multimodal híbrida de segunda generación entrenada sobre consenso de 4 radiólogos (LIDC-IDRI) y validada bajo protocolo estricto <em>Patient-Level Zero-Leakage</em>.
                         Combina extracción profunda de características visuales en parénquima pulmonar (1024D), encoder contrastivo de dominio (64D) y prior clínico estructurado (32D) mediante un cabezal XGBoost calibrado (1120D).
-                        Incorpora mapas de calor de alta resolución <strong>HiResCAM</strong> y clasificación simultánea de <strong>4 subtipos histopatológicos</strong> (CLID) con 99.39% de sensibilidad oncológica.
+                        Incorpora mapas de calor de alta resolución <strong>HiResCAM</strong> y clasificación simultánea de <strong>4 subtipos histopatológicos</strong> (CLID) con 99.39% de sensibilidad en el conjunto de prueba CLID.
                     </p>
                 </div>
             </div>
@@ -364,7 +366,7 @@ export default function ModeloPage() {
                             </div>
                             <p className="text-white">POST https://oncoscan-ai.duckdns.org/predict</p>
                             <p className="text-slate-500 text-[11px]">
-                                Respuesta enriquecida: <code>{"{ score, nivel_riesgo, subtipo_histologico, hirescam_grid }"}</code>
+                                Responde {MODEL_STATUS.servingVersion}: <code>{"{ score, nivel_riesgo, recomendacion, heatmap_base64 }"}</code>
                             </p>
                         </div>
                     </div>
