@@ -2,7 +2,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 
 import { PracticeSession } from "./PracticeSession";
-import { PRACTICE_AI_NOTICE, PRACTICE_MANIFEST_URL, PRACTICE_VIEWER_REASON } from "@/lib/practiceCases";
+import {
+  PRACTICE_AI_NOTICE,
+  PRACTICE_MANIFEST_URL,
+  PRACTICE_SUPPORT_NOTICE,
+  PRACTICE_VIEWER_REASON,
+} from "@/lib/practiceCases";
 
 const MANIFEST = {
   version: 1,
@@ -97,6 +102,13 @@ describe("PracticeSession", () => {
     expect(within(refs).getByText("Nódulo de referencia 1: 12,3 mm, marcado por 4 de 4 radiólogos")).toBeInTheDocument();
     expect(within(refs).getByText("No encontrado")).toBeInTheDocument();
     expect(screen.getByText("No hiciste marcas en este caso.")).toBeInTheDocument();
+  });
+
+  it("el resultado de la IA aclara que es un apoyo y no reemplaza el criterio del especialista", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));
+    expect(PRACTICE_SUPPORT_NOTICE).toBe("Resultado de apoyo académico: no reemplaza el criterio del especialista.");
+    expect(screen.getByText(PRACTICE_SUPPORT_NOTICE)).toBeInTheDocument();
   });
 
   it("una marca sobre el nódulo cuenta como encontrada y se lista", async () => {

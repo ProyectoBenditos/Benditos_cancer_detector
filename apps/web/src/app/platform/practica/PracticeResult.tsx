@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { RiskBadge } from "@/components/ui/RiskBadge";
 import { formatMm } from "@/components/ui/measureMath";
 import type { Marker } from "@/components/ui/markerState";
-import { PRACTICE_AI_NOTICE, type PracticeCase } from "@/lib/practiceCases";
+import { PRACTICE_AI_NOTICE, PRACTICE_SUPPORT_NOTICE, type PracticeCase } from "@/lib/practiceCases";
 import { MATCH_RADIUS_MM, anchorMatches, markerAnchor, practiceSummary } from "@/lib/practiceMath";
 import { badgeCenter, dotExtent, overlaySizes, ringRadius, type Ring } from "./practiceOverlay";
 
@@ -322,6 +322,7 @@ export function PracticeResult({
               </div>
             </dl>
             <p className="mt-3 text-xs text-slate-500">Modelo: {ai.modelVersion}</p>
+            <p className="mt-3 text-sm font-medium text-slate-600">{PRACTICE_SUPPORT_NOTICE}</p>
             <p className="mt-4 flex gap-2 rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs leading-relaxed text-slate-600">
               <Info className="mt-0.5 h-4 w-4 shrink-0 text-brand-primary" aria-hidden="true" />
               <span>{PRACTICE_AI_NOTICE}</span>

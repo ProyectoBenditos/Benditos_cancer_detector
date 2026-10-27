@@ -15,6 +15,9 @@ export const PRACTICE_VIEWER_REASON = "La IA se muestra al pulsar «Ver resultad
 export const PRACTICE_AI_NOTICE =
   "La IA de OncoScan da un score y un mapa de calor para el corte completo: no localiza ni cuenta nódulos. Sus 8 variables clínicas, incluida la sospecha de malignidad, vienen del consenso de los radiólogos de LIDC-IDRI.";
 
+/** Aclaración fija junto al resultado de la IA: es un apoyo, no un diagnóstico. */
+export const PRACTICE_SUPPORT_NOTICE = "Resultado de apoyo académico: no reemplaza el criterio del especialista.";
+
 /** Pie de la página del modo práctica. */
 export const PRACTICE_FOOTER =
   "Casos públicos de LIDC-IDRI (The Cancer Imaging Archive, CC BY 3.0). No son pacientes de OncoScan y tus lecturas no se guardan.";
