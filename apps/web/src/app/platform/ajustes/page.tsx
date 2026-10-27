@@ -6,17 +6,27 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import LogoutButton from "@/app/platform/logout-button";
+import { BlindReadingToggle } from "./BlindReadingToggle";
 
 export default async function AjustesPage() {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) redirect("/login");
 
-    const { data: profile } = await supabase
+    // Si la migración de lectura ciega aún no está aplicada, la columna no
+    // existe y la consulta falla: se reintenta solo con el rol.
+    let available = true;
+    const full = await supabase
         .from("profiles")
-        .select("role")
+        .select("role, blind_reading")
         .eq("id", user.id)
         .single();
+    let profile: { role: string; blind_reading: boolean } | null = full.data;
+    if (full.error) {
+        available = false;
+        const fallback = await supabase.from("profiles").select("role").eq("id", user.id).single();
+        profile = fallback.data ? { role: fallback.data.role, blind_reading: false } : null;
+    }
 
     const rolLabel = profile?.role === "admin" ? "Administrador" : profile ? "Médico" : "—";
 
@@ -46,6 +56,13 @@ export default async function AjustesPage() {
                             </div>
                         </div>
                     </dl>
+                </CardContent>
+            </Card>
+
+            <Card className="mb-6">
+                <CardContent className="p-6">
+                    <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-4">Lectura</h2>
+                    <BlindReadingToggle initial={profile?.blind_reading === true} available={available} />
                 </CardContent>
             </Card>
 
