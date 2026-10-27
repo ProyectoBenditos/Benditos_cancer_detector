@@ -111,6 +111,14 @@ describe("PracticeSession", () => {
     expect(screen.getByText(PRACTICE_SUPPORT_NOTICE)).toBeInTheDocument();
   });
 
+  it("con el mapa de calor apagado el carril del interruptor no usa slate-300", async () => {
+    await start();
+    fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));
+    const toggle = screen.getByRole("switch", { name: "Mostrar mapa de calor de la IA" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    expect(toggle.firstElementChild?.className).not.toContain("bg-slate-300");
+  });
+
   it("una marca sobre el nódulo cuenta como encontrada y se lista", async () => {
     await start();
     addCenterMarker();

@@ -246,7 +246,7 @@ export function PracticeResult({
               <span
                 aria-hidden="true"
                 className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
-                  showHeatmap ? "bg-brand-primary" : "bg-slate-300"
+                  showHeatmap ? "bg-brand-primary" : "bg-slate-500"
                 }`}
               >
                 <span
