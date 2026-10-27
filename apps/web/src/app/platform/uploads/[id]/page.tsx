@@ -121,7 +121,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 sanitized_sha256: summary.sanitized_sha256 as string,
                 tags_cleared_count: (summary.tags_cleared_count as number) ?? (summary.tags_cleared as number) ?? 30,
                 normative_compliance: (summary.normative_compliance as string[]) ?? null,
-                zero_retention_verified: true,
+                zero_retention_verified: summary.zero_retention_verified === true,
                 created_at: upload.created_at,
             };
         } else if (upload.metadata_json?.deidentified || upload.patient_id_dicom) {
@@ -130,7 +130,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 source_sha256: (upload.metadata_json?.source_sha256 as string) ?? null,
                 sanitized_sha256: (upload.metadata_json?.sanitized_sha256 as string) ?? null,
                 tags_cleared_count: (upload.metadata_json?.tags_cleared as number) ?? 30,
-                zero_retention_verified: true,
+                zero_retention_verified: false,
                 created_at: upload.created_at,
             };
         }

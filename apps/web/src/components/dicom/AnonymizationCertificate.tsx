@@ -26,6 +26,7 @@ export function AnonymizationCertificate({ audit, fallbackPatientId }: Props) {
     const sanitizedHash = audit?.sanitized_sha256;
     const sourceHash = audit?.source_sha256;
     const tagsCount = audit?.tags_cleared_count ?? 0;
+    const zeroRetention = audit?.zero_retention_verified === true;
 
     const copyHash = (hash: string) => {
         navigator.clipboard.writeText(hash);
@@ -106,18 +107,21 @@ export function AnonymizationCertificate({ audit, fallbackPatientId }: Props) {
                         </p>
                     </div>
 
-                    {/* Retención Cero */}
+                    {/* Retención: solo se afirma retención cero si la auditoría la verificó. */}
                     <div className="rounded-xl border border-slate-200/80 bg-white p-4">
                         <div className="flex items-center justify-between mb-1.5">
                             <span className="text-xs font-semibold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                                <Fingerprint className="w-3.5 h-3.5 text-emerald-600" /> Zero Data Retention
+                                <Fingerprint className="w-3.5 h-3.5 text-emerald-600" />{" "}
+                                {zeroRetention ? "Zero Data Retention" : "Retención"}
                             </span>
                         </div>
                         <p className="text-base font-bold text-slate-800">
-                            Cómputo Efímero
+                            {zeroRetention ? "Cómputo Efímero" : "Copia desidentificada en Storage privado"}
                         </p>
                         <p className="text-[11px] text-slate-400 mt-1">
-                            Procesado en memoria RAM en Oracle Cloud. Sin persistencia en discos no autorizados.
+                            {zeroRetention
+                                ? "Procesado en memoria RAM en Oracle Cloud. Sin persistencia en discos no autorizados."
+                                : "Se guarda solo el archivo ya desidentificado; se abre con URL firmada y temporal."}
                         </p>
                     </div>
                 </div>
