@@ -121,6 +121,36 @@ describe("PracticeSession", () => {
     expect(within(overlay).getAllByTestId("reader-mark")).toHaveLength(1);
   });
 
+  it("con un nódulo pequeño (7,8 mm) la marca en el centro deja el anillo entero a la vista", async () => {
+    const small = {
+      ...MANIFEST,
+      cases: [
+        {
+          ...MANIFEST.cases[0],
+          pixel_spacing: [0.728516, 0.728516],
+          reference: [{ x: 0.5, y: 0.5, diameter_mm: 7.8, readers: 4 }],
+        },
+      ],
+    };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(reply(small)));
+    await start();
+    addCenterMarker();
+    fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));
+
+    const overlay = screen.getByTestId("practice-overlay");
+    const marks = within(overlay).getByTestId("reader-marks");
+    const rings = within(overlay).getByTestId("reference-rings");
+    // Los anillos se dibujan después de las marcas: quedan encima.
+    expect(marks.compareDocumentPosition(rings) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+
+    const dot = within(overlay).getByTestId("reader-mark-dot");
+    const halo = within(overlay).getByTestId("reference-ring-halo");
+    const dotOuter = Number(dot.getAttribute("r")) + Number(dot.getAttribute("stroke-width")) / 2;
+    const ringInner = Number(halo.getAttribute("r")) - Number(halo.getAttribute("stroke-width")) / 2;
+    expect(Number(halo.getAttribute("r"))).toBeCloseTo(7.8 / 2 / 0.728516, 6);
+    expect(dotOuter).toBeLessThan(ringInner);
+  });
+
   it("el interruptor superpone el mapa de calor de la IA", async () => {
     await start();
     fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));

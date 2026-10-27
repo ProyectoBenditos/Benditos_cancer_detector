@@ -8,6 +8,7 @@ import { formatMm } from "@/components/ui/measureMath";
 import type { Marker } from "@/components/ui/markerState";
 import { PRACTICE_AI_NOTICE, type PracticeCase } from "@/lib/practiceCases";
 import { MATCH_RADIUS_MM, anchorMatches, markerAnchor, practiceSummary } from "@/lib/practiceMath";
+import { badgeCenter, dotExtent, overlaySizes, ringRadius, type Ring } from "./practiceOverlay";
 
 /** LIDC-IDRI: cada caso lo leyeron 4 radiólogos. */
 const LIDC_READERS = 4;
@@ -49,7 +50,6 @@ export function PracticeResult({
   const marksTitleId = useId();
   const { geometry, reference, ai } = practiceCase;
   const { columns, rows } = geometry;
-  const colMm = geometry.pixelSpacingMm[1];
 
   const anchors = markers.map(markerAnchor);
   const byAnchor = anchorMatches(anchors, reference, geometry);
@@ -58,19 +58,19 @@ export function PracticeResult({
   const summary = practiceSummary(found, unmatched);
 
   // Tamaños del dibujo en unidades del viewBox (píxeles de la imagen original).
-  const unit = Math.max(columns, rows);
-  const pinR = unit * 0.024;
-  const ringStroke = unit * 0.005;
-  const haloStroke = unit * 0.011;
-  const dash = `${unit * 0.012} ${unit * 0.008}`;
-  const tickGap = unit * 0.012;
-  const tickLen = unit * 0.03;
+  const s = overlaySizes(columns, rows);
+  const rings: Ring[] = reference.map((ref) => ({
+    cx: ref.x * columns,
+    cy: ref.y * rows,
+    r: ringRadius(ref.diameterMm, geometry),
+  }));
 
   return (
     <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)]">
       <Card>
         <CardContent className="p-4 sm:p-6">
-          <figure>
+          {/* Tope de ancho: el corte se ve cerca de su tamaño real y los números no crecen de más. */}
+          <figure className="mx-auto w-full max-w-xl">
             <div
               className="relative w-full overflow-hidden rounded-xl border border-slate-200 bg-black"
               style={{ aspectRatio: `${columns} / ${rows}` }}
@@ -99,96 +99,119 @@ export function PracticeResult({
                 preserveAspectRatio="none"
                 className="absolute inset-0 h-full w-full"
               >
-                {reference.map((ref, i) => {
-                  const cx = ref.x * columns;
-                  const cy = ref.y * rows;
-                  const r = ref.diameterMm / 2 / colMm;
-                  const inner = r + tickGap;
-                  const outer = inner + tickLen;
-                  const ticks = [
-                    [cx, cy - inner, cx, cy - outer],
-                    [cx, cy + inner, cx, cy + outer],
-                    [cx - inner, cy, cx - outer, cy],
-                    [cx + inner, cy, cx + outer, cy],
-                  ];
-                  return (
-                    <g key={i} data-testid="reference-ring">
-                      <circle cx={cx} cy={cy} r={r} fill="none" className="stroke-white/90" strokeWidth={haloStroke} />
-                      <circle
-                        cx={cx}
-                        cy={cy}
-                        r={r}
-                        fill="none"
-                        className="stroke-brand-primary"
-                        strokeWidth={ringStroke}
-                        strokeDasharray={dash}
-                      />
-                      {ticks.map(([x1, y1, x2, y2], t) => (
-                        <g key={t}>
-                          <line x1={x1} y1={y1} x2={x2} y2={y2} className="stroke-white/90" strokeWidth={haloStroke} strokeLinecap="round" />
-                          <line x1={x1} y1={y1} x2={x2} y2={y2} className="stroke-brand-primary" strokeWidth={ringStroke} strokeLinecap="round" />
-                        </g>
-                      ))}
-                      {reference.length > 1 && (
+                {/* Primero las marcas; los anillos van después para quedar siempre encima. */}
+                <g data-testid="reader-marks">
+                  {markers.map((m) => {
+                    const anchor = markerAnchor(m);
+                    const x = anchor.x * columns;
+                    const y = anchor.y * rows;
+                    const badge = badgeCenter({ x, y }, rings, { w: columns, h: rows }, s);
+                    const len = Math.hypot(badge.x - x, badge.y - y) || 1;
+                    const ux = (badge.x - x) / len;
+                    const uy = (badge.y - y) / len;
+                    const leader = {
+                      x1: x + ux * (dotExtent(s) + s.leaderGap / 2),
+                      y1: y + uy * (dotExtent(s) + s.leaderGap / 2),
+                      x2: badge.x - ux * s.badgeR,
+                      y2: badge.y - uy * s.badgeR,
+                    };
+                    const measure =
+                      m.kind === "measure" && m.x2 !== null && m.y2 !== null
+                        ? { x1: m.x * columns, y1: m.y * rows, x2: m.x2 * columns, y2: m.y2 * rows }
+                        : null;
+                    return (
+                      <g key={m.id} data-testid="reader-mark">
+                        {measure && (
+                          <>
+                            <line {...measure} className="stroke-white" strokeWidth={s.haloStroke} strokeLinecap="round" />
+                            <line {...measure} className="stroke-brand-primary" strokeWidth={s.ringStroke} strokeLinecap="round" />
+                          </>
+                        )}
+                        <line {...leader} className="stroke-white" strokeWidth={s.haloStroke * 0.7} strokeLinecap="round" />
+                        <line {...leader} className="stroke-brand-primary" strokeWidth={s.ringStroke * 0.7} strokeLinecap="round" />
+                        <circle
+                          cx={badge.x}
+                          cy={badge.y}
+                          r={s.badgeR}
+                          className="fill-brand-primary stroke-white"
+                          strokeWidth={s.badgeStroke}
+                        />
                         <text
-                          x={cx + outer}
-                          y={cy - outer}
-                          fontSize={pinR * 1.1}
+                          x={badge.x}
+                          y={badge.y}
+                          textAnchor="middle"
+                          dominantBaseline="central"
+                          fontSize={s.badgeFont}
                           fontWeight={700}
-                          className="fill-white stroke-brand-primary"
-                          strokeWidth={ringStroke}
-                          paintOrder="stroke"
+                          className="fill-white"
                         >
-                          {`R${i + 1}`}
+                          {m.seq}
                         </text>
-                      )}
-                    </g>
-                  );
-                })}
-                {markers.map((m) => {
-                  const anchor = markerAnchor(m);
-                  const x = anchor.x * columns;
-                  const y = anchor.y * rows;
-                  const line = m.kind === "measure" && m.x2 !== null && m.y2 !== null;
-                  return (
-                    <g key={m.id} data-testid="reader-mark">
-                      {line && (
-                        <>
-                          <line
-                            x1={m.x * columns}
-                            y1={m.y * rows}
-                            x2={(m.x2 as number) * columns}
-                            y2={(m.y2 as number) * rows}
-                            className="stroke-white"
-                            strokeWidth={haloStroke}
-                            strokeLinecap="round"
-                          />
-                          <line
-                            x1={m.x * columns}
-                            y1={m.y * rows}
-                            x2={(m.x2 as number) * columns}
-                            y2={(m.y2 as number) * rows}
-                            className="stroke-brand-primary"
-                            strokeWidth={ringStroke}
-                            strokeLinecap="round"
-                          />
-                        </>
-                      )}
-                      <circle cx={x} cy={y} r={pinR} className="fill-brand-primary stroke-white" strokeWidth={pinR * 0.2} />
-                      <text
-                        x={x}
-                        y={y}
-                        textAnchor="middle"
-                        dominantBaseline="central"
-                        fontSize={pinR * 1.05}
-                        fontWeight={700}
-                        className="fill-white"
-                      >
-                        {m.seq}
-                      </text>
-                    </g>
-                  );
-                })}
+                        <circle
+                          data-testid="reader-mark-dot"
+                          cx={x}
+                          cy={y}
+                          r={s.dotR}
+                          className="fill-brand-primary stroke-white"
+                          strokeWidth={s.dotStroke}
+                        />
+                      </g>
+                    );
+                  })}
+                </g>
+                <g data-testid="reference-rings">
+                  {rings.map(({ cx, cy, r }, i) => {
+                    const inner = r + s.tickGap;
+                    const outer = inner + s.tickLen;
+                    const ticks = [
+                      [cx, cy - inner, cx, cy - outer],
+                      [cx, cy + inner, cx, cy + outer],
+                      [cx - inner, cy, cx - outer, cy],
+                      [cx + inner, cy, cx + outer, cy],
+                    ];
+                    return (
+                      <g key={i} data-testid="reference-ring">
+                        <circle
+                          data-testid="reference-ring-halo"
+                          cx={cx}
+                          cy={cy}
+                          r={r}
+                          fill="none"
+                          className="stroke-white/90"
+                          strokeWidth={s.haloStroke}
+                        />
+                        <circle
+                          cx={cx}
+                          cy={cy}
+                          r={r}
+                          fill="none"
+                          className="stroke-brand-primary"
+                          strokeWidth={s.ringStroke}
+                          strokeDasharray={s.dash}
+                        />
+                        {ticks.map(([x1, y1, x2, y2], t) => (
+                          <g key={t}>
+                            <line x1={x1} y1={y1} x2={x2} y2={y2} className="stroke-white/90" strokeWidth={s.haloStroke} strokeLinecap="round" />
+                            <line x1={x1} y1={y1} x2={x2} y2={y2} className="stroke-brand-primary" strokeWidth={s.ringStroke} strokeLinecap="round" />
+                          </g>
+                        ))}
+                        {rings.length > 1 && (
+                          <text
+                            x={cx + outer}
+                            y={cy - outer}
+                            fontSize={s.badgeFont * 0.85}
+                            fontWeight={700}
+                            className="fill-white stroke-brand-primary"
+                            strokeWidth={s.ringStroke}
+                            paintOrder="stroke"
+                          >
+                            {`R${i + 1}`}
+                          </text>
+                        )}
+                      </g>
+                    );
+                  })}
+                </g>
               </svg>
             </div>
             <figcaption className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-xs text-slate-600">
@@ -199,13 +222,15 @@ export function PracticeResult({
                 Nódulo de referencia, con su diámetro real
               </span>
               <span className="inline-flex items-center gap-2">
-                <span
-                  aria-hidden="true"
-                  className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full border border-white bg-brand-primary text-[9px] font-bold text-white shadow-sm"
-                >
-                  1
-                </span>
-                Tu marca (en una medición, su punto medio)
+                <svg aria-hidden="true" viewBox="0 0 28 20" className="h-4 w-6 shrink-0">
+                  <line x1="5" y1="15" x2="15" y2="8" className="stroke-brand-primary" strokeWidth="1.5" />
+                  <circle cx="5" cy="15" r="2.5" className="fill-brand-primary stroke-white" strokeWidth="1" />
+                  <circle cx="20" cy="8" r="7" className="fill-brand-primary" />
+                  <text x="20" y="8" textAnchor="middle" dominantBaseline="central" fontSize="9" fontWeight={700} className="fill-white">
+                    1
+                  </text>
+                </svg>
+                Tu marca: el punto es donde marcaste (en una medición, su punto medio)
               </span>
             </figcaption>
           </figure>
