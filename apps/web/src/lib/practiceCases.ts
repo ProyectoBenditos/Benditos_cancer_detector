@@ -8,6 +8,17 @@ import type { PixelGeometry } from "./pixelGeometry";
 export const PRACTICE_MANIFEST_URL = "/demo/practica/manifest.json";
 export const PRACTICE_BASE = "/demo/practica/";
 
+/** Motivo que muestra el visor mientras se lee un caso sin IA. */
+export const PRACTICE_VIEWER_REASON = "La IA se muestra al pulsar «Ver resultado».";
+
+/** Aviso fijo sobre lo que hace (y no hace) la IA en el modo práctica. */
+export const PRACTICE_AI_NOTICE =
+  "La IA de OncoScan da un score y un mapa de calor para el corte completo: no localiza ni cuenta nódulos. Sus 8 variables clínicas, incluida la sospecha de malignidad, vienen del consenso de los radiólogos de LIDC-IDRI.";
+
+/** Pie de la página del modo práctica. */
+export const PRACTICE_FOOTER =
+  "Casos públicos de LIDC-IDRI (The Cancer Imaging Archive, CC BY 3.0). No son pacientes de OncoScan y tus lecturas no se guardan.";
+
 export type PracticeReference = { x: number; y: number; diameterMm: number; readers: number };
 
 export type PracticeCase = {

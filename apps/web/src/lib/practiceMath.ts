@@ -24,17 +24,17 @@ export function markerAnchor(m: Marker): Point {
 
 /**
  * Emparejamiento uno a uno, voraz por la pareja (ancla, referencia) más cercana
- * dentro del radio. `found[i]` indica si la referencia i fue encontrada.
+ * dentro del radio. Devuelve, por ancla, el índice de la referencia que le tocó o null.
  */
-export function matchReader(
+export function anchorMatches(
   anchors: Point[],
   reference: PracticeReference[],
   geometry: PixelGeometry
-): { found: boolean[]; unmatched: number } {
-  const found = reference.map(() => false);
+): (number | null)[] {
+  const byAnchor: (number | null)[] = anchors.map(() => null);
   const natural = { w: geometry.columns, h: geometry.rows };
   const cal = calibrationFor(geometry, natural);
-  if (!cal) return { found, unmatched: anchors.length };
+  if (!cal) return byAnchor;
 
   const pairs: { a: number; r: number; d: number }[] = [];
   anchors.forEach((anchor, a) => {
@@ -45,13 +45,25 @@ export function matchReader(
   });
   pairs.sort((p, q) => p.d - q.d);
 
-  const usedAnchors = new Set<number>();
+  const usedRefs = new Set<number>();
   for (const { a, r } of pairs) {
-    if (usedAnchors.has(a) || found[r]) continue;
-    usedAnchors.add(a);
-    found[r] = true;
+    if (byAnchor[a] !== null || usedRefs.has(r)) continue;
+    byAnchor[a] = r;
+    usedRefs.add(r);
   }
-  return { found, unmatched: anchors.length - usedAnchors.size };
+  return byAnchor;
+}
+
+/** Mismo emparejamiento visto desde la referencia: `found[i]` indica si la referencia i fue encontrada. */
+export function matchReader(
+  anchors: Point[],
+  reference: PracticeReference[],
+  geometry: PixelGeometry
+): { found: boolean[]; unmatched: number } {
+  const byAnchor = anchorMatches(anchors, reference, geometry);
+  const found = reference.map(() => false);
+  for (const r of byAnchor) if (r !== null) found[r] = true;
+  return { found, unmatched: byAnchor.filter((r) => r === null).length };
 }
 
 export function practiceSummary(found: boolean[], unmatched: number): string {

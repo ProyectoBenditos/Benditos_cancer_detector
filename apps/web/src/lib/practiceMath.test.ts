@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Marker } from "@/components/ui/markerState";
 import type { PixelGeometry } from "./pixelGeometry";
 import type { PracticeReference } from "./practiceCases";
-import { MATCH_RADIUS_MM, markerAnchor, matchReader, practiceSummary } from "./practiceMath";
+import { MATCH_RADIUS_MM, anchorMatches, markerAnchor, matchReader, practiceSummary } from "./practiceMath";
 
 const geometry: PixelGeometry = { pixelSpacingMm: [1, 1], rows: 512, columns: 512 };
 const ref = (x: number, y: number): PracticeReference => ({ x, y, diameterMm: 8, readers: 4 });
@@ -67,6 +67,27 @@ describe("matchReader", () => {
   });
   it("sin referencia todo son marcas sin coincidir", () => {
     expect(matchReader([{ x: 0.1, y: 0.1 }], [], geometry)).toEqual({ found: [], unmatched: 1 });
+  });
+});
+
+describe("anchorMatches", () => {
+  it("devuelve, por ancla, el índice del nódulo emparejado o null", () => {
+    const r1 = ref(0.5, 0.5);
+    const r2 = ref(0.5 + mm(10), 0.5);
+    const a = { x: 0.5 + mm(4), y: 0.5 }; // R1 a 4 mm (la más cercana global)
+    const b = { x: 0.5 - mm(5), y: 0.5 }; // R1 a 5 mm, R2 a 15 mm
+    const far = { x: 0.1, y: 0.1 };
+    expect(anchorMatches([a, b, far], [r1, r2], geometry)).toEqual([0, null, null]);
+  });
+  it("cada ancla toma su nódulo cuando no compiten", () => {
+    const r1 = ref(0.5, 0.5);
+    const r2 = ref(0.5 + mm(10), 0.5);
+    const a = { x: 0.5 + mm(6), y: 0.5 };
+    const b = { x: 0.5 - mm(5), y: 0.5 };
+    expect(anchorMatches([a, b], [r1, r2], geometry)).toEqual([1, 0]);
+  });
+  it("sin anclas devuelve una lista vacía", () => {
+    expect(anchorMatches([], [ref(0.5, 0.5)], geometry)).toEqual([]);
   });
 });
 
