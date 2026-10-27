@@ -12,8 +12,10 @@ import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
 import { useFocusTrap } from "./useFocusTrap";
 import { MarkerLayer } from "./MarkerLayer";
-import { normalizedToStage, stageToNormalized, visibleCenter, type Size } from "./markerMath";
-import { markersReducer, markersStateFrom, type Marker } from "./markerState";
+import { normalizedToStage, stageToNormalized, visibleCenter, type Point, type Size } from "./markerMath";
+import { MARKER_SIZE_MAX_MM, markersReducer, markersStateFrom, type Marker } from "./markerState";
+import { calibrationFor, formatMm, measureMm } from "./measureMath";
+import type { PixelGeometry } from "@/lib/pixelGeometry";
 import { useMarkerAutosave } from "./useMarkerAutosave";
 import type { AnnotationInput, AnnotationResult } from "@/lib/uploadAnnotations";
 import { MarkerPanel } from "./MarkerPanel";
@@ -50,6 +52,8 @@ type BeforeAfterViewerProps = {
   heatmapBase64: string | null;
   summary?: ViewerSummary;
   annotations?: ViewerAnnotations;
+  /** Geometría del DICOM (PixelSpacing, rows, columns). Sin ella, Medir queda deshabilitado. */
+  pixelGeometry?: PixelGeometry | null;
   initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
@@ -113,6 +117,7 @@ export function BeforeAfterViewer({
   heatmapBase64,
   summary,
   annotations,
+  pixelGeometry,
   initialMode = "curtain",
   initialSplit = 50,
   initialShowAi = true,
@@ -194,6 +199,32 @@ export function BeforeAfterViewer({
     dispatchMarkers({ type: "add", x: n.x, y: n.y });
     setSheetOpen(true);
   };
+
+  // Medir: solo con calibración real (PixelSpacing y la imagen a su tamaño original).
+  const calibration = calibrationFor(pixelGeometry ?? null, natural);
+  // Primer punto de la medición en curso; se descarta al cambiar de herramienta o con Esc.
+  const [measureStart, setMeasureStart] = useState<Point | null>(null);
+  const placeMeasurePoint = (n: Point) => {
+    if (!calibration) return;
+    if (!measureStart) {
+      setMeasureStart(n);
+      setAnnouncement("Primer punto de la medición fijado. Elige el segundo punto.");
+      return;
+    }
+    const sizeMm = measureMm(measureStart, n, natural, calibration);
+    if (sizeMm <= 0 || sizeMm > MARKER_SIZE_MAX_MM) {
+      setAnnouncement(
+        sizeMm <= 0
+          ? "Los dos puntos coinciden. Elige otro segundo punto."
+          : `La medición supera ${MARKER_SIZE_MAX_MM} mm. Elige otro segundo punto.`
+      );
+      return;
+    }
+    setAnnouncement(`Medición ${markersState.nextSeq}: ${formatMm(sizeMm)}`);
+    dispatchMarkers({ type: "addMeasure", x: measureStart.x, y: measureStart.y, x2: n.x, y2: n.y, sizeMm });
+    setMeasureStart(null);
+    setSheetOpen(true);
+  };
   const centerOnMarker = (m: Marker) => {
     centerOn(normalizedToStage(m, getStageSize(), natural), CENTER_ZOOM);
   };
@@ -215,6 +246,7 @@ export function BeforeAfterViewer({
       natural={natural}
       scale={scale}
       focusable={focusable}
+      measureStart={tool === "measure" ? measureStart : null}
       onSelect={(id) => {
         dispatchMarkers({ type: "select", id });
         setSheetOpen(true);
@@ -232,10 +264,12 @@ export function BeforeAfterViewer({
     pan: panHandlers,
     adjust,
     onAdjust: setAdjust,
-    // Un clic en una franja negra (fuera de la imagen) no crea marcador.
+    // Un clic en una franja negra (fuera de la imagen) no crea marcador ni punto.
     onClickAt: (p, stage) => {
       const n = stageToNormalized(p, getTransform(), stage, natural);
-      if (n) addMarkerAt(n);
+      if (!n) return;
+      if (tool === "measure") placeMeasurePoint(n);
+      else addMarkerAt(n);
     },
   });
 
@@ -247,7 +281,7 @@ export function BeforeAfterViewer({
   const cursorClass =
     tool === "adjust"
       ? "cursor-ns-resize"
-      : tool === "marker"
+      : tool === "marker" || tool === "measure"
         ? "cursor-crosshair"
         : canPan
           ? "cursor-grab active:cursor-grabbing"
@@ -349,12 +383,14 @@ export function BeforeAfterViewer({
     setAnnouncement(next ? "IA visible" : "IA oculta");
   };
 
-  // Medir queda desactivado: sin PixelSpacing no hay mm reales que mostrar.
+  // Sin calibración Medir queda desactivado: no hay mm reales que mostrar.
   const selectTool = (t: ViewerTool) => {
-    if (t === "measure") {
+    if (t === "measure" && !calibration) {
       setAnnouncement(MEASURE_UNAVAILABLE);
       return;
     }
+    // Cambiar de herramienta descarta una medición a medias (nunca se guarda media).
+    if (t !== tool) setMeasureStart(null);
     setTool(t);
     setAnnouncement(`Herramienta: ${TOOL_LABELS[t]}`);
   };
@@ -383,6 +419,12 @@ export function BeforeAfterViewer({
         toggleFullscreen();
         break;
       case "exitFullscreen":
+        // Con una medición a medias, Esc primero descarta el punto.
+        if (measureStart) {
+          setMeasureStart(null);
+          setAnnouncement("Medición descartada");
+          break;
+        }
         exitFullscreen();
         break;
       case "toggleAi":
@@ -402,9 +444,13 @@ export function BeforeAfterViewer({
         selectTool("measure");
         break;
       case "addMarker":
-        if (tool !== "marker") break;
-        e.preventDefault();
-        addMarkerAt(visibleCenter(getTransform(), getStageSize(), natural));
+        if (tool === "marker") {
+          e.preventDefault();
+          addMarkerAt(visibleCenter(getTransform(), getStageSize(), natural));
+        } else if (tool === "measure") {
+          e.preventDefault();
+          placeMeasurePoint(visibleCenter(getTransform(), getStageSize(), natural));
+        }
         break;
       case "openHelp":
         e.preventDefault();
@@ -462,6 +508,18 @@ export function BeforeAfterViewer({
         ctx.textBaseline = "middle";
         ctx.font = "bold 13px sans-serif";
         for (const p of exportPinPositions(markersState.markers, S)) {
+          if (p.x2 !== undefined && p.y2 !== undefined) {
+            // Línea de medición con halo blanco, debajo del pin.
+            ctx.lineCap = "round";
+            for (const [width, color] of [[5, "#ffffff"], [3, "#012641"]] as const) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p.x2, p.y2);
+              ctx.lineWidth = width;
+              ctx.strokeStyle = color;
+              ctx.stroke();
+            }
+          }
           ctx.beginPath();
           ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
           ctx.fillStyle = "#012641";
@@ -555,6 +613,7 @@ export function BeforeAfterViewer({
             onModeChange={setMode}
             tool={tool}
             onToolChange={selectTool}
+            measureAvailable={calibration !== null}
             showAi={showAi}
             onToggleAi={toggleAi}
             isFullscreen={isFullscreen}

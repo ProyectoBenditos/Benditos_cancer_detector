@@ -17,6 +17,7 @@ import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/ac
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 import { uploadAccept, uploadFormatsLabel, validateUploadFile } from "@/lib/uploadFile";
+import { pixelGeometryFrom } from "@/lib/pixelGeometry";
 
 type UploadResponse = {
     message: string;
@@ -28,6 +29,8 @@ type UploadResponse = {
     modality: string | null;
     study_date: string | null;
     patient_id_dicom: string | null;
+    /** PixelSpacing, rows y columns del DICOM (null en PNG/JPG): calibra Medir. */
+    volume_metadata?: unknown;
 };
 
 type AnalysisResult = {
@@ -559,6 +562,7 @@ export default function UploadDicomPage() {
                                     lobarLocation={lobarLocation || null}
                                     sourceSlice={analysisResult.source_slice ?? null}
                                     modelVersion={analysisResult.modelo_version}
+                                    pixelGeometry={pixelGeometryFrom(successData?.volume_metadata)}
                                     summary={{
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),

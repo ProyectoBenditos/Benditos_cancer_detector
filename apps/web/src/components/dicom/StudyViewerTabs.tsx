@@ -4,6 +4,7 @@ import React, { useId, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { BeforeAfterViewer, type ViewerSummary, type ViewerAnnotations } from "@/components/ui/BeforeAfterViewer";
 import { SourceLink } from "@/components/referencias/SourceLink";
+import type { PixelGeometry } from "@/lib/pixelGeometry";
 import { Layers, Eye, Box } from "lucide-react";
 import { explainabilityReference, isVolumeFileType, volume3dEnabled } from "./studyViewer";
 
@@ -35,6 +36,8 @@ interface StudyViewerTabsProps {
   lobarLocation?: string | null;
   sourceSlice?: { index: number; total: number } | null;
   modelVersion?: string | null;
+  /** Calibración del corte 2D para Medir (null en PNG/JPG o estudios sin PixelSpacing). */
+  pixelGeometry?: PixelGeometry | null;
 }
 
 export function StudyViewerTabs({
@@ -47,6 +50,7 @@ export function StudyViewerTabs({
   lobarLocation,
   sourceSlice,
   modelVersion,
+  pixelGeometry,
 }: StudyViewerTabsProps) {
   const baseId = useId();
   const [activeTab, setActiveTab] = useState<TabId>("2d");
@@ -87,6 +91,7 @@ export function StudyViewerTabs({
         heatmapBase64={heatmapBase64}
         summary={summary}
         annotations={annotations}
+        pixelGeometry={pixelGeometry}
       />
       <p className="text-xs text-slate-500 mt-2 px-1">
         Mapa generado con <SourceLink href={reference.url}>{reference.short}</SourceLink>: indica las regiones que más

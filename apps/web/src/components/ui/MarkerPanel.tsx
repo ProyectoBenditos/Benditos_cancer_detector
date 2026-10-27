@@ -6,6 +6,7 @@ import { RiskBadge } from "./RiskBadge";
 import { CONCORDANCIA_OPTIONS, CONDUCTA_OPTIONS, LUNG_RADS_OPTIONS } from "@/lib/uploadReview";
 import { MarkerEditor } from "./MarkerEditor";
 import { findingLabel, type Marker, type MarkerAction } from "./markerState";
+import { formatMm } from "./measureMath";
 import { DARK_PANEL } from "./ViewerToolbar";
 import type { ViewerSummary } from "./BeforeAfterViewer";
 import type { SaveStatus } from "./useMarkerAutosave";
@@ -179,11 +180,17 @@ export function MarkerPanel({
                       {m.seq}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-slate-800 viewer-full:text-slate-100">
-                        <span className="sr-only">Marcador {m.seq}: </span>
-                        {findingLabel(m.findingType)}
-                        {m.sizeMm != null && ` · ${m.sizeMm} mm`}
-                      </p>
+                      {m.kind === "measure" && m.sizeMm != null ? (
+                        <p className="text-sm font-semibold tabular-nums text-slate-800 viewer-full:text-slate-100">
+                          Medición<span className="sr-only"> {m.seq}</span>: {formatMm(m.sizeMm)}
+                        </p>
+                      ) : (
+                        <p className="text-sm font-semibold text-slate-800 viewer-full:text-slate-100">
+                          <span className="sr-only">Marcador {m.seq}: </span>
+                          {findingLabel(m.findingType)}
+                          {m.sizeMm != null && ` · ${m.sizeMm} mm`}
+                        </p>
+                      )}
                       {note && (
                         <p className="truncate text-xs text-slate-500 viewer-full:text-slate-400">
                           {note.length > NOTE_PREVIEW_CHARS ? `${note.slice(0, NOTE_PREVIEW_CHARS)}…` : note}
@@ -263,6 +270,11 @@ export function MarkerPanel({
               );
             })}
           </ul>
+        )}
+        {markers.some((m) => m.kind === "measure") && (
+          <p className="text-xs text-slate-500 viewer-full:text-slate-400">
+            Medición sobre el corte mostrado; no reemplaza la medición en la estación de trabajo.
+          </p>
         )}
       </section>
 

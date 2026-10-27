@@ -1,8 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import { BeforeAfterViewer, type ViewerAnnotations, type ViewerSummary } from "./BeforeAfterViewer";
 import type { Marker } from "./markerState";
+import type { PixelGeometry } from "@/lib/pixelGeometry";
 
 function renderViewer(summary?: ViewerSummary) {
   render(
@@ -200,6 +201,12 @@ function sizeStage(stage: HTMLElement, size = 400) {
   Object.defineProperty(stage, "clientWidth", { configurable: true, value: size });
   Object.defineProperty(stage, "clientHeight", { configurable: true, value: size });
   stage.getBoundingClientRect = () => ({ left: 0, top: 0, width: size, height: size }) as DOMRect;
+}
+
+/** Clic (sin arrastre) en (x, y) del lienzo. */
+function clickAt(el: HTMLElement, x: number, y: number) {
+  fireEvent.pointerDown(el, { clientX: x, clientY: y, pointerId: 1 });
+  fireEvent.pointerUp(el, { clientX: x, clientY: y, pointerId: 1 });
 }
 
 function addMarkerWithKeyboard(visor: HTMLElement) {
@@ -530,5 +537,117 @@ describe("BeforeAfterViewer — persistencia", () => {
   it("sin annotations conserva el aviso de la Fase B", () => {
     renderViewer();
     expect(screen.getByText(/todavía no se guardan/)).toBeInTheDocument();
+  });
+});
+
+describe("BeforeAfterViewer — medir", () => {
+  const UPLOAD_ID = "6f1c2b3a-1d2e-4f50-8a9b-0c1d2e3f4a5b";
+  const UNAVAILABLE = "No disponible: este estudio no trae calibración en mm (PixelSpacing).";
+  const GEO_512: PixelGeometry = { pixelSpacingMm: [0.7, 0.7], rows: 512, columns: 512 };
+
+  function renderMeasure(pixelGeometry: PixelGeometry | null, initial: Marker[] = [], naturalSize = 512) {
+    const save = vi.fn<ViewerAnnotations["save"]>().mockResolvedValue({ ok: true });
+    const remove = vi.fn<ViewerAnnotations["remove"]>().mockResolvedValue({ ok: true });
+    render(
+      <BeforeAfterViewer
+        beforeUrl="/estudio.png"
+        heatmapBase64="AAAA"
+        pixelGeometry={pixelGeometry}
+        annotations={{ uploadId: UPLOAD_ID, initial, save, remove }}
+      />
+    );
+    const img = screen.getByAltText("Estudio tomográfico original");
+    Object.defineProperty(img, "naturalWidth", { configurable: true, value: naturalSize });
+    Object.defineProperty(img, "naturalHeight", { configurable: true, value: naturalSize });
+    fireEvent.load(img);
+    const stage = screen.getByRole("group", { name: /Comparativa en cortina/ });
+    sizeStage(stage);
+    return { visor: screen.getByRole("group", { name: /Visor de tomografía/ }), stage, save };
+  }
+
+  /** Fila del panel cuyo texto completo es `text` (incluye el número solo para lectores). */
+  const panelRow = (text: string) =>
+    within(screen.getByRole("complementary", { name: "Panel del caso" })).queryByText(
+      (_, el) => el?.tagName === "P" && el.textContent === text
+    );
+
+  it("sin calibración Medir está deshabilitado con el texto exacto y L no lo activa", () => {
+    const { visor } = renderMeasure(null);
+    const medir = screen.getByRole("radio", { name: "Medir (L)" });
+    expect(medir).toHaveAttribute("aria-disabled", "true");
+    expect(medir).toHaveAccessibleDescription(UNAVAILABLE);
+    fireEvent.keyDown(visor, { key: "l" });
+    expect(medir).toHaveAttribute("aria-checked", "false");
+    expect(screen.getByRole("status")).toHaveTextContent(UNAVAILABLE);
+  });
+
+  it("una imagen reescalada (tamaño natural distinto de rows × columns) no se calibra", () => {
+    const { visor } = renderMeasure(GEO_512, [], 256);
+    fireEvent.keyDown(visor, { key: "l" });
+    expect(screen.getByRole("radio", { name: "Medir (L)" })).toHaveAttribute("aria-checked", "false");
+  });
+
+  it("con calibración, dos clics crean la medición en mm y se guarda", async () => {
+    vi.useFakeTimers();
+    const { visor, stage, save } = renderMeasure(GEO_512);
+    fireEvent.keyDown(visor, { key: "l" });
+    expect(screen.getByRole("radio", { name: "Medir (L)" })).toHaveAttribute("aria-checked", "true");
+
+    clickAt(stage, 0, 200); // clic en (0, 0.5)
+    expect(screen.getByTestId("measure-start")).toBeInTheDocument();
+    clickAt(stage, 200, 200); // clic en (0.5, 0.5)
+
+    expect(panelRow("Medición 1: 179,2 mm")).toBeInTheDocument();
+    expect(screen.queryByTestId("measure-start")).toBeNull();
+    expect(screen.getByText("Medición sobre el corte mostrado; no reemplaza la medición en la estación de trabajo.")).toBeInTheDocument();
+    await act(() => vi.advanceTimersByTimeAsync(700));
+    expect(save).toHaveBeenCalledWith(expect.objectContaining({ kind: "measure", sizeMm: 179.2, x: 0, y: 0.5, x2: 0.5, y2: 0.5 }));
+  });
+
+  it.each([
+    ["M", { key: "m" }],
+    ["Escape", { key: "Escape" }],
+  ])("%s descarta el primer punto pendiente", (_name, key) => {
+    const { visor, stage } = renderMeasure(GEO_512);
+    fireEvent.keyDown(visor, { key: "l" });
+    clickAt(stage, 0, 200);
+    fireEvent.keyDown(visor, key);
+    expect(screen.queryByTestId("measure-start")).toBeNull();
+    fireEvent.keyDown(visor, { key: "l" });
+
+    clickAt(stage, 0, 0); // primer punto nuevo, no una medición
+    expect(screen.queryByRole("button", { name: /^Medición 1/ })).toBeNull();
+    expect(screen.getByTestId("measure-start")).toBeInTheDocument();
+  });
+
+  it("Enter fija el primer punto en el centro y, tras mover la imagen, Enter crea la medición", () => {
+    const { visor } = renderMeasure(GEO_512);
+    visor.focus();
+    fireEvent.keyDown(visor, { key: "+" });
+    fireEvent.keyDown(visor, { key: "l" });
+    fireEvent.keyDown(visor, { key: "Enter" });
+    expect(screen.getByTestId("measure-start")).toBeInTheDocument();
+    fireEvent.keyDown(visor, { key: "ArrowRight" });
+    fireEvent.keyDown(visor, { key: "Enter" });
+    expect(screen.getByRole("button", { name: /^Medición 1: \d+,\d mm$/ })).toBeInTheDocument();
+  });
+
+  it("una medición guardada se dibuja como línea con su pin etiquetado", () => {
+    const saved: Marker = {
+      id: "m1",
+      seq: 1,
+      kind: "measure",
+      x: 0,
+      y: 0.5,
+      x2: 0.5,
+      y2: 0.5,
+      findingType: null,
+      aiAgreement: null,
+      note: "",
+      sizeMm: 179.2,
+    };
+    renderMeasure(GEO_512, [saved]);
+    expect(screen.getByTestId("measure-line-1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Medición 1: 179,2 mm" })).toBeInTheDocument();
   });
 });

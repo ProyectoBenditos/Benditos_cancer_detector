@@ -29,6 +29,12 @@ describe("exportLegendLines", () => {
     expect(exportLegendLines([m(2, "", null)], true)).toEqual(["2. Sin clasificar"]);
   });
 
+  it("una medición lleva sus mm en la leyenda; la nota solo con consentimiento", () => {
+    const measure: Marker = { ...m(1, "eje largo", null), kind: "measure", x2: 0.75, y2: 0.5, sizeMm: 179.2 };
+    expect(exportLegendLines([measure, m(2, "dato sensible")], false)).toEqual(["1. Medición 179,2 mm"]);
+    expect(exportLegendLines([measure], true)).toEqual(["1. Medición 179,2 mm — eje largo"]);
+  });
+
   it("corta las líneas largas a 110 caracteres", () => {
     const [line] = exportLegendLines([m(1, "x".repeat(300))], true);
     expect(line).toHaveLength(110);
@@ -39,6 +45,11 @@ describe("exportLegendLines", () => {
 describe("exportPinPositions", () => {
   it("posición de los pins en el lienzo exportado", () => {
     expect(exportPinPositions([m(2, "")])).toEqual([{ seq: 2, x: 200, y: 400 }]);
+  });
+
+  it("una medición lleva también su segundo extremo", () => {
+    const measure: Marker = { ...m(1, ""), kind: "measure", x2: 0.75, y2: 0.5, sizeMm: 10 };
+    expect(exportPinPositions([measure])).toEqual([{ seq: 1, x: 200, y: 400, x2: 600, y2: 400 }]);
   });
 });
 

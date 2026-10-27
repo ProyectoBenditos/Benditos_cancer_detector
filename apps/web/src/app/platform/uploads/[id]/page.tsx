@@ -16,6 +16,7 @@ import type { UploadReview } from "@/lib/uploadReview";
 import { ClinicalReviewForm } from "./ClinicalReviewForm";
 import { deleteAnnotationAction, saveAnnotationAction } from "./actions";
 import { ANNOTATION_COLUMNS, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
+import { pixelGeometryFrom } from "@/lib/pixelGeometry";
 import type { Marker } from "@/components/ui/markerState";
 import { AnonymizationCertificate, type AnonymizationAuditData } from "@/components/dicom/AnonymizationCertificate";
 
@@ -264,6 +265,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
                                 : null
                         }
                         modelVersion={upload.ai_model_version}
+                        pixelGeometry={pixelGeometryFrom(upload.metadata_json?.volume_metadata)}
                         summary={{
                             score: upload.ai_score,
                             riskLevel: asRiskLevel(upload.ai_risk_level),

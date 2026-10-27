@@ -59,15 +59,15 @@ export const VIEWER_SHORTCUTS: ReadonlyArray<{ keys: string; description: string
       "Herramienta Brillo/Contraste (arrastre horizontal = contraste, vertical = brillo; doble clic restablece)",
   },
   { keys: "M", description: "Herramienta Marcador (clic sobre la imagen)" },
-  { keys: "Enter", description: "Con Marcador activo, agregar un marcador en el centro" },
+  { keys: "Enter", description: "Con Marcador activo, agregar un marcador en el centro; con Medir, fijar un punto en el centro" },
   { keys: "Flechas sobre un marcador", description: "Mover el marcador" },
-  { keys: "L", description: "Medir (no disponible: la imagen no trae calibración en mm)" },
+  { keys: "L", description: "Medir en mm (dos clics o Enter dos veces; solo estudios DICOM calibrados)" },
   { keys: "+ / −", description: "Acercar / alejar" },
   { keys: "Flechas", description: "Mover la imagen" },
   { keys: "0", description: "Restablecer zoom, posición y brillo/contraste" },
   { keys: "Espacio", description: "Mostrar u ocultar la IA (con el visor enfocado)" },
   { keys: "F", description: "Pantalla completa" },
-  { keys: "Esc", description: "Salir de pantalla completa" },
+  { keys: "Esc", description: "Descartar el primer punto de una medición o salir de pantalla completa" },
   { keys: "?", description: "Mostrar esta ayuda" },
 ];
 

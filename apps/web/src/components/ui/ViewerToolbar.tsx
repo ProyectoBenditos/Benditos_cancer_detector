@@ -40,8 +40,7 @@ export const TOOL_LABELS: Record<ViewerTool, string> = {
   measure: "Medir",
 };
 
-export const MEASURE_UNAVAILABLE =
-  "No disponible: la imagen no trae PixelSpacing, así que no se puede medir en milímetros.";
+export const MEASURE_UNAVAILABLE = "No disponible: este estudio no trae calibración en mm (PixelSpacing).";
 
 export function ToolbarButton({
   onClick,
@@ -169,10 +168,17 @@ const MODE_OPTIONS: ReadonlyArray<RadioOption<ViewMode>> = [
   { value: "overlay", icon: Layers, label: "Superpuesto" },
 ];
 
-const TOOL_OPTIONS: ReadonlyArray<RadioOption<ViewerTool>> = [
+const BASE_TOOL_OPTIONS: ReadonlyArray<RadioOption<ViewerTool>> = [
   { value: "pan", icon: Hand, label: "Mover (H)" },
   { value: "adjust", icon: SunMedium, label: "Brillo/Contraste (A)" },
   { value: "marker", icon: MapPin, label: "Marcador (M)" },
+];
+const TOOL_OPTIONS_WITH_MEASURE: ReadonlyArray<RadioOption<ViewerTool>> = [
+  ...BASE_TOOL_OPTIONS,
+  { value: "measure", icon: Ruler, label: "Medir (L)" },
+];
+const TOOL_OPTIONS_WITHOUT_MEASURE: ReadonlyArray<RadioOption<ViewerTool>> = [
+  ...BASE_TOOL_OPTIONS,
   { value: "measure", icon: Ruler, label: "Medir (L)", disabled: true, description: MEASURE_UNAVAILABLE },
 ];
 
@@ -181,6 +187,8 @@ export type ViewerToolbarProps = {
   onModeChange: (m: ViewMode) => void;
   tool: ViewerTool;
   onToolChange: (t: ViewerTool) => void;
+  /** Solo con calibración real en mm (PixelSpacing y la imagen a su tamaño original). */
+  measureAvailable: boolean;
   showAi: boolean;
   onToggleAi: () => void;
   isFullscreen: boolean;
@@ -197,6 +205,7 @@ export function ViewerToolbar({
   onModeChange,
   tool,
   onToolChange,
+  measureAvailable,
   showAi,
   onToggleAi,
   isFullscreen,
@@ -207,6 +216,7 @@ export function ViewerToolbar({
   onExport,
   onHelp,
 }: ViewerToolbarProps) {
+  const toolOptions = measureAvailable ? TOOL_OPTIONS_WITH_MEASURE : TOOL_OPTIONS_WITHOUT_MEASURE;
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2">
@@ -217,7 +227,7 @@ export function ViewerToolbar({
           onChange={onModeChange}
           variant="segment"
         />
-        <RadioGroup label="Herramienta" options={TOOL_OPTIONS} value={tool} onChange={onToolChange} variant="icon" />
+        <RadioGroup label="Herramienta" options={toolOptions} value={tool} onChange={onToolChange} variant="icon" />
       </div>
 
       <div className="flex flex-wrap items-center gap-2">

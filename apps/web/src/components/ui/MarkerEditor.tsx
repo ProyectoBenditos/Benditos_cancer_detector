@@ -11,6 +11,7 @@ import {
   type Marker,
   type MarkerPatch,
 } from "./markerState";
+import { formatMm } from "./measureMath";
 
 const FIELD =
   "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 outline-none focus-visible:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary viewer-full:border-slate-400 viewer-full:bg-slate-800 viewer-full:text-slate-100 viewer-full:focus-visible:border-sky-300 viewer-full:focus-visible:ring-sky-300";
@@ -97,26 +98,34 @@ export function MarkerEditor({
         </p>
       </div>
 
-      <div>
-        <label htmlFor={`${id}-mm`} className={LABEL}>
-          Tamaño estimado (mm, opcional)
-        </label>
-        <input
-          id={`${id}-mm`}
-          type="number"
-          inputMode="decimal"
-          min="0.1"
-          max={MARKER_SIZE_MAX_MM}
-          step="0.1"
-          value={sizeDraft}
-          onChange={(e) => {
-            // Borrador local: escribir «0.5» pasa por «0», que el estado descarta.
-            setSizeDraft(e.target.value);
-            onChange({ sizeMm: e.target.value === "" ? null : Number(e.target.value) });
-          }}
-          className={FIELD}
-        />
-      </div>
+      {marker.kind === "measure" ? (
+        // En una medición los mm salen de los dos puntos: no se editan a mano.
+        <p className="text-xs text-slate-700 viewer-full:text-slate-300">
+          <span className="font-medium">Distancia medida: </span>
+          <span className="tabular-nums">{marker.sizeMm != null ? formatMm(marker.sizeMm) : "—"}</span>
+        </p>
+      ) : (
+        <div>
+          <label htmlFor={`${id}-mm`} className={LABEL}>
+            Tamaño estimado (mm, opcional)
+          </label>
+          <input
+            id={`${id}-mm`}
+            type="number"
+            inputMode="decimal"
+            min="0.1"
+            max={MARKER_SIZE_MAX_MM}
+            step="0.1"
+            value={sizeDraft}
+            onChange={(e) => {
+              // Borrador local: escribir «0.5» pasa por «0», que el estado descarta.
+              setSizeDraft(e.target.value);
+              onChange({ sizeMm: e.target.value === "" ? null : Number(e.target.value) });
+            }}
+            className={FIELD}
+          />
+        </div>
+      )}
 
       <button
         type="button"

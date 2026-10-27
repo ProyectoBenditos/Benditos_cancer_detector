@@ -9,7 +9,9 @@ vi.mock("next/dynamic", () => ({
     },
 }));
 vi.mock("@/components/ui/BeforeAfterViewer", () => ({
-  BeforeAfterViewer: () => <div>visor-2d</div>,
+  BeforeAfterViewer: ({ pixelGeometry }: { pixelGeometry?: unknown }) => (
+    <div data-geometry={JSON.stringify(pixelGeometry ?? null)}>visor-2d</div>
+  ),
 }));
 
 import { StudyViewerTabs } from "./StudyViewerTabs";
@@ -62,6 +64,12 @@ describe("StudyViewerTabs", () => {
     fireEvent.keyDown(after[1], { key: "ArrowLeft" });
     expect(screen.getAllByRole("tab")[0]).toHaveAttribute("aria-selected", "true");
     expect(container.innerHTML).not.toContain("brand-danger");
+  });
+
+  it("pasa la geometría de píxel al visor 2D", () => {
+    const geometry = { pixelSpacingMm: [0.7, 0.7], rows: 512, columns: 512 };
+    render(<StudyViewerTabs {...base} fileType="dicom" pixelGeometry={geometry as never} />);
+    expect(screen.getByText("visor-2d")).toHaveAttribute("data-geometry", JSON.stringify(geometry));
   });
 
   it("muestra el lóbulo solo si existe", () => {
