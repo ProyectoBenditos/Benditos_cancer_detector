@@ -1,0 +1,31 @@
+{
+  "job_id": "49b2cf13be97da9e493bd1b56fe19697b974054806a63d68ac792dc5a12291ba",
+  "status": "ready",
+  "volume_metadata": {
+    "num_slices": 139,
+    "rows": 384,
+    "columns": 384,
+    "pixel_spacing": [
+      1.0156253178914387,
+      1.0156253178914387
+    ],
+    "slice_spacing": 2.5,
+    "slice_thickness": 2.5,
+    "slice_order": "inferior_to_superior",
+    "coordinate_space": "render_voxel_column_row_slice",
+    "window_center": -600,
+    "window_width": 1500,
+    "hu_min": -1350,
+    "hu_max": 150,
+    "intensity_encoding": "lung_window_uint8"
+  },
+  "segmentation_version": "monai-lowres-training-preprocess-v4",
+  "present_labels": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "attribution": "HiResCAM"
+}

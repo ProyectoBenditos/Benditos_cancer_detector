@@ -1,0 +1,16 @@
+{
+  "source_slice_index": 117,
+  "native_cam_shapes": [
+    [
+      4,
+      4
+    ],
+    [
+      2,
+      2
+    ]
+  ],
+  "baseline_max": 0.40970051288604736,
+  "zeroed_fusion_head_cam_max": 0.0,
+  "scope": "Controlled gradient connectivity check; in-memory mutation in a disposable process; checkpoints and service unchanged; not clinical validation"
+}

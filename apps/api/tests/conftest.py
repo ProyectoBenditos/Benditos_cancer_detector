@@ -72,10 +72,12 @@ def supabase_mock(monkeypatch) -> MagicMock:
     # Routers ya importaron `supabase` por nombre → parchear cada referencia
     import app.api.v1.routers.analysis as analysis_module
     import app.api.v1.routers.dicom as dicom_module
+    import app.api.v1.routers.volume as volume_module
     import app.core.security as security_module
 
     monkeypatch.setattr(analysis_module, "supabase", mock)
     monkeypatch.setattr(dicom_module, "supabase", mock)
+    monkeypatch.setattr(volume_module, "supabase", mock)
     monkeypatch.setattr(security_module, "supabase", mock)
 
     return mock

@@ -10,18 +10,20 @@ import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { toast } from "sonner";
 import { Modal } from "@/components/ui/Modal";
-import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/actions";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
+import { uploadAccept, uploadFormatsLabel, validateUploadFile } from "@/lib/uploadFile";
 
 type UploadResponse = {
     message: string;
     dicom_id: string;
     user_id: string;
     filename: string;
+    file_type: string;
     storage_path: string;
     modality: string | null;
     study_date: string | null;
@@ -36,6 +38,7 @@ type AnalysisResult = {
     modelo_version: string;
     heatmap_base64?: string | null;
     original_signed_url?: string | null;
+    source_slice?: { index: number; total: number } | null;
 };
 
 type ClinicalFeatures = {
@@ -142,6 +145,12 @@ export default function UploadDicomPage() {
 
         if (!file) {
             setErrorMsg("Debes seleccionar un archivo.");
+            return;
+        }
+
+        const fileError = validateUploadFile(file);
+        if (fileError) {
+            toast.error(fileError);
             return;
         }
 
@@ -333,12 +342,12 @@ export default function UploadDicomPage() {
                             </label>
                             <input
                                 type="file"
-                                accept=".dcm,.png,.jpg,.jpeg,application/dicom,image/png,image/jpeg"
+                                accept={uploadAccept()}
                                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
                             <p className="text-xs text-slate-500 mt-2">
-                                Formatos compatibles: DICOM (.dcm), PNG y JPG. Tamaño máximo: 50MB.
+                                {uploadFormatsLabel()}
                             </p>
                             <p className="text-xs text-amber-600 mt-1 font-medium">
                                 ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos (OT, MR, CR, etc.) producirán resultados no válidos.
@@ -525,15 +534,19 @@ export default function UploadDicomPage() {
 
                         {analysisResult.heatmap_base64 && (
                             <div className="mt-6">
-                                <BeforeAfterViewer
+                                <StudyViewerTabs
+                                    uploadId={analysisResult.dicom_id}
                                     beforeUrl={analysisResult.original_signed_url ?? null}
                                     heatmapBase64={analysisResult.heatmap_base64}
+                                    fileType={successData?.file_type ?? null}
+                                    lobarLocation={lobarLocation || null}
+                                    sourceSlice={analysisResult.source_slice ?? null}
+                                    modelVersion={analysisResult.modelo_version}
                                     summary={{
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),
                                         review: null,
                                     }}
-                                    // Estudio recién creado: sin marcadores guardados todavía.
                                     annotations={{
                                         uploadId: analysisResult.dicom_id,
                                         initial: [],
@@ -541,6 +554,18 @@ export default function UploadDicomPage() {
                                         remove: deleteAnnotationAction,
                                     }}
                                 />
+                                <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                                    <div className="text-xs text-slate-600">
+                                        <p className="font-semibold text-slate-800">Estudio procesado con OncoScan 2.0</p>
+                                        <p>Puedes acceder al informe anatomopatológico con biomarcadores y validar el caso.</p>
+                                    </div>
+                                    <Link
+                                        href={`/platform/uploads/${analysisResult.dicom_id}/informe`}
+                                        className={buttonVariants({ variant: "primary", size: "md" })}
+                                    >
+                                        Ver Informe Clínico Estandarizado
+                                    </Link>
+                                </div>
                             </div>
                         )}
 

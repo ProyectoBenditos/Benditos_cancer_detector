@@ -1,0 +1,6 @@
+{
+  "name": "3D Slicer CTChest",
+  "url": "https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+  "source_sha256": "4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+  "purpose": "local visualization demonstration, not independent model validation"
+}

@@ -1,0 +1,11 @@
+{
+ "detector": "check_model_provenance",
+ "dossier": "docs/volume-rendering/model_dossier.json",
+ "model": "MONAI wholeBody_ct_segmentation lowres SegResNet",
+ "n_arms": 0,
+ "claims": [],
+ "summary": {
+  "major": 0,
+  "minor": 0
+ }
+}

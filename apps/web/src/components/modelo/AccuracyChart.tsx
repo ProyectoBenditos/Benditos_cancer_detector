@@ -2,6 +2,7 @@
 
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { ACCURACY_DATA } from './modelData';
+import IllustrativeNote from './IllustrativeNote';
 
 export default function AccuracyChart() {
   return (
@@ -47,6 +48,9 @@ export default function AccuracyChart() {
             />
           </LineChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-3">
+        <IllustrativeNote />
       </div>
     </div>
   );

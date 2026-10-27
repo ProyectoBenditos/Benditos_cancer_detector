@@ -1,0 +1,16 @@
+{
+  "scope": "Packaging integrity only; functional tests previously passed",
+  "snapshot_integrity": {
+    "scope": "snapshot_integrity_only",
+    "verified": 218,
+    "missing_optional": [],
+    "problems": [],
+    "status": "pass"
+  },
+  "rejection_checks": {
+    "crlf_lf_normalization": "pass",
+    "wrong_hash": "sha256_mismatch",
+    "missing_required": "missing",
+    "outside_repository": "outside_repository"
+  }
+}

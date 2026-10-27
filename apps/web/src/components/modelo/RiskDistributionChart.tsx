@@ -5,6 +5,7 @@ import {
   Tooltip, ResponsiveContainer, Cell, LabelList,
 } from "recharts";
 import { RISK_DISTRIBUTION } from "./modelData";
+import IllustrativeNote from "./IllustrativeNote";
 
 export default function RiskDistributionChart() {
   return (
@@ -44,7 +45,7 @@ export default function RiskDistributionChart() {
               <LabelList
                 dataKey="count"
                 position="top"
-                content={({ x, y, width, index }) => {
+                content={({ x, y, width, index }: { x?: number | string; y?: number | string; width?: number | string; index?: number }) => {
                   const entry = RISK_DISTRIBUTION[index as number];
                   if (!entry) return null;
                   return (
@@ -64,6 +65,9 @@ export default function RiskDistributionChart() {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      <div className="mt-3">
+        <IllustrativeNote />
       </div>
     </div>
   );

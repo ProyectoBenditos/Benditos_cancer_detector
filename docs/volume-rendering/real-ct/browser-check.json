@@ -1,0 +1,11 @@
+{
+  "gpu": {
+    "renderer": "ANGLE (NVIDIA, NVIDIA GeForce GTX 1650 (0x00001F99) Direct3D11 vs_5_0 ps_5_0, D3D11)",
+    "error": 0
+  },
+  "errors": [],
+  "alerts": [],
+  "modesChangeImage": true,
+  "mobileOverflow": false,
+  "text": "Cargar un estudio\nOncoScan\n\nEXPLORACIÓN VOLUMÉTRICA · MUESTRA PÚBLICA\n\nAnatomía y activación, en el mismo espacio.\n\nUna TC torácica real de 139 cortes. Los cinco lóbulos se segmentan con MONAI; el mapa HiResCAM del modelo local se calcula por corte y se registra sobre el volumen. Cambia de vista, gira los pulmones o abre un plano para explorar su interior.\n\nReconstrucción volumétrica 3D · 139 cortes\n\nPulmones aislados · Segmentación MONAI · HiResCAM por corte\n\nAnatomía\n5 lóbulos\nMapa de calor\nSimular respiración\nIntensidad del calor\nUmbral\n0.35\nBaja\nAlta contribución\nVer pico · corte 118\nAxial\nSagital\nCoronal\nOpacidad\n59 FPS\n\nHiResCAM muestra contribución al clasificador por corte; no es una segmentación tumoral.\n\nDemostración con CTChest de 3D Slicer. La activación explica el componente neuronal del clasificador y no confirma la presencia de un tumor. La respiración del visor es ilustrativa.\n\nFuente de la TC"
+}

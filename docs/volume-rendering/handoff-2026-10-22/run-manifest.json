@@ -1,0 +1,2163 @@
+{
+  "schema_version": "1.0",
+  "run": {
+    "id": "oncoscan-volume-handoff-2026-10-22",
+    "snapshot_created_at": "2026-10-22T15:44:47.127423-05:00",
+    "status": "replayable with constraints",
+    "supported_scope": "Local CT/MONAI/HiResCAM integration on one public CTChest; no clinical performance claim",
+    "canonical_command_after_setup": "apps/api/.venv-ml/Scripts/python.exe scripts/prepare_lung_demo.py",
+    "integrity_command": "python scripts/verify_volume_handoff.py",
+    "production_deployed": false,
+    "external_sharing_performed": false
+  },
+  "code_identity": {
+    "base_revision": "645e676d958a358dadcd8b7c71b40c48c1dc37ba",
+    "dirty_worktree": true,
+    "final_release_commit": null,
+    "snapshot_identity": "SHA-256 of listed artifacts; text normalizes CRLF to LF, binary hashes are exact",
+    "inventory_scope": "API app/tests and frontend sources plus volume entrypoints, data, models and evidence. Preserve the whole repository when transferring a checkout. A hash inventory is not a source bundle.",
+    "delivery_branch": "feat/volumen-3d-handoff-2026-10-22",
+    "release_commit_resolution": "git log -1 --format=%H on the delivery branch; self-referential commit hashes are not embedded"
+  },
+  "environment": {
+    "os": "Windows-11-10.0.26200-SP0",
+    "timezone": "America/Bogota",
+    "api_python": "3.14.3",
+    "ml_python": "3.11.9",
+    "node": "24.14.0",
+    "pnpm": "12.3.4",
+    "torch": "2.6.0+cu124",
+    "torchvision": "0.21.0+cu124",
+    "monai": "1.4.0",
+    "xgboost": "3.2.0",
+    "gpu": "NVIDIA GeForce GTX 1650",
+    "gpu_memory_mib": 4096,
+    "driver": "616.92",
+    "system_ram_bytes": 17041244160,
+    "environment_variables_names_only": [
+      "SUPABASE_URL",
+      "SUPABASE_SERVICE_ROLE_KEY",
+      "SUPABASE_BUCKET_NAME",
+      "ANONYMIZATION_SALT",
+      "HF_API_BASE_URL",
+      "HF_PREDICT_TIMEOUT",
+      "LOCAL_ML_URL",
+      "NEXT_PUBLIC_API_URL",
+      "API_URL",
+      "NEXT_PUBLIC_SUPABASE_URL",
+      "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"
+    ],
+    "seeds": {
+      "training": null,
+      "reason": "No training performed; inference in eval mode"
+    },
+    "known_nondeterminism": [
+      "CUDA mixed precision and hardware/library differences",
+      "compression metadata",
+      "browser screenshots and FPS"
+    ],
+    "clean_install_gaps": [
+      "API requirements omit NiBabel/SciPy used by volume tests and NIfTI",
+      "NumPy 1.26.4 cannot be assumed installable under Python 3.14",
+      "pnpm lock ignored and workspace allowBuilds has placeholders"
+    ]
+  },
+  "inputs": [
+    {
+      "id": "slicer-ctchest",
+      "uri": "https://github.com/Slicer/SlicerTestingData/releases/download/SHA256/4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+      "sha256": "4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+      "privacy": "public_demonstration"
+    },
+    {
+      "id": "monai-wholebody-lowres",
+      "uri": "https://developer.download.nvidia.com/assets/Clara/monai/tutorials/model_zoo/model_lowres_wholebody_ct_segmentation.pt",
+      "bundle_revision": "13f6d33ae9de6664571d935ee647039f477c3fad",
+      "license": "Apache-2.0",
+      "sha256": "c3ab55eb979785fdcb30690872c210bbeee73d79a170c32fdaa1eca117779f90"
+    },
+    {
+      "id": "oncoscan-weights",
+      "location": "docs/modelo-v2-densenet/weights/",
+      "access": "Obtain .pth from model owner by authorized private transfer. Training/licence provenance not re-audited in this packaging task."
+    }
+  ],
+  "lineage": {
+    "source": "slicer-ctchest",
+    "conversion": "scripts/prepare_lung_demo.py",
+    "geometry": "apps/api/app/services/ct_volume.py",
+    "segmentation": "apps/api/app/ml/segmentation.py",
+    "attribution": "apps/api/app/ml/runtime.py",
+    "assembly": "apps/api/app/ml/volume_pipeline.py",
+    "configuration": {
+      "pipeline": "monai-hirescam-volume-v2",
+      "segmentation": "monai-lowres-training-preprocess-v4",
+      "window_center": -600,
+      "window_width": 1500,
+      "max_render_xy": 384,
+      "max_render_slices": 384,
+      "roi": [
+        96,
+        96,
+        96
+      ],
+      "segmentation_spacing_mm": 3
+    },
+    "outputs": "apps/web/public/demo/lung-ct/",
+    "evidence": "docs/volume-rendering/real-ct/"
+  },
+  "artifacts": [
+    {
+      "path": "apps/api/app/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "b4f4e502ed868db7d7cea29ab7fd0087bda3c83a91ddb3312d6693eddb1f77f8",
+      "bytes": 15,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "e28e6b1743fc1cd5aef82d8182a2d8d1c28113d35392a3e4cb4eff9fe14bae6d",
+      "bytes": 15,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "2230a20830e39c2227d3faf4a0f9a3b5fe7098a8b21857772adc9599d8d760a9",
+      "bytes": 18,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "9e69d80ee4b343a2a90df3a220a1dd981eabcfcc92c926b3cda1048609cb7d33",
+      "bytes": 19,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/analysis.py",
+      "role": "code_snapshot",
+      "sha256": "3b28c4a4d1d04042d2d55f31ecb5da86175a745a85fb3ebd3275999adfa09f52",
+      "bytes": 11422,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/batch.py",
+      "role": "code_snapshot",
+      "sha256": "1e6725f447b79fbe2487a17ef92ef63a58be393ac5154fd97cf7452b0ba13c8d",
+      "bytes": 26940,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/dicom.py",
+      "role": "code_snapshot",
+      "sha256": "8ea93fccc0ce19e96437b28c9d59c1f11b646212232057f74ab4ebb314da7ca4",
+      "bytes": 32982,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/health.py",
+      "role": "code_snapshot",
+      "sha256": "94dd5c6cbece7c6c319d27b6363e90660d2c17dce0b8aedf107166ebd1e04908",
+      "bytes": 212,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/api/v1/routers/volume.py",
+      "role": "code_snapshot",
+      "sha256": "5b41b9aecfa0ca5d6515212abf79740dc54c87ff264f10a969f16b2e9fc758bc",
+      "bytes": 4590,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/core/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "5d21070956458d55a1d0c8893c0da184747f5cd2fa96147a58c86d7389d4860c",
+      "bytes": 16,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/core/config.py",
+      "role": "code_snapshot",
+      "sha256": "11fe75c310dbf1b818343efb3d8d507847d4bac9ba165a4de2849b8b7fbb143f",
+      "bytes": 1255,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/core/deidentifier.py",
+      "role": "code_snapshot",
+      "sha256": "0b706da78970eae1224d9355586b01c6a9bfc150074c9be5840727f97789e5c3",
+      "bytes": 6574,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/core/logging.py",
+      "role": "code_snapshot",
+      "sha256": "8a806e22f763bcdec7d3f59ee0317fa3b37995dd6ddd753a60fe2c333722becf",
+      "bytes": 2968,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/core/security.py",
+      "role": "code_snapshot",
+      "sha256": "82367444ae75542d04ef419706a12073fd539c34e31dd4f2866cedb3afbde1ee",
+      "bytes": 2516,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/db/supabase_client.py",
+      "role": "code_snapshot",
+      "sha256": "ba339fd3ce6fdea63c930635acf0fb8f7f3d7946e81b6ad6b185995d605e4e41",
+      "bytes": 332,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/main.py",
+      "role": "code_snapshot",
+      "sha256": "9533fc48316aa98db21a982bb52bf34954c88eab08344ef3e6e669d4ea269dfb",
+      "bytes": 1433,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/ml/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "eff1f86aed202651798b91d2a161717330c1ae6d8dd2ed601782745974257c8c",
+      "bytes": 79,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/ml/runtime.py",
+      "role": "code_snapshot",
+      "sha256": "8c5201410a28a46b24f85c5f13de2a83804eda7e86b55e2e45f3039296e8fc5f",
+      "bytes": 9433,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/ml/segmentation.py",
+      "role": "code_snapshot",
+      "sha256": "b285e358d61b7551c6ed6bed04cdfc45404fbba30681ae71c06405e1c2421ba7",
+      "bytes": 4943,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/ml/volume_pipeline.py",
+      "role": "code_snapshot",
+      "sha256": "07769c7664bc32351487f79a071b9f7bf2f632872b29604e2e15981a233caea7",
+      "bytes": 5264,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/services/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/services/ct_volume.py",
+      "role": "code_snapshot",
+      "sha256": "473fad71f328e60f361fe4c6074f1f5a3254663430b1bad669c8fdb465d2b6e6",
+      "bytes": 7480,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/services/hf_client.py",
+      "role": "code_snapshot",
+      "sha256": "0a4cc64c9ce3cebbb4957547223eb58104ddb1add52a6c26a4f9dd75603be830",
+      "bytes": 3200,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/app/services/volume_geometry.py",
+      "role": "code_snapshot",
+      "sha256": "2c9f11047e74bd099392110865033f635c4b2f756931f419c7938ba31a6422f8",
+      "bytes": 2414,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/__init__.py",
+      "role": "code_snapshot",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/conftest.py",
+      "role": "code_snapshot",
+      "sha256": "e77171763a9938e9ced24cc2677eb0c384dd2d556c1304fd7574d0e19cd1e565",
+      "bytes": 4231,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_analysis.py",
+      "role": "code_snapshot",
+      "sha256": "d52dd0131c280ebb4544d153a0b74f5058fa7711cd5336f203da048921550edc",
+      "bytes": 3499,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_deidentifier.py",
+      "role": "code_snapshot",
+      "sha256": "b41dcbe11c122f57373da8464be3495e8061dfe0328c911be675ab2347e13f86",
+      "bytes": 6877,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_dicom.py",
+      "role": "code_snapshot",
+      "sha256": "423e09dedd7f53f6de98984ab5063b6bd03099e7777b7a1c72e3744f66dc5201",
+      "bytes": 9478,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_health.py",
+      "role": "code_snapshot",
+      "sha256": "edef7da4c6041900c8439d1548931e0c19109a890dbb00a36272e2b3ef0932e6",
+      "bytes": 479,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_logging.py",
+      "role": "code_snapshot",
+      "sha256": "56c09be7fd1747e8ed8f7d214e4db7e6a1df749af6a2207fd6f23e988288b7eb",
+      "bytes": 2313,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_volume_artifacts.py",
+      "role": "code_snapshot",
+      "sha256": "3db67a2dfc2cbd14c9e218ef3d7a598800bbc001513d38fdb203b7bfc965fc25",
+      "bytes": 4076,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/tests/test_volume_rendering.py",
+      "role": "code_snapshot",
+      "sha256": "f116672f9b1fd54c8141e16f26c5e93e2988a0a883bf4409687c543e5c27501c",
+      "bytes": 5187,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/admin/medicos/actions.test.ts",
+      "role": "code_snapshot",
+      "sha256": "042b2d6dbd2ad7b744adf45a04a255ddb45f6ffaaf83febf6c280b8941e010e7",
+      "bytes": 4564,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/admin/medicos/actions.ts",
+      "role": "code_snapshot",
+      "sha256": "6237334a9430c3c8af854e350c5c76cb2c990291ab75fcc6ba192c0726561c2f",
+      "bytes": 1978,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/actions.test.ts",
+      "role": "code_snapshot",
+      "sha256": "0565e2342aa037234e873eca1304b689c83265a51cee6e9ec96670659c5786d3",
+      "bytes": 2403,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/actions.ts",
+      "role": "code_snapshot",
+      "sha256": "4461b36b88198beed8bf4cebbcd1db0f59e230eee7db24bee01005961d518cb1",
+      "bytes": 3271,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/reportes/download/route.test.ts",
+      "role": "code_snapshot",
+      "sha256": "5e016f26b17b52c9b9e964094d35afd2a405758d3355529dcb5b82b4642965d4",
+      "bytes": 2084,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/reportes/download/route.ts",
+      "role": "code_snapshot",
+      "sha256": "b01ec1c5b595adb2ce6fbaf3637e526635d2e0bc6ed8eb21e3109e434bbe87ec",
+      "bytes": 2268,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/actions.test.ts",
+      "role": "code_snapshot",
+      "sha256": "04df5bac829e29931d4d3303af380823392ba16899579f9416b6cc4beec876af",
+      "bytes": 5163,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/actions.ts",
+      "role": "code_snapshot",
+      "sha256": "302f749b4d4678dc1dccbb97f0a3611d4f9c896e38738d64b7c72dbfc7ddb612",
+      "bytes": 3737,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/annotationActions.test.ts",
+      "role": "code_snapshot",
+      "sha256": "999f341b7b4a9ee7139572cebe7829ee8d41a59d0b4dc20b62f365fb557fb04d",
+      "bytes": 4680,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/signup/actions.test.ts",
+      "role": "code_snapshot",
+      "sha256": "527d08e3c58daa9bbecbb2d3c51fa3d74ce7ab9b08bcbccb09f90fe7c2302dd1",
+      "bytes": 4014,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/signup/actions.ts",
+      "role": "code_snapshot",
+      "sha256": "8896ac3d2282aeb5be04db56969be86b901b7a6ae831ee5d2765873eaf7e2065",
+      "bytes": 3060,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/volumeClient.test.ts",
+      "role": "code_snapshot",
+      "sha256": "571227d034815f5ed918f56929e5a44cfda87a73d8d8a82182bde3bcd859926d",
+      "bytes": 2910,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/volumeClient.ts",
+      "role": "code_snapshot",
+      "sha256": "e598b6e4eccd41e8844b12ae3e7d9348a4939f04154cc06d16bcd03b288f360a",
+      "bytes": 3699,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/volumeGeometry.test.ts",
+      "role": "code_snapshot",
+      "sha256": "caacfa75df78cb6bfff6a89c74f7dbedafe1c685838b78c479995439c19b92f3",
+      "bytes": 2523,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/volumeGeometry.ts",
+      "role": "code_snapshot",
+      "sha256": "82491e2320cd258b6077c43e95a9ef10731941d829f2db102ca55f199a8231aa",
+      "bytes": 2888,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/volumeShaders.ts",
+      "role": "code_snapshot",
+      "sha256": "5d14f8174a133ba704f44a8f4e11cecb6089f2fcd80af3d9485b41370dae3a80",
+      "bytes": 7958,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/modelData.ts",
+      "role": "code_snapshot",
+      "sha256": "42ae12ab1a6fce7e1781ee9a72fb51d8b4fca5409ddf416dfce52c7aaf057f17",
+      "bytes": 9296,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/markerMath.test.ts",
+      "role": "code_snapshot",
+      "sha256": "8558b572cfcabc39c03a4e7526741373e3275db4586447d60510fdfe45cfa10c",
+      "bytes": 2645,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/markerMath.ts",
+      "role": "code_snapshot",
+      "sha256": "fca87e607d01aff9ae07fb6dc9b2866b702518a38f6a8eb42c7db64a550dfad4",
+      "bytes": 3122,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/markerState.test.ts",
+      "role": "code_snapshot",
+      "sha256": "ad31f25ebdd7be56ecf97d0ce290edfe5bd77befe1b7f8cba2534d4dfb46f91b",
+      "bytes": 4106,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/markerState.ts",
+      "role": "code_snapshot",
+      "sha256": "07f9380191d8c7de4889c779ddb9608326935183cc1ffa59f03f71dcf42c467c",
+      "bytes": 5118,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/panZoomMath.test.ts",
+      "role": "code_snapshot",
+      "sha256": "3a9182348502ccad27acbca57d8fdce9069c87494547f68c51d4b3ecfee88a8c",
+      "bytes": 2912,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/panZoomMath.ts",
+      "role": "code_snapshot",
+      "sha256": "d958a8a278a1c3280ab180df425697ff048a2aacf58dab24dcc52f8230c20dd7",
+      "bytes": 2228,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useFocusTrap.ts",
+      "role": "code_snapshot",
+      "sha256": "2d3b4e12be7b67d6d4f4427a6bfdb992a7da9992246eabd7653d24f597e0bffa",
+      "bytes": 1897,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useMarkerAutosave.test.ts",
+      "role": "code_snapshot",
+      "sha256": "ad048569fb27172214f1565ea82d1e9c5dcc51197c56b948ddad398a81c97116",
+      "bytes": 5372,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useMarkerAutosave.ts",
+      "role": "code_snapshot",
+      "sha256": "0b2b39c595410e27eb502150b9ec312d9b5cded7b215d3ebf96237951c1dcaf4",
+      "bytes": 5377,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/usePanZoom.ts",
+      "role": "code_snapshot",
+      "sha256": "220694f991d85b8045717238172bf22cbc7d246b6ab388944cf6eeaf95ddef50",
+      "bytes": 5257,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useToolPointer.ts",
+      "role": "code_snapshot",
+      "sha256": "39222fc782eb6b9e17579af904b004cc608909b2f7472194bd84cfa376e41af7",
+      "bytes": 2439,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useViewerFullscreen.test.ts",
+      "role": "code_snapshot",
+      "sha256": "b37af4a4ad0d413cb95c7e43ef88f09abdd8316cebcd82adf1f1848628a83bb2",
+      "bytes": 2339,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useViewerFullscreen.ts",
+      "role": "code_snapshot",
+      "sha256": "6f5b72f4ae9243a88fea8fe5206234571cd22cf2d37057943046d1d52cb31a41",
+      "bytes": 1761,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerExport.test.ts",
+      "role": "code_snapshot",
+      "sha256": "700de1a4da037ace0a132d0dac284da09be62bc65adefc7e12ee9babc35f5b53",
+      "bytes": 1561,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerExport.ts",
+      "role": "code_snapshot",
+      "sha256": "6c8e25db27a90e075d3cf997f74cdd8f3d99de1a57eebd57c21f93a116d50b53",
+      "bytes": 1202,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerKeys.test.ts",
+      "role": "code_snapshot",
+      "sha256": "d978760d29133df616d7bf10a182163df72d2306378c1c00bb58bfb3938a3d2c",
+      "bytes": 5043,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerKeys.ts",
+      "role": "code_snapshot",
+      "sha256": "ec715be3cb5a89e5126762423b93f366534ec6649e473b644b6836c64a5ef220",
+      "bytes": 4425,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerTools.test.ts",
+      "role": "code_snapshot",
+      "sha256": "f2f1254f5572e4c8921bc1add55690de5461bc6bc9314f58fcc6afa7780a32e0",
+      "bytes": 1642,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/viewerTools.ts",
+      "role": "code_snapshot",
+      "sha256": "c32028741cbded0fe1fbd9f93b61f6636bc8c729bc390f36788e577949c0deb3",
+      "bytes": 1623,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/lib/consent.ts",
+      "role": "code_snapshot",
+      "sha256": "36b042debd10dab8f3433c58fed6e7f97a0879b8bdd0fb91aa30c676214bae0d",
+      "bytes": 465,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/lib/references.ts",
+      "role": "code_snapshot",
+      "sha256": "df4ddc0f44771593c5251c7ea44e1478e6f9e68d70e65a0f050b0ffcd07bef36",
+      "bytes": 6548,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/lib/uploadAnnotations.test.ts",
+      "role": "code_snapshot",
+      "sha256": "457eb6caa8593ac1c4f89d56d471329818d8e98199f360f8493a15a1bdf05d2d",
+      "bytes": 2955,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/lib/uploadAnnotations.ts",
+      "role": "code_snapshot",
+      "sha256": "3aa4f72562199a8e9569e72a615ab0350a305821b87e8df9f9f75a2cdaafe8a4",
+      "bytes": 4399,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/lib/uploadReview.ts",
+      "role": "code_snapshot",
+      "sha256": "6f36b64f7fe16f104afeed0955691f6030b775548484d7a7635aff5f6400e87f",
+      "bytes": 6439,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/proxy.ts",
+      "role": "code_snapshot",
+      "sha256": "c1b220b6fb0b4b907788fea560e7e697489e65a8284727a306a768a5efd18945",
+      "bytes": 366,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/utils/supabase/client.ts",
+      "role": "code_snapshot",
+      "sha256": "74d7daa07b9aadfeb37fc8786c8f0c53b1ad5cdcc75a3b38903fd51058af2ffd",
+      "bytes": 273,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/utils/supabase/middleware.ts",
+      "role": "code_snapshot",
+      "sha256": "350b1408463637616e85c48e51646455c0d4514f659bd1dff79def1a9dff314c",
+      "bytes": 926,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/utils/supabase/server.ts",
+      "role": "code_snapshot",
+      "sha256": "b2bcfc4559faf813c266a0ce25181fe720d1ed0d192c6dbbd01ff5d7002985fb",
+      "bytes": 683,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/cuenta-pendiente/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "6ef04c53517d3de3ff90bcc17092dc7914430933ab4ff4368317b566200402e7",
+      "bytes": 3023,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/demo/pulmon-3d/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "47a472b7f0a548e00bdbabe63cf811ca87c6ac34eb6c3586657dc69dbf0df127",
+      "bytes": 2208,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/demo/pulmon-3d/ViewerDemo.tsx",
+      "role": "code_snapshot",
+      "sha256": "7cdfb62b20c0a41fd015502ace06a4c683daa67a9f6cf8792f6acdc8fc890be3",
+      "bytes": 439,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/layout.tsx",
+      "role": "code_snapshot",
+      "sha256": "9b181abaead77e3ad8dedb3903ea7486f9863fbe51eb9f54455ffbefcf577363",
+      "bytes": 908,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/login/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "603c632075c4e314474943954221b02087f7f2734a11db01a2af538a7024283c",
+      "bytes": 4838,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "b892c4a22aefe4e0b8cef0b94e90b6c98b002428c92bee5a369634c234a21569",
+      "bytes": 21010,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/admin/medicos/[id]/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "aedde7a80fa0497a49b8bb2b36a1c6bfaebaeb68542fa8cd931bbde83eb364ac",
+      "bytes": 5551,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/admin/medicos/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "2a9edfdf6ecc08f99b63bd6226764a1f79a2bf4507a4efbd559ed4871ad0c949",
+      "bytes": 4132,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/ajustes/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "3a85c50255b995d25d1a6fe46cea80f0404c2eb48927a57c066f1198d6a903f4",
+      "bytes": 687,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/ajustes/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "5f1200baf118aedb7520261a5342038dadaa76fa5e724591ca7f97463eaa96da",
+      "bytes": 3344,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/alertas/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "f5292ae823ecadefea0020b643730124a2aec471f6df02a1582cefeb21497305",
+      "bytes": 730,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/alertas/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "f6861e0e2d2ba21e8ae4578c9acd516e3516281d2cb658ba5613d5b4faf18b18",
+      "bytes": 6418,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/analyze/[id]/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "02e891acc337d9ac7d4884cb78ca3da58a0393cd6b0e710c083ceb018c3373ac",
+      "bytes": 693,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/analyze/[id]/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "25931ef59db063fa91ee8014338382a59174dc1fed189fd90eb5fe2b2a294644",
+      "bytes": 266,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/analyze/batch/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "bc56ba9520e3b4279282c15eab955c13955b30e6eedaa474360022fa0eca0dae",
+      "bytes": 489,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/analyze/batch/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "76cd6a424ad8db45b984115ff6d8e0b0fc0b386415639a7766defe7d3a2b45f8",
+      "bytes": 38204,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/analyze/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "7703ff1b3fa60627e691cbbdc2c5019407d9bfb5aa751b3e59dca7abafb32230",
+      "bytes": 124,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/error.tsx",
+      "role": "code_snapshot",
+      "sha256": "d11d6bc17fd2e4017b150438c154b6857eb72af059be2c5a155f30db0bf1be1c",
+      "bytes": 1753,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/layout.tsx",
+      "role": "code_snapshot",
+      "sha256": "245c763fa233f819df97a1b59f59b7d4ba29792efae1543c01fe2541809ce857",
+      "bytes": 902,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "f5a54e0282cb3218deb75860b8bc67985cdf74a678993baa7498dee19e3f84c0",
+      "bytes": 1442,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/logout-button.tsx",
+      "role": "code_snapshot",
+      "sha256": "73cbc8f8808dc349d79c1b7438e8e1eeac700b56194f052339a9dc687c7c68b4",
+      "bytes": 903,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/modelo/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "d0284621e7b21187e870e84a539fe6811dd859a6a2b6861c299ced6c9d3147c4",
+      "bytes": 757,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/modelo/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "30b76e58de0d3835d6c35d87abf262a91b4bcc15c66215c0aa02e231dbf8c145",
+      "bytes": 34333,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/[id]/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "1c7210025dda5e851bca2b4277f20d88a4057f1e1b8c4c4db33277193ffcc39c",
+      "bytes": 5645,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "b87fde932d742e7b95b2a1eb6f25c9b1bddb5c33027f3ccb2fc6031f173a1fad",
+      "bytes": 819,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/nuevo/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "a18ed574419497a805435c1181b449e7b8d6fdaa6b4c5d5c5880def07dc40ff3",
+      "bytes": 3992,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/pacientes/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "60025793fc4fd44e5948ed883c86a98f85be94fbc6975ca976e8664463d5860d",
+      "bytes": 6471,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "6b01f6109c3c4c78f0d8c31b8cc5f2f999a646545fd39021cc59c7f44debee37",
+      "bytes": 17307,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/reportes/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "100180b01c90f8f71c72ea0eebeccba01a0e8a58f5c5d6a2060e580651524d67",
+      "bytes": 947,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/reportes/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "a3a0f1e7cd4e12f557b5adbdfff6acefd5342c97c0a12dda8dd4897d42f5a330",
+      "bytes": 7879,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/upload/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "0ef5da25d4e72d8f0a8e5bf8dc7034588c0b8be3b4091778f990a75c88495951",
+      "bytes": 858,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/upload/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "8bced1952e4de82b6ebbe4bd92996493878e8ab6911870b16b8c393f5f29baf9",
+      "bytes": 37151,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/ClinicalReviewForm.tsx",
+      "role": "code_snapshot",
+      "sha256": "54be7c3bae2413d969c75113ac796fffc2c3aec7728162c1e462a5b288864b58",
+      "bytes": 12269,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/informe/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "9be93f70c440450446bb04b60fde5ef499f7e7fed5263ddb671fd2f110d13c3a",
+      "bytes": 30624,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "a67cd9d9a1bdb1ff8c4b26931ea1de81573505766fa936fe50a964fc21ab5f79",
+      "bytes": 793,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/[id]/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "6cd040d6b703200f322ef53e5d546e64bbf341a784cabe5520cfa968395c6e91",
+      "bytes": 21569,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/BatchHistoryTable.tsx",
+      "role": "code_snapshot",
+      "sha256": "a89193ca462c7cb69a1d49d5a9d52b869d733706f6ece2780e3dc1605646049a",
+      "bytes": 14805,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/loading.tsx",
+      "role": "code_snapshot",
+      "sha256": "e66e04adfe801e8f832f5485ec5acdb84f24f97441e208e88e714d897f02f8a5",
+      "bytes": 845,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/platform/uploads/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "6dff06de0447df1394ef7b02e3a142fbddbe5d8902b1e7aeb116484af59f288b",
+      "bytes": 5662,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/signup/page.tsx",
+      "role": "code_snapshot",
+      "sha256": "b244fdc8b8c31b37ccf24c094f76720aef4dfcdf839784e74a11c476a13a1dde",
+      "bytes": 1872,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/signup/SignupForm.tsx",
+      "role": "code_snapshot",
+      "sha256": "3fb5b4dad9bfa92df7a16bd523d959c4ecfd4b8a7a7843b3ff6e9f223ed1deb8",
+      "bytes": 6683,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/AnonymizationCertificate.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "938043aa02a877b20e48c3f41761cef4ccb226bd9f5af9f25b5fb4565ce9f116",
+      "bytes": 1994,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/AnonymizationCertificate.tsx",
+      "role": "code_snapshot",
+      "sha256": "5b221ee2d77e1573385d7d837410bfb0ceea854dbe3dcceb115eeeea32cd9cce",
+      "bytes": 9292,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/StudyViewerTabs.tsx",
+      "role": "code_snapshot",
+      "sha256": "c2ac51dbef5a0cd883d95ad2388e510ff9f549377082a2b9a04a4bc90b8b1a5f",
+      "bytes": 5220,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/dicom/VolumeViewer3D.tsx",
+      "role": "code_snapshot",
+      "sha256": "4183636b5e677c6fa8f0f8cced2d04cc2b26e407fc2f6a3fe1519328a9fe2c3f",
+      "bytes": 21597,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/AnatomicalLungsDiagram.tsx",
+      "role": "code_snapshot",
+      "sha256": "c843c1df1de4f9922883b70031975b367c7e5fd658ce3ac548d7c3f9016d20d5",
+      "bytes": 8536,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/HistologicalSubtypeCard.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "9ca147f15e29320ce144ad49797089f653294c5ebb4a53189a03d4d8a9ff5664",
+      "bytes": 1969,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/HistologicalSubtypeCard.tsx",
+      "role": "code_snapshot",
+      "sha256": "ca7e1fa71f39dd4c36dcbb1204c826f665e5e8ea1628eb2d52eaf01202263f06",
+      "bytes": 5913,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/LungLobeDiagram.tsx",
+      "role": "code_snapshot",
+      "sha256": "5433b3e7a114c0ea8fc5d04031fd686e61b4ce667ed3a7fbcc8ce647ab5736f2",
+      "bytes": 7580,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/MorphologyBars.tsx",
+      "role": "code_snapshot",
+      "sha256": "3ee5c9ee92c1569d8c78d54e77ed7e1e29c6a7d6315d20bf141964b0a631de90",
+      "bytes": 6211,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/ReportPrintControls.tsx",
+      "role": "code_snapshot",
+      "sha256": "a6f085f6ebb2effff157ba0c7e1e066fa3e71cb9d0a54a64ee8c4a984c87399f",
+      "bytes": 2692,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/informe/RiskGaugeBar.tsx",
+      "role": "code_snapshot",
+      "sha256": "d8e2e1957979fd226d78c2713dd6aa0296c321daafaf6622ca601df24fe6146d",
+      "bytes": 5181,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/landing/HeroDemoViewer.tsx",
+      "role": "code_snapshot",
+      "sha256": "69e9eddfcc44dc85b9ddc2b06bc103279b6dcab1fd0ab87ad7a5a567b3a65e57",
+      "bytes": 13473,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/layout/Header.tsx",
+      "role": "code_snapshot",
+      "sha256": "0b65b5ec940a5c79cf43ff2a999880f0bb17a596f4c5bf7b2e073806231d8343",
+      "bytes": 1792,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/layout/PlatformShell.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "bd6a2103791bed450397e641b421d71a491a504fec40a2ac26bbf08757b7cbe2",
+      "bytes": 2428,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/layout/PlatformShell.tsx",
+      "role": "code_snapshot",
+      "sha256": "b588cc7369cc05af168555108534cde62388e731a2670c348a020d9a3fafdb52",
+      "bytes": 3049,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/layout/Sidebar.tsx",
+      "role": "code_snapshot",
+      "sha256": "06dab5987ff33425622392563b952f25bdb3005546952af44dd0f730b39e0b73",
+      "bytes": 7262,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/AccuracyChart.tsx",
+      "role": "code_snapshot",
+      "sha256": "46e0ad12023b05bebe40ed2295c5b0d12fbfd227b65d2ec031eff4484caa811e",
+      "bytes": 1849,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/ArchitecturePipeline.tsx",
+      "role": "code_snapshot",
+      "sha256": "fc591c21451632471eb7d28de92705d328822e78723e57f8dad640dfb7fa6677",
+      "bytes": 13629,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/ConfusionMatrix.tsx",
+      "role": "code_snapshot",
+      "sha256": "6466ef631bc1651f12e2f58ffde9d204683efd5019d2278b33248a52c3a72bb7",
+      "bytes": 13671,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/FeaturesTable.tsx",
+      "role": "code_snapshot",
+      "sha256": "afac89d2865143f650f9752ea21ab4ded009cc30049e89623bd03a4816324a56",
+      "bytes": 3513,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/RiskDistributionChart.tsx",
+      "role": "code_snapshot",
+      "sha256": "2014b95fe6242d298ecfbc4b416c75f54d02329f8833f184ef4fabd4e3edefb3",
+      "bytes": 2434,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/ROCCurve.tsx",
+      "role": "code_snapshot",
+      "sha256": "d0a385b96c9c0fddc6fd4934326a7fb02a0109d39662b078750adc089e9162fe",
+      "bytes": 2296,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/modelo/ScoreDistribution.tsx",
+      "role": "code_snapshot",
+      "sha256": "b9b28589ff86b77f7091c49fbf2360267242a0a3c6e3662fc1fe58eec4fee465",
+      "bytes": 2689,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/referencias/ReferenceList.tsx",
+      "role": "code_snapshot",
+      "sha256": "97cdf7ba082a97f22e4105ec760f45a2c3fa69853f5c5884d695dbf807e2b069",
+      "bytes": 1436,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/referencias/SourceLink.tsx",
+      "role": "code_snapshot",
+      "sha256": "4c5226fa0a85b0ebcfb296d63e46bc55d1f4e9680b197fb3cd6a395a1c3a2f76",
+      "bytes": 1186,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/AlertBanner.tsx",
+      "role": "code_snapshot",
+      "sha256": "3c776e823f20e1a92b75b0f3ab6cf0d17dc2ae19f14b925d8878cc22a58f4928",
+      "bytes": 2707,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/BeforeAfterViewer.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "746977279e782cdd059519722ebe2615cd22a72122b882ef990faf402af4639c",
+      "bytes": 24209,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/BeforeAfterViewer.tsx",
+      "role": "code_snapshot",
+      "sha256": "eb92df623daf4b92b284573e5344f99bfa82c9f9e6e8ba430c916b1060f96454",
+      "bytes": 37283,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Button.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "ca00b42417001f279fdc6ace96678130ecc08cee49cd0fffbc133bcd2bc1bf30",
+      "bytes": 2015,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Button.tsx",
+      "role": "code_snapshot",
+      "sha256": "4536bde9cd344fe7534dbbab6ccb637b151e1080710e1938eff877cb63168077",
+      "bytes": 2138,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Card.tsx",
+      "role": "code_snapshot",
+      "sha256": "c419c596138d589230e645546f53ae79461d927256c0ca43f7455d32cf5a191d",
+      "bytes": 819,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Input.tsx",
+      "role": "code_snapshot",
+      "sha256": "fd9b3ee7c8d7a8566a5b9244d2fd16bc0c12944f2332bddad3b07025de3b98a2",
+      "bytes": 1446,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/MarkerEditor.tsx",
+      "role": "code_snapshot",
+      "sha256": "2408e873a71db4384822593b2c90fbb9c9c4bcd55f979447829f38d47cdef83b",
+      "bytes": 4408,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/MarkerLayer.tsx",
+      "role": "code_snapshot",
+      "sha256": "a08dbb58d8e7c0e86a98159213a98a20b52cc5a87e520e7be8d763465f3e06e8",
+      "bytes": 2996,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/MarkerPanel.tsx",
+      "role": "code_snapshot",
+      "sha256": "ed8057f5a510a5719410bd194d86d9d9ca87c7ff97f40466ccdef125fe24e850",
+      "bytes": 14429,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Modal.tsx",
+      "role": "code_snapshot",
+      "sha256": "71756687d42d9dbd43bce5ae1ddb19714422e546676450960a715aeb6d98f687",
+      "bytes": 3341,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/PageContainer.tsx",
+      "role": "code_snapshot",
+      "sha256": "06e406786a97cf2daf2c7ffa42cd6249cb0a7a8ed1e2be1fbee37c783b2185d2",
+      "bytes": 747,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/PhantomButton.tsx",
+      "role": "code_snapshot",
+      "sha256": "fc521d7fa48f64e432f244a2383b8abd91d8743d954c706744cbc09c26f4408c",
+      "bytes": 1387,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/RiskBadge.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "a155d80c649d49c4f9a73c842dd221bc5f829bfddb128ad756b99e1e33ea8a64",
+      "bytes": 1351,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/RiskBadge.tsx",
+      "role": "code_snapshot",
+      "sha256": "f8ad686fbb73ae23b5c6708e484b4872b86c7fb85b0084744374f90228d32af7",
+      "bytes": 1283,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/SectionHeader.tsx",
+      "role": "code_snapshot",
+      "sha256": "6630721746cceb445e2418a19870fa805977bce509f946c37fdb183cc3f64edb",
+      "bytes": 683,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/StatusBadge.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "b84ba9549e61d8e444b52785fb24e64615a3c4ddacd7a79a0904ec4c07fa6350",
+      "bytes": 1932,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/StatusBadge.tsx",
+      "role": "code_snapshot",
+      "sha256": "f50966992311776c13a0f63ca74301c7f99fd2c5e9cd3d8f5a29d49cf60369f3",
+      "bytes": 1170,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/Table.tsx",
+      "role": "code_snapshot",
+      "sha256": "ee054e9c53f1e6d6a7a57b1bd8e2e0784286cbf27dc3dd799220bb04e0ff1f0e",
+      "bytes": 1590,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/useFocusTrap.test.tsx",
+      "role": "code_snapshot",
+      "sha256": "88f6421ec6c58ad0d731c31cdc2ff976eafc6432b9001c8ba00882f4540124a6",
+      "bytes": 2424,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/ViewerExportDialog.tsx",
+      "role": "code_snapshot",
+      "sha256": "a46780de8f619f4927983aacf760249f79a2e3e2747f38d4b0ea2aa3cc99025e",
+      "bytes": 2075,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/ViewerHelpDialog.tsx",
+      "role": "code_snapshot",
+      "sha256": "8fe5a38733bf27c9f7f1bd33a4cf9546fa24f1383e63e43002564edd90c25812",
+      "bytes": 1004,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/components/ui/ViewerToolbar.tsx",
+      "role": "code_snapshot",
+      "sha256": "567388d4efd3ef74797c7ed51c5c286ba7836c46ed18e52c39e45fda5c12bc66",
+      "bytes": 9802,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/src/app/globals.css",
+      "role": "code_snapshot",
+      "sha256": "a1718a936808c05ea4b2dccdeb49809d504f63695c2cdb9df8425eae86df6030",
+      "bytes": 2365,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": ".gitignore",
+      "role": "code_snapshot",
+      "sha256": "b7b1058e01b0345bce1c473c72ea7ba0109708931fe138c8ba7b24e4cdcba75f",
+      "bytes": 989,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "README.md",
+      "role": "code_snapshot",
+      "sha256": "94a56cd93c138be9aca8dc14b1438fc0e30d6fe37d3e9142451f0a1af85cf5d3",
+      "bytes": 5511,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "package.json",
+      "role": "code_snapshot",
+      "sha256": "b166ee8039f1971fb56ba9da16ec8da0c80d399629d620ff5e49579624774954",
+      "bytes": 238,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "pnpm-workspace.yaml",
+      "role": "code_snapshot",
+      "sha256": "541c9f09bf29f96cc27cf1422a7b11e98d8dd4d51575197f00ddb300d2ff1cab",
+      "bytes": 91,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/web/package.json",
+      "role": "code_snapshot",
+      "sha256": "33948636a2851aa71c77921464a5932b77ae47e556b3c25658ef446989e18b81",
+      "bytes": 970,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/local_ai_server.py",
+      "role": "code_snapshot",
+      "sha256": "e30df1fa3c7fdbe82bafc7845c116e88471e5f4748285dfb5c37a12f42f35f56",
+      "bytes": 210,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/local_ml_server.py",
+      "role": "code_snapshot",
+      "sha256": "ffa5848daf7efe71bcffdf46667dc56d250807cea708af9951591b32530d5de9",
+      "bytes": 4651,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/modelo-v2-densenet/entrenamiento_e_inferencia_v2.py",
+      "role": "code_snapshot",
+      "sha256": "00fe383bce739a65d0d9f4f174fd5a1fa9383fd1cfd5240f1a1c3286db02d418",
+      "bytes": 9570,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "scripts/prepare_lung_demo.py",
+      "role": "code_snapshot",
+      "sha256": "e631cfbc7390a611a53574bc3b152c0414047d8b45b491fcf9f852e02a65f78d",
+      "bytes": 3470,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "scripts/create_test_samples.py",
+      "role": "code_snapshot",
+      "sha256": "dcc3cc7874b9d788f9212b644d2aeb036a74cace50595a8bbe42b1d355e7e24c",
+      "bytes": 12947,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "scripts/start_local_services.ps1",
+      "role": "code_snapshot",
+      "sha256": "42955fa03c22e098a6b9ecf9b91b45314963d45b13dd0918fc4049fbcf8239ad",
+      "bytes": 2167,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "scripts/verify_volume_handoff.py",
+      "role": "code_snapshot",
+      "sha256": "00620037e4f79b3c7b02281a0926f138c9c818e01affc94d02e13b832272a012",
+      "bytes": 2093,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/requirements.txt",
+      "role": "environment_declaration",
+      "sha256": "1a3d5221e110193df93afd5fbad7fca19d4e464292f761724893840d224d6df4",
+      "bytes": 174,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/requirements-dev.txt",
+      "role": "environment_declaration",
+      "sha256": "6cbe8a5330b9022be1c1a145de0723f3716f368c6a4b3c9523ee8cf8b5ac7eaa",
+      "bytes": 157,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/requirements-ml.txt",
+      "role": "environment_declaration",
+      "sha256": "142c6ecc6a798e1c58a2b61b9223ceb1f0d64f54182559690372bce6cf649542",
+      "bytes": 436,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/requirements-ml-lock.txt",
+      "role": "environment_declaration",
+      "sha256": "d075aa8f87a4b0ac21754ab2125727924971de36ae1fe253b5191d2e9818b01e",
+      "bytes": 707,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "pnpm-lock.yaml",
+      "role": "environment_lock",
+      "sha256": "17c814b167307942d3609c7b9d916ceddb85839573ab39baa114e30edb132a1a",
+      "bytes": 114,
+      "required": false,
+      "distribution": "ignored_locally_not_in_git",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/modelo-v2-densenet/weights/best_model_densenet_v2.pth",
+      "role": "oncoscan_model_weights",
+      "sha256": "04401199ae4d7abd84621b927de6bc683df092965efb2eefe2975908154542b4",
+      "bytes": 74974690,
+      "required": true,
+      "distribution": "private_artifact_obtain_from_model_owner_not_in_git",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/modelo-v2-densenet/weights/domain_lidc_encoder.pth",
+      "role": "oncoscan_model_weights",
+      "sha256": "e3706d5fa4054f908fd3028bf8808b8be30a3255bb7702ce7157972aca47c422",
+      "bytes": 44917965,
+      "required": true,
+      "distribution": "private_artifact_obtain_from_model_owner_not_in_git",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/modelo-v2-densenet/weights/best_model_clid_subtype.pth",
+      "role": "oncoscan_model_weights",
+      "sha256": "5062f4ab544da01c8c001b26808291ffbef5cd831a7dbec89607d0ec9a7a39d8",
+      "bytes": 28448673,
+      "required": true,
+      "distribution": "private_artifact_obtain_from_model_owner_not_in_git",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/modelo-v2-densenet/weights/xgb_head_v2.json",
+      "role": "oncoscan_model_weights",
+      "sha256": "cface00fd8d28bcc4ec378c788ac6e8f40db2a9a7cedd0dbce3704d8e97967d0",
+      "bytes": 224013,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "apps/api/.cache/models/monai-wholebody-lowres.pt",
+      "role": "monai_model_weights",
+      "sha256": "c3ab55eb979785fdcb30690872c210bbeee73d79a170c32fdaa1eca117779f90",
+      "bytes": 75225922,
+      "required": true,
+      "distribution": "download_verified_by_prepare_lung_demo_not_in_git",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "samples/real-lung/CT-chest.nrrd",
+      "role": "public_source_ct",
+      "sha256": "4507b664690840abb6cb9af2d919377ffc4ef75b167cb6fd0f747befdb12e38e",
+      "bytes": 42189103,
+      "required": true,
+      "distribution": "download_verified_by_prepare_lung_demo",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "samples/real-lung/CT-chest.nii.gz",
+      "role": "converted_public_ct",
+      "sha256": "0643d597ff718cf5848e52f0b4416fb7333200460240be39891390458c9e64f3",
+      "bytes": 49118882,
+      "required": false,
+      "distribution": "regenerable_conversion_hash_may_vary",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "apps/web/public/demo/lung-ct/atlas.png",
+      "role": "public_inference_demonstration",
+      "sha256": "ed77c603ce92897b38a512ab70e2d19f7aadb66172812dd8e458a5edfe538a45",
+      "bytes": 8893761,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "apps/web/public/demo/lung-ct/lobes.png",
+      "role": "public_inference_demonstration",
+      "sha256": "ebf547cc31cc92937cb07a205bcd7d1804ee8f8bf31aa37a663dbd0ec2213273",
+      "bytes": 53012,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "apps/web/public/demo/lung-ct/heatmap.png",
+      "role": "public_inference_demonstration",
+      "sha256": "23883a138ecb6a78f69a5b4c2be661e89715bd8eabd2bb5d8b4023dc69c1dfd0",
+      "bytes": 267579,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "apps/web/public/demo/lung-ct/manifest.json",
+      "role": "public_inference_demonstration",
+      "sha256": "2fc19a838f9a7805c441198752cc46b7c03f841f423cf44672f7913159a306c4",
+      "bytes": 3750,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/anatomy-canvas.png",
+      "role": "local_functional_evidence",
+      "sha256": "06948bbf186e53d9d2f4dc6d840faff8c69c2a63e7ba579dfe6a5ed8aa26b911",
+      "bytes": 106676,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/anatomy-desktop.png",
+      "role": "local_functional_evidence",
+      "sha256": "f7a34597de440dc5b543b3fe560564d3de3e6662da9b12f4196485d61dabd002",
+      "bytes": 189587,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/api-bridge-check.json",
+      "role": "local_functional_evidence",
+      "sha256": "6993a5a994c87a69bbc64802c33c839dbe0f155cd7e729cd810e94f5e8b890bb",
+      "bytes": 599,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/browser-check.json",
+      "role": "local_functional_evidence",
+      "sha256": "61b8ce39eba13d6700358405ea3dc3374fd881805cd62fab0abb81ac97647729",
+      "bytes": 1217,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/clipped-heatmap.png",
+      "role": "local_functional_evidence",
+      "sha256": "1a517ecd2a200ada7989295426820af3915cce52186ea7122ede37a21ff5faab",
+      "bytes": 205632,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/coronal-registration-check.png",
+      "role": "local_functional_evidence",
+      "sha256": "766917df2e1b0c64439407e211214ae8ac955819f40a80fae8093e85f27e9e39",
+      "bytes": 185397,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/gradient-check.json",
+      "role": "local_functional_evidence",
+      "sha256": "11fdbf436a2d82ba125d4601eac71af06a3642848d8083d9cf2f239b12d27f06",
+      "bytes": 368,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/heatmap-canvas.png",
+      "role": "local_functional_evidence",
+      "sha256": "a28f2a9a68f0ed806e98dbe2701a7d846e251273714ec5a8a0fe7cbe1096012c",
+      "bytes": 111145,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/heatmap-desktop.png",
+      "role": "local_functional_evidence",
+      "sha256": "6b9465b693a52f23a53bf0a25c03dc12ecdf56d16cc37c50e7bb0d6a69616cf7",
+      "bytes": 203663,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/heatmap-mobile.png",
+      "role": "local_functional_evidence",
+      "sha256": "153de0b5e533872d0551d4781207ae1b692c72979774690236f9aeaee3edbfcd",
+      "bytes": 172179,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/lobes-desktop.png",
+      "role": "local_functional_evidence",
+      "sha256": "f2e12c79c191caeb1c71ec6c5591cc84a436300428d52a421731465de5ff46f7",
+      "bytes": 190562,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "binary"
+    },
+    {
+      "path": "docs/volume-rendering/real-ct/worker-check.json",
+      "role": "local_functional_evidence",
+      "sha256": "db521858bd79a0f044bd64722a582eed362bb2fdde9a7779e6ff8093c64f16cc",
+      "bytes": 750,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/HANDOFF-2026-10-22.md",
+      "role": "handoff_documentation",
+      "sha256": "e9d3349e3b1872fca1162b852f452d9c7d0b2471193e1bcb6dc476004011ec24",
+      "bytes": 22627,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/deploy.md",
+      "role": "handoff_documentation",
+      "sha256": "c21794bda5717e89458644f479a1702ffe262e1eb0bd6108e4bcc9a8710664c6",
+      "bytes": 12545,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/README.md",
+      "role": "handoff_documentation",
+      "sha256": "04b5a7c8159c5a4934c42efa55d3ab5f5a9ecc9a220988dc93ff71b72f8c98a1",
+      "bytes": 14309,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/PRODUCCION.md",
+      "role": "handoff_documentation",
+      "sha256": "dbf7045a8846b62732507c7b552816bc3ce3cc47da2708990731d25cc2645f1e",
+      "bytes": 13819,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/model_dossier.json",
+      "role": "handoff_documentation",
+      "sha256": "3704baf9f14ec4524a32ac7425df90f748985d1bb3344e9eda81b0ff4ca9ac55",
+      "bytes": 1667,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/model_provenance.json",
+      "role": "handoff_documentation",
+      "sha256": "7e1b65235fd353fc62d4de7f350cfc90f2b05e5e302618c5b37b64c17e0e5eac",
+      "bytes": 243,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/decisions/architecture_choice.md",
+      "role": "handoff_documentation",
+      "sha256": "47f7bf2b83024b307d383a55b7e0a2303c3aaf06d11d27672d7d351581052367",
+      "bytes": 2524,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/handoff-2026-10-22/MENSAJE.md",
+      "role": "handoff_documentation",
+      "sha256": "026634b41bca43b3f1fb648c46441730ccaf99e9f7e7a80f2cc73d050cb4b76b",
+      "bytes": 1979,
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text"
+    },
+    {
+      "path": "docs/volume-rendering/handoff-2026-10-22/two-dimensional-check.json",
+      "role": "local_functional_evidence",
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text",
+      "sha256": "c6d4bdef0bade6679ba0273f38b4160fe82c60c7693448853bcb2bcce28744b1",
+      "bytes": 982
+    },
+    {
+      "path": "samples/README.md",
+      "role": "handoff_documentation",
+      "required": true,
+      "distribution": "repository_snapshot",
+      "sha256_mode": "lf_text",
+      "sha256": "fc3185892c0388c7df681e0661dc827f95e82a255852f9eb5480a88d5548207f",
+      "bytes": 833
+    }
+  ],
+  "acceptance": [
+    {
+      "id": "source_and_weights",
+      "comparison": "sha256_snapshot",
+      "scope": "Integrity of delivered files only"
+    },
+    {
+      "id": "demo_geometry",
+      "comparison": "invariants_after_recomputation",
+      "expected": {
+        "slices": 139,
+        "rows": 384,
+        "columns": 384,
+        "atlas_size": [
+          4608,
+          4608
+        ],
+        "lobe_labels": [
+          1,
+          2,
+          3,
+          4,
+          5
+        ]
+      }
+    },
+    {
+      "id": "cam",
+      "comparison": "finite_values_and_gradient_connection",
+      "reference_native_shapes": [
+        [
+          4,
+          4
+        ],
+        [
+          2,
+          2
+        ]
+      ],
+      "reference_peak_slice_zero_based": 117,
+      "cross_hardware_numeric_tolerance": null,
+      "scope": "Reference peak is not a lesion annotation or universal coordinate"
+    },
+    {
+      "id": "access_control",
+      "comparison": "authenticated_owner_and_study_bound_routes",
+      "current_evidence": "Unit tests and real worker bridge with mocked identity/storage; real staging users pending"
+    },
+    {
+      "id": "frontend_tests",
+      "last_observed_passed": 226,
+      "test_files": 25,
+      "command": "npm test -- --reporter=dot --maxWorkers=2",
+      "cwd": "apps/web"
+    },
+    {
+      "id": "backend_tests",
+      "last_observed_passed": 56,
+      "command": ".venv/Scripts/python.exe -m pytest -q",
+      "cwd": "apps/api"
+    },
+    {
+      "id": "build",
+      "last_observed_passed": true,
+      "command": "npm run build",
+      "cwd": "apps/web"
+    }
+  ],
+  "validation": {
+    "independent_runner": null,
+    "clean_environment_reproduction": false,
+    "production_gpu_benchmark": false,
+    "clinical_validation_performed": false,
+    "claim_boundary": "One public sample, local functionality and registration; no new sensitivity/AUC/Dice/HD95 or validated tumor localization"
+  },
+  "operations": {
+    "credentials_owner": "Project administrators; values excluded",
+    "model_owner": "Project AI team; private artifacts required",
+    "receiving_owner": "To be confirmed",
+    "documented_production_path": "docs/volume-rendering/PRODUCCION.md",
+    "retention": "Define retention and cascading deletion of patient-derived caches before production"
+  },
+  "limitations": [
+    "Snapshot was assembled from uncommitted work; continuation is delivered on feat/volumen-3d-handoff-2026-10-22; inspect git log for final revision",
+    "Inventory is not a source bundle, deployment or independent reproduction",
+    "PyTorch .pth and MONAI cache are not in Git",
+    "Worker is loopback-only and has in-memory jobs",
+    "Real authenticated staging E2E not executed",
+    "MPR workstation, 3D tumor detection, MONAI Physio and phase 4 pending"
+  ]
+}

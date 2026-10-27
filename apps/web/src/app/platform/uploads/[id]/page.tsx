@@ -9,7 +9,7 @@ import { buttonVariants } from "@/components/ui/Button";
 import { asRiskLevel, RiskBadge } from "@/components/ui/RiskBadge";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { AlertBanner } from "@/components/ui/AlertBanner";
-import { BeforeAfterViewer } from "@/components/ui/BeforeAfterViewer";
+import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
 import type { UploadReview } from "@/lib/uploadReview";
@@ -242,12 +242,28 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 </Card>
             )}
 
-            {/* Visualizador antes / después (Grad-CAM) */}
+            {/* Visor Clínico Dual: Axial 2D HiResCAM y Gemelo Digital 3D Raymarching */}
             {isAnalyzed && upload.ai_heatmap_base64 && (
                 <div className="mb-6">
-                    <BeforeAfterViewer
+                    <StudyViewerTabs
+                        uploadId={upload.id}
                         beforeUrl={beforeUrl}
                         heatmapBase64={upload.ai_heatmap_base64}
+                        fileType={upload.file_type}
+                        lobarLocation={
+                            ((upload.clinical_features as Record<string, unknown> | null)?.lobar_location as string | undefined) ??
+                            upload.metadata_json?.lobar_info?.codigo ?? null
+                        }
+                        sourceSlice={
+                            typeof upload.metadata_json?.analysis_source_slice === "number" &&
+                            typeof upload.metadata_json?.volume_metadata?.num_slices === "number"
+                                ? {
+                                      index: upload.metadata_json.analysis_source_slice,
+                                      total: upload.metadata_json.volume_metadata.num_slices,
+                                  }
+                                : null
+                        }
+                        modelVersion={upload.ai_model_version}
                         summary={{
                             score: upload.ai_score,
                             riskLevel: asRiskLevel(upload.ai_risk_level),
@@ -267,11 +283,6 @@ export default async function UploadDetailPage({ params }: PageProps) {
                             remove: deleteAnnotationAction,
                         }}
                     />
-                    <p className="text-xs text-slate-500 mt-2 px-1">
-                        Mapa de calor generado con{" "}
-                        <SourceLink href={REFERENCES.gradcam.url}>Grad-CAM (Selvaraju et al., 2017)</SourceLink>: indica las
-                        regiones que más pesaron en el score, no delimita el nódulo.
-                    </p>
                 </div>
             )}
 

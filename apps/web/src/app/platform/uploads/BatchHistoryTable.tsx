@@ -157,11 +157,21 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                 </TableCell>
                 <TableCell>
                   <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold border uppercase tracking-wider ${
-                    isAnalysis
+                    upload.file_type === "dicom_series"
+                      ? "bg-indigo-50 text-indigo-700 border-indigo-200"
+                      : upload.file_type === "nifti_volume"
+                      ? "bg-cyan-50 text-cyan-700 border-cyan-200"
+                      : isAnalysis
                       ? "bg-brand-primary/10 text-brand-primary border-brand-primary/20"
                       : "bg-slate-100 text-slate-700 border-slate-200"
                   }`}>
-                    {isAnalysis ? "IA" : "DICOM"}
+                    {upload.file_type === "dicom_series"
+                      ? "SERIE 3D"
+                      : upload.file_type === "nifti_volume"
+                      ? "NIfTI 3D"
+                      : isAnalysis
+                      ? "IA"
+                      : "DICOM"}
                   </span>
                 </TableCell>
                 <TableCell className="text-slate-600 truncate max-w-[120px]" title={upload.metadata_json?.case_ref ?? ""}>

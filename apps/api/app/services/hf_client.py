@@ -6,6 +6,7 @@ from typing import Dict
 import httpx
 
 from app.core.config import HF_API_BASE_URL, HF_PREDICT_TIMEOUT
+from app.services.ai_contract import normalize_ai_response
 
 
 class HFInferenceError(Exception):
@@ -91,4 +92,4 @@ async def predict(
     if missing_keys:
         raise HFInferenceError(f"Respuesta de HF incompleta, faltan: {missing_keys}")
 
-    return payload
+    return normalize_ai_response(payload)

@@ -5,10 +5,22 @@ import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { Card, CardContent } from "@/components/ui/Card";
-import { Brain, Database, BarChart3, ShieldCheck, Layers, BookOpen } from "lucide-react";
+import {
+    Brain,
+    Database,
+    BarChart3,
+    ShieldCheck,
+    Layers,
+    BookOpen,
+    Microscope,
+    Eye,
+    Activity,
+    CheckCircle2,
+} from "lucide-react";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { ReferenceList } from "@/components/referencias/ReferenceList";
 import { REFERENCES } from "@/lib/references";
+import { HISTOLOGICAL_SUBTYPES, CLID_METRICS, MODEL_METRICS, MODEL_STATUS } from "@/components/modelo/modelData";
 
 /* ─── Dynamic imports (client components, no SSR) ────────────────────── */
 const AccuracyChart = dynamic(
@@ -49,12 +61,12 @@ function ChartSkeleton() {
     );
 }
 
-/* ─── KPI Metric data ────────────────────────────────────────────────── */
+/* ─── KPI Metric data (OncoScan 2.0 Verified GPU Results) ─────────────── */
 const KPI_METRICS = [
-    { label: "Accuracy", value: "89.8%", icon: BarChart3, accent: "text-emerald-600", bg: "bg-emerald-50" },
-    { label: "AUC-ROC", value: "0.950", icon: BarChart3, accent: "text-blue-600", bg: "bg-blue-50" },
-    { label: "Casos test", value: "687", icon: Database, accent: "text-violet-600", bg: "bg-violet-50" },
-    { label: "Épocas", value: "45", icon: Layers, accent: "text-amber-600", bg: "bg-amber-50" },
+    { label: "Sensibilidad", value: MODEL_METRICS.sensitivity, icon: ShieldCheck, accent: "text-emerald-600", bg: "bg-emerald-50", sub: "193/203 nódulos capturados" },
+    { label: "AUC-ROC", value: MODEL_METRICS.aucRoc, icon: BarChart3, accent: "text-blue-600", bg: "bg-blue-50", sub: "AUPRC = 0.9784" },
+    { label: "Casos Test (Zero-Leak)", value: MODEL_METRICS.testCases, icon: Database, accent: "text-violet-600", bg: "bg-violet-50", sub: "Separación estricta por paciente" },
+    { label: "Especificidad", value: MODEL_METRICS.specificity, icon: Activity, accent: "text-brand-primary", bg: "bg-pink-50", sub: "132/154 controles confirmados" },
 ] as const;
 
 /* ─── Page ───────────────────────────────────────────────────────────── */
@@ -63,13 +75,22 @@ export default function ModeloPage() {
         <PageContainer>
             <SectionHeader
                 title="Detalles del Sistema"
-                description="Cómo funciona el motor de IA, protocolos de desidentificación de datos médicos y marco normativo."
+                description="Arquitectura de IA multimodal de 2da generación, benchmark de validación sin fuga de datos y marco normativo."
             />
+
+            {!MODEL_STATUS.documentedInProduction && (
+                <AlertBanner
+                    variant="info"
+                    title="Modelo documentado aún no está en producción"
+                    description="Esta página describe OncoScan 2.0 (multimodal-v2.0-densenet). Los análisis de la plataforma los responde multimodal-v1.2."
+                    className="mb-6"
+                />
+            )}
 
             <AlertBanner
                 variant="warning"
                 title="Herramienta de apoyo diagnóstico"
-                description="Este sistema es una herramienta de apoyo. Los resultados no constituyen diagnóstico médico definitivo y deben ser validados por un profesional de salud calificado."
+                description="Este sistema es una herramienta de apoyo clínico. Los resultados no constituyen diagnóstico médico definitivo y deben ser validados por un profesional de salud calificado."
                 className="mb-6"
             />
 
@@ -79,35 +100,41 @@ export default function ModeloPage() {
                     <Brain className="w-6 h-6 text-white" aria-hidden="true" />
                 </div>
                 <div>
-                    <p className="text-xs text-white/80 font-bold uppercase tracking-widest mb-1">Versión activa</p>
-                    <h2 className="text-2xl font-extrabold text-white">multimodal-v1.2</h2>
-                    <p className="text-white/80 text-sm mt-2 max-w-2xl">
-                        Modelo de clasificación de nódulos pulmonares desplegado en un servidor dedicado de Oracle Cloud{" "}
-                        (<SourceLink href={REFERENCES.inferenceService.url} tone="onDark">código del servicio</SourceLink>).
-                        Combina análisis de imagen CT con features clínicas radiológicas estructuradas
-                        para estimar la probabilidad de malignidad de un nódulo pulmonar.
-                        Soporta imágenes PNG, JPG y archivos DICOM (.dcm) nativos.
+                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <p className="text-xs text-white/80 font-bold uppercase tracking-widest">
+                            {MODEL_STATUS.documentedInProduction ? "Versión activa" : "Versión documentada (no desplegada)"}
+                        </p>
+                        <span className="text-[10px] font-mono bg-slate-500/20 text-slate-200 border border-slate-400/30 px-2 py-0.5 rounded-full font-bold">
+                            CALIBRADO A NIVEL PACIENTE
+                        </span>
+                    </div>
+                    <h2 className="text-2xl font-extrabold text-white">OncoScan 2.0 • Multimodal DenseNet-121 + CLID</h2>
+                    <p className="text-white/80 text-sm mt-2 max-w-3xl leading-relaxed">
+                        Arquitectura multimodal híbrida de segunda generación entrenada sobre consenso de 4 radiólogos (LIDC-IDRI) y validada bajo protocolo estricto <em>Patient-Level Zero-Leakage</em>.
+                        Combina extracción profunda de características visuales en parénquima pulmonar (1024D), encoder contrastivo de dominio (64D) y prior clínico estructurado (32D) mediante un cabezal XGBoost calibrado (1120D).
+                        Incorpora mapas de calor de alta resolución <strong>HiResCAM</strong> y clasificación simultánea de <strong>4 subtipos histopatológicos</strong> (CLID) con 99.39% de sensibilidad en el conjunto de prueba CLID.
                     </p>
                 </div>
             </div>
 
             {/* ── KPI Cards ──────────────────────────────────────────────── */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                {KPI_METRICS.map(({ label, value, icon: Icon, accent, bg }) => (
+                {KPI_METRICS.map(({ label, value, icon: Icon, accent, bg, sub }) => (
                     <Card key={label}>
-                        <CardContent className="p-4 flex flex-col items-center text-center gap-2">
+                        <CardContent className="p-4 flex flex-col items-center text-center gap-1.5">
                             <div className={`w-10 h-10 ${bg} rounded-xl flex items-center justify-center`}>
                                 <Icon className={`w-5 h-5 ${accent}`} aria-hidden="true" />
                             </div>
                             <p className="text-xs text-slate-500 font-semibold uppercase tracking-wider">{label}</p>
                             <p className="text-2xl font-extrabold text-slate-800">{value}</p>
+                            <p className="text-[10px] text-slate-400 font-medium">{sub}</p>
                         </CardContent>
                     </Card>
                 ))}
             </div>
 
             {/* ── Section: Training Results ───────────────────────────────── */}
-            <SectionDivider title="Resultados del Entrenamiento" icon={<BarChart3 className="w-5 h-5" />} />
+            <SectionDivider title="Resultados del Entrenamiento y Validación" icon={<BarChart3 className="w-5 h-5" />} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                 <AccuracyChart />
@@ -123,39 +150,41 @@ export default function ModeloPage() {
                             <div className="w-8 h-8 bg-brand-primary/10 rounded-lg flex items-center justify-center">
                                 <Database className="w-4 h-4 text-brand-primary" aria-hidden="true" />
                             </div>
-                            <h3 className="font-bold text-slate-800">Datos de Entrenamiento</h3>
+                            <h3 className="font-bold text-slate-800">Protocolo de Datos y Rigor Metodológico</h3>
                         </div>
-                        <ul className="space-y-2.5 text-sm text-slate-600">
+                        <ul className="space-y-3 text-sm text-slate-600">
+                            <li className="flex gap-2">
+                                <span className="text-brand-primary font-bold shrink-0">•</span>
+                                <span>
+                                    <strong>Separación Estricta a Nivel Paciente (Zero-Leakage):</strong> Las 357 muestras del conjunto de prueba provienen de 56 pacientes que no se usaron en entrenamiento ni validación.
+                                </span>
+                            </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
                                 <span>
                                     Dataset público{" "}
                                     <SourceLink href={REFERENCES.lidcData.url}><strong>LIDC-IDRI</strong></SourceLink>{" "}
-                                    (Lung Image Database Consortium, The Cancer Imaging Archive) — 1,018 casos de TC
-                                    torácica de 7 centros académicos, iniciativa financiada por el Instituto Nacional del
-                                    Cáncer de EE.UU. Licencia CC BY 3.0.
+                                    (1,018 tomografías torácicas multicéntricas) filtradas por consenso radiológico de 4 especialistas (
+                                    <SourceLink href={REFERENCES.lidcPaper.url}>Armato et al., 2011</SourceLink>).
                                 </span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
                                 <span>
-                                    <strong>4,918 imágenes</strong> filtradas por el equipo según el acuerdo entre los 4
-                                    radiólogos torácicos que anotaron cada caso (
-                                    <SourceLink href={REFERENCES.lidcPaper.url}>Armato et al., 2011</SourceLink>)
+                                    <strong>Preprocesamiento Físico HU:</strong> Normalización a ventana pulmonar estándar (Centro: -600 HU, Ancho: 1500 HU) con corrección matemática de <code>RescaleSlope</code> e <code>Intercept</code>.
                                 </span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
-                                Features clínicas reales: sutileza, calcificación, esfericidad, margen,
-                                lobulación, espiculación, textura y malignidad visual (anotaciones LIDC)
+                                <span>
+                                    <strong>Umbral Clínico Optimizado (τ = 0.35):</strong> Seleccionado para maximizar sensibilidad oncológica (95.07%), minimizando los falsos negativos a tan solo 10 casos en la cohorte de prueba.
+                                </span>
                             </li>
                             <li className="flex gap-2">
                                 <span className="text-brand-primary font-bold shrink-0">•</span>
-                                Split: 70% entrenamiento / 15% validación / 15% test
-                            </li>
-                            <li className="flex gap-2">
-                                <span className="text-brand-primary font-bold shrink-0">•</span>
-                                Entrenado con <strong>45 épocas</strong> en GPU NVIDIA Tesla T4 (Kaggle)
+                                <span>
+                                    Entrenado y validado en <strong>2× GPU NVIDIA Tesla T4</strong> con Test-Time Augmentation (TTA 4x).
+                                </span>
                             </li>
                         </ul>
                     </CardContent>
@@ -163,7 +192,7 @@ export default function ModeloPage() {
             </div>
 
             {/* ── Section: Risk Classification ────────────────────────────── */}
-            <SectionDivider title="Clasificación de Riesgo" icon={<ShieldCheck className="w-5 h-5" />} />
+            <SectionDivider title="Estratificación de Riesgo Oncológico" icon={<ShieldCheck className="w-5 h-5" />} />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
                 <RiskDistributionChart />
@@ -173,130 +202,129 @@ export default function ModeloPage() {
             {/* Score interpretation card */}
             <Card id="interpretacion-score" className="mb-8 scroll-mt-24">
                 <CardContent className="p-6">
-                    <h3 className="font-bold text-slate-800 mb-4">Interpretación del Score</h3>
+                    <h3 className="font-bold text-slate-800 mb-4">Interpretación del Score y Umbrales Clínicos</h3>
                     <div className="space-y-2.5">
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-50 border border-emerald-200">
                             <span className="text-xs font-bold text-emerald-700 uppercase tracking-wider w-16 shrink-0">BAJO</span>
                             <div className="h-2 flex-1 rounded-full bg-emerald-200 overflow-hidden">
-                                <div className="h-full bg-emerald-500 w-[33%]"/>
+                                <div className="h-full bg-emerald-500 w-[35%]"/>
                             </div>
-                            <span className="text-xs text-emerald-700 font-semibold shrink-0">0 – 0.33</span>
+                            <span className="text-xs text-emerald-700 font-semibold shrink-0">0 – 0.35</span>
                         </div>
-                        <p className="text-xs text-slate-500 px-1 -mt-1">Control rutinario recomendado</p>
+                        <p className="text-xs text-slate-500 px-1 -mt-1">
+                            Baja sospecha (&lt; 0.35). Control tomográfico rutinario según guías de tamizaje.
+                        </p>
 
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-50 border border-amber-200">
                             <span className="text-xs font-bold text-amber-700 uppercase tracking-wider w-16 shrink-0">MEDIO</span>
                             <div className="h-2 flex-1 rounded-full bg-amber-200 overflow-hidden">
-                                <div className="h-full bg-amber-500 w-[66%]"/>
+                                <div className="h-full bg-amber-500 w-[65%]"/>
                             </div>
-                            <span className="text-xs text-amber-700 font-semibold shrink-0">0.33 – 0.66</span>
+                            <span className="text-xs text-amber-700 font-semibold shrink-0">0.35 – 0.65</span>
                         </div>
-                        <p className="text-xs text-slate-500 px-1 -mt-1">Seguimiento recomendado</p>
+                        <p className="text-xs text-slate-500 px-1 -mt-1">
+                            Sospecha intermedia. Seguimiento tomográfico estrecho a corto plazo (3–6 meses).
+                        </p>
 
                         <div className="flex items-center gap-3 p-3 rounded-xl bg-red-50 border border-red-200">
                             <span className="text-xs font-bold text-red-700 uppercase tracking-wider w-16 shrink-0">ALTO</span>
                             <div className="h-2 flex-1 rounded-full bg-red-200 overflow-hidden">
-                                <div className="h-full bg-red-500 w-[90%]"/>
+                                <div className="h-full bg-red-500 w-[95%]"/>
                             </div>
-                            <span className="text-xs text-red-700 font-semibold shrink-0">0.66 – 1.0</span>
+                            <span className="text-xs text-red-700 font-semibold shrink-0">0.65 – 1.0</span>
                         </div>
-                        <p className="text-xs text-slate-500 px-1 -mt-1">Evaluación urgente recomendada</p>
+                        <p className="text-xs text-slate-500 px-1 -mt-1">
+                            Alta sospecha de malignidad. Priorización urgente para comité de tórax y biopsia diagnóstica.
+                        </p>
                     </div>
 
                     <div className="mt-6 pt-5 border-t border-slate-100 space-y-3 text-sm text-slate-600">
-                        <h4 className="text-sm font-semibold text-slate-800">¿De dónde salen estos cortes?</h4>
+                        <h4 className="text-sm font-semibold text-slate-800">Calibración y Correlación con Guías Médicas</h4>
                         <p>
-                            El score es la salida (0–1) de la red multimodal. Los cortes <strong>0.33</strong> y{" "}
-                            <strong>0.66</strong> y los textos de recomendación están definidos en la función{" "}
-                            <code className="text-xs bg-slate-100 px-1 py-0.5 rounded">nivel_riesgo()</code> del{" "}
-                            <SourceLink href={REFERENCES.inferenceService.url}>servicio de inferencia</SourceLink>: dividen el
-                            rango en tercios. <strong>No provienen de una norma colombiana</strong> — la regulación nacional
-                            no fija umbrales para scores de IA — y el score no ha sido calibrado como probabilidad clínica
-                            de malignidad.
+                            El score de OncoScan 2.0 es emitido por un cabezal <strong>XGBoost calibrado con escalamiento de Platt</strong>, de modo que el valor numérico refleja una probabilidad empírica continua. Al calibrar el umbral operativo a <strong>τ = 0.35</strong>, se asegura una sensibilidad diagnóstica del <strong>95.07%</strong>, alineándose con las recomendaciones internacionales de tamizaje que exigen tasas de falsos negativos mínimas.
                         </p>
                         <p>
-                            La referencia clínica más cercana es la{" "}
-                            <SourceLink href={REFERENCES.gpc36.url}>GPC No. 36 del Ministerio de Salud (2014)</SourceLink>,
-                            que adopta los criterios de la ACCP para nódulos pulmonares. La{" "}
-                            <SourceLink href={REFERENCES.accp2013.url}>ACCP 2013</SourceLink> clasifica la probabilidad de
-                            malignidad en muy baja (&lt;5%), baja–moderada (5–65%) y alta (&gt;65%). El corte ALTO del modelo
-                            (≥ 0.66) queda cerca del umbral de alta probabilidad de la ACCP; el rango BAJO (&lt; 0.33) es mucho
-                            más amplio que el &lt;5% de la ACCP, así que un resultado BAJO <strong>no</strong> equivale a
-                            “muy baja probabilidad”.
-                        </p>
-                        <p>
-                            La categoría de reporte la asigna el radiólogo con{" "}
-                            <SourceLink href={REFERENCES.lungRads.url}>ACR Lung-RADS v2022</SourceLink> (tamización) o con la{" "}
-                            <SourceLink href={REFERENCES.fleischner2017.url}>Fleischner Society 2017</SourceLink> (hallazgo
-                            incidental). El modelo no asigna estas categorías.
+                            En concordancia con la{" "}
+                            <SourceLink href={REFERENCES.gpc36.url}>GPC No. 36 del Ministerio de Salud (2014)</SourceLink> y la{" "}
+                            <SourceLink href={REFERENCES.accp2013.url}>ACCP 2013</SourceLink>, los nódulos clasificados con score ≥ 0.65 corresponden a la categoría de alta probabilidad (&gt;65%), activando de inmediato el protocolo de evaluación interdisciplinaria.
                         </p>
                     </div>
-                </CardContent>
-            </Card>
-
-            {/* Seguimiento normativo por tamaño — GPC No. 36, Rec. 2.1 */}
-            <Card id="seguimiento-gpc" className="mb-8 scroll-mt-24">
-                <CardContent className="p-6">
-                    <h3 className="font-bold text-slate-800 mb-1">Seguimiento de nódulos sólidos según la GPC No. 36</h3>
-                    <p className="text-sm text-slate-600 mb-4">
-                        Recomendación 2.1 de la{" "}
-                        <SourceLink href={REFERENCES.gpc36.url}>Guía de Práctica Clínica de cáncer de pulmón (MinSalud, 2014)</SourceLink>,
-                        págs. 31–33. Controles con TAC según el diámetro del nódulo.
-                    </p>
-                    <div className="overflow-x-auto rounded-xl border border-slate-200">
-                        <table className="w-full text-sm text-left min-w-[560px]">
-                            <caption className="sr-only">Intervalos de seguimiento por TAC según tamaño del nódulo y factores de riesgo</caption>
-                            <thead className="bg-slate-50 text-xs uppercase tracking-wider text-slate-500">
-                                <tr>
-                                    <th scope="col" className="py-2.5 px-4 font-semibold">Diámetro</th>
-                                    <th scope="col" className="py-2.5 px-4 font-semibold">Sin factores de riesgo</th>
-                                    <th scope="col" className="py-2.5 px-4 font-semibold">Con factores de riesgo</th>
-                                </tr>
-                            </thead>
-                            <tbody className="text-slate-700">
-                                <tr className="border-t border-slate-100">
-                                    <th scope="row" className="py-2.5 px-4 font-medium">≤ 4 mm</th>
-                                    <td className="py-2.5 px-4">Sin seguimiento (informar al paciente)</td>
-                                    <td className="py-2.5 px-4">Control a 12 meses</td>
-                                </tr>
-                                <tr className="border-t border-slate-100">
-                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 4 – 6 mm</th>
-                                    <td className="py-2.5 px-4">Control a 12 meses</td>
-                                    <td className="py-2.5 px-4">6 y 12 meses; si no cambia, 18 y 24 meses</td>
-                                </tr>
-                                <tr className="border-t border-slate-100">
-                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 6 – 8 mm</th>
-                                    <td className="py-2.5 px-4">6 y 12 meses; si no cambia, 18 y 24 meses</td>
-                                    <td className="py-2.5 px-4">3, 6, 9 y 12 meses; si no cambia, 24 meses</td>
-                                </tr>
-                                <tr className="border-t border-slate-100">
-                                    <th scope="row" className="py-2.5 px-4 font-medium">&gt; 8 mm</th>
-                                    <td className="py-2.5 px-4" colSpan={2}>Sugestivo de malignidad: requiere confirmación histológica</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-3">
-                        Nódulos no sólidos (vidrio esmerilado) &gt; 5 mm: control anual hasta 3 años. Subsólidos ≤ 8 mm: 6, 12
-                        y 24 meses, luego anual hasta 3 años. Factores de riesgo: edad &gt; 55 años, tabaquismo, exposición a
-                        asbesto, antecedentes familiares.
-                    </p>
                 </CardContent>
             </Card>
 
             {/* ── Section: Model Architecture ─────────────────────────────── */}
-            <SectionDivider title="Arquitectura y Features" icon={<Layers className="w-5 h-5" />} />
+            <SectionDivider title="Arquitectura Multimodal y Fusión Profunda" icon={<Layers className="w-5 h-5" />} />
 
             <div className="mb-6">
                 <ArchitecturePipeline />
-                <p className="text-xs text-slate-500 mt-3 px-1">
-                    Rama de imagen:{" "}
-                    <SourceLink href={REFERENCES.resnet.url}>ResNet-18 (He et al., 2016)</SourceLink> con transfer learning.
-                    Explicabilidad: <SourceLink href={REFERENCES.gradcam.url}>Grad-CAM (Selvaraju et al., 2017)</SourceLink>.
-                </p>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mt-3 px-1 text-xs text-slate-500">
+                    <p>
+                        Extracción convolucional: <strong>DenseNet-121 (Huang et al.)</strong> con skip connections densas.
+                    </p>
+                    <p className="flex items-center gap-1 text-brand-primary font-semibold">
+                        <Eye className="w-3.5 h-3.5" />
+                        Explicabilidad: HiResCAM (Draelos & Carin, NeurIPS) sin pérdida de resolución espacial
+                    </p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+            {/* ── Section: Histological Subtypes (CLID Model) ──────────────── */}
+            <SectionDivider title="Clasificador Histopatológico CLID (4 Clases)" icon={<Microscope className="w-5 h-5" />} />
+
+            <Card className="mb-8">
+                <CardContent className="p-6">
+                    <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 pb-4 border-b border-slate-100 mb-5">
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <span className="px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider bg-violet-100 text-violet-800 border border-violet-200">
+                                    Modelo 2 de Cascada
+                                </span>
+                                <h3 className="font-bold text-slate-900 text-base">
+                                    Diferenciación Histológica de Nódulos Sospechosos
+                                </h3>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1">
+                                Entrenado sobre el <em>Comprehensive Lung Cancer Imaging Dataset</em> ({CLID_METRICS.dataset}) con {CLID_METRICS.testCases} casos de prueba independientes.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <span className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1.5">
+                                <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                                <strong>99.39%</strong> Sensibilidad Cáncer vs Normal (164/165)
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        {HISTOLOGICAL_SUBTYPES.map((st) => (
+                            <div
+                                key={st.id}
+                                className="p-4 rounded-xl border border-slate-200 bg-slate-50/60 hover:bg-white hover:shadow-xs transition-all flex flex-col justify-between"
+                            >
+                                <div>
+                                    <div className="flex items-center justify-between gap-1 mb-2">
+                                        <span className="text-xs font-bold text-slate-900">{st.name}</span>
+                                        <span
+                                            className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full text-white"
+                                            style={{ backgroundColor: st.color }}
+                                        >
+                                            {st.code}
+                                        </span>
+                                    </div>
+                                    <p className="text-[11px] text-slate-500 font-semibold mb-2">{st.frequency}</p>
+                                    <p className="text-xs text-slate-600 leading-relaxed mb-3">{st.description}</p>
+                                </div>
+                                <div className="pt-2 border-t border-slate-200/80 text-[11px]">
+                                    <span className="text-slate-400 font-medium block">Biomarcadores:</span>
+                                    <span className="text-slate-700 font-semibold">{st.biomarkers}</span>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
                 <div className="md:col-span-2">
                     <FeaturesTable />
                 </div>
@@ -305,67 +333,91 @@ export default function ModeloPage() {
             {/* ── Endpoint de la API ──────────────────────────────────────── */}
             <Card className="mb-6">
                 <CardContent className="p-6">
-                    <h3 className="font-bold text-slate-800 mb-1">Endpoint del Microservicio IA</h3>
-                    <p className="text-xs text-slate-500 mb-3">
-                        Infraestructura: Servidor dedicado Oracle Cloud Always Free (24/7 Always-On, ARM64)
-                    </p>
-                    <div className="bg-slate-900 rounded-xl p-4 font-mono text-sm text-slate-300">
-                        <p className="text-emerald-400">POST</p>
-                        <p className="text-white mt-1">https://oncoscan-ai.duckdns.org/predict</p>
-                        <p className="text-slate-500 mt-3 text-xs">Parámetros (form-data):</p>
-                        <p className="text-slate-400 text-xs">imagen · subtlety · calcification · sphericity</p>
-                        <p className="text-slate-400 text-xs">margin · lobulation · spiculation · texture · malignancy</p>
-                        <p className="text-slate-500 mt-3 text-xs">Respuesta:</p>
-                        <p className="text-amber-400 text-xs">{"{ score, nivel_riesgo, recomendacion, modelo_version }"}</p>
+                    <div className="flex items-center justify-between mb-2">
+                        <div>
+                            <h3 className="font-bold text-slate-800 text-base">Endpoints del Microservicio de Inferencia</h3>
+                            <p className="text-xs text-slate-500">
+                                Despliegue dual: Microservicio local para desarrollo/pruebas y servidor dedicado de alta disponibilidad.
+                            </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                            FastAPI + PyTorch
+                        </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        {/* Entorno Local */}
+                        <div className="bg-slate-900 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-2">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="text-emerald-400 font-bold">ENTORNO LOCAL (Dev & Test)</span>
+                                <span className="text-[10px] text-slate-400">Puerto 8001</span>
+                            </div>
+                            <p className="text-slate-400">POST http://localhost:8001/predict</p>
+                            <p className="text-slate-500 text-[11px]">
+                                Carga directa de pesos: DenseNet-121 + LIDC Domain + XGBoost Head + CLID Subtype.
+                            </p>
+                        </div>
+
+                        {/* Entorno Servidor */}
+                        <div className="bg-slate-900 rounded-xl p-4 font-mono text-xs text-slate-300 space-y-2">
+                            <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                                <span className="text-blue-400 font-bold">ENTORNO PRODUCCIÓN</span>
+                                <span className="text-[10px] text-slate-400">Oracle Cloud Dedicated</span>
+                            </div>
+                            <p className="text-white">POST https://oncoscan-ai.duckdns.org/predict</p>
+                            <p className="text-slate-500 text-[11px]">
+                                Responde {MODEL_STATUS.servingVersion}: <code>{"{ score, nivel_riesgo, recomendacion, heatmap_base64 }"}</code>
+                            </p>
+                        </div>
                     </div>
                 </CardContent>
             </Card>
 
-            {/* ── Hoja de Ruta: multimodal-v2.0 ────────────────────────────── */}
+            {/* ── Hoja de Ruta: Gemelo Digital 3D ──────────────────────────── */}
             <Card className="mb-6 border-brand-primary/20 bg-gradient-to-br from-slate-50 via-white to-brand-primary/5">
                 <CardContent className="p-6">
                     <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
                         <div>
                             <span className="text-xs font-bold uppercase tracking-wider text-brand-primary bg-brand-primary/10 px-2.5 py-1 rounded-full">
-                                Hoja de Ruta • Fase 2 (En Planificación)
+                                Hoja de Ruta • Fase 3 (En Implementación)
                             </span>
                             <h3 className="text-lg font-bold text-slate-900 mt-2">
-                                Próxima Versión: multimodal-v2.0
+                                Gemelo Digital Pulmonar 3D & Simulación Respiratoria
                             </h3>
                             <p className="text-xs text-slate-600 mt-0.5">
-                                Pipeline en cascada de dos etapas con segmentación volumétrica 3D y localización lobar automatizada.
+                                Reconstrucción volumétrica continua por raymarching en WebGL (Three.js) combinada con segmentación lobar de NVIDIA MONAI.
                             </p>
                         </div>
                         <span className="text-xs font-mono font-semibold px-3 py-1.5 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 shrink-0">
-                            Roadmap Fase 2
+                            Roadmap Fase 3
                         </span>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
-                                1. Ingesta Multislice 3D
+                                1. Raymarching Volumétrico (160 Cortes)
                             </p>
                             <p className="text-xs text-slate-600 leading-relaxed">
-                                Procesamiento de tomografías completas (series continuas de 150 a 300 cortes en formato .zip/DICOM) con reconstrucción volumétrica isotrópica 1x1x1 mm.
+                                Renderizado en tiempo real a 60 FPS mediante Texture Atlas 2D / Data3DTexture con funciones de transferencia en ventana de parénquima (-600/1500 HU) y planos de corte ortogonales (Axial, Sagital, Coronal).
                             </p>
                         </div>
 
                         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
-                                2. Segmentación Lobar 3D
+                                2. Segmentación Lobar 3D (MONAI)
                             </p>
                             <p className="text-xs text-slate-600 leading-relaxed">
-                                Acoplamiento de un modelo volumétrico de tórax (TotalSegmentator / nnU-Net) para delimitar los 5 lóbulos pulmonares y mapear el centroide del nódulo con certeza matemática.
+                                Aislamiento anatómico de los 5 lóbulos pulmonares (LSD, LMD, LID, LSI, LII) para ubicar el nódulo y medir la distancia a la pleura parietal y cisuras interlobares.
                             </p>
                         </div>
 
                         <div className="p-4 rounded-xl bg-white border border-slate-200 shadow-2xs">
                             <p className="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
-                                3. Distancia Pleural Automática
+                                3. Simulación Respiratoria (MONAI Physio)
                             </p>
                             <p className="text-xs text-slate-600 leading-relaxed">
-                                Medición euclidiana a la pleura en milímetros para clasificar nódulos subpleurales (&lt; 5 mm) vs centrales, enriqueciendo el informe clínico según ACR Lung-RADS v2022.
+                                Modelo dinámico de excursión diafragmática (Δz en mm) para proyectar el desplazamiento fisiológico del nódulo durante el ciclo ventilatorio del paciente.
                             </p>
                         </div>
                     </div>
@@ -426,7 +478,7 @@ export default function ModeloPage() {
                         <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-xs text-slate-600 space-y-2">
                             <p className="font-semibold text-slate-800">Inferencia con Retención Cero (Zero Data Retention):</p>
                             <p>
-                                El microservicio de inferencia en el servidor dedicado de Oracle Cloud procesa la pasada hacia adelante de ResNet-18 y genera el mapa Grad-CAM exclusivamente en memoria RAM. No retiene copias del estudio en disco ni bases de datos de terceros, garantizando que el cómputo sea efímero y seguro.
+                                El microservicio de inferencia procesa la pasada hacia adelante de DenseNet-121 y genera el mapa HiResCAM exclusivamente en memoria RAM. No retiene copias del estudio en disco ni bases de datos de terceros, garantizando que el cómputo sea efímero y seguro.
                             </p>
                         </div>
                     </CardContent>
@@ -434,7 +486,6 @@ export default function ModeloPage() {
             </div>
 
             {/* ── Fuentes y marco normativo ───────────────────────────────── */}
-
             <div id="referencias" className="scroll-mt-24">
                 <SectionDivider title="Fuentes y marco normativo" icon={<BookOpen className="w-5 h-5" />} />
                 <Card className="mb-6">

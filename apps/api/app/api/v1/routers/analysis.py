@@ -280,6 +280,20 @@ def _persist_success(
         "predicted_at": predicted_at,
         "ai_heatmap_base64": payload.get("heatmap_base64"),
     }
+
+    # Enriquecer metadata_json con OncoScan 2.0 (subtipo histológico CLID, lóbulo MONAI, explicabilidad)
+    try:
+        curr_res = supabase.table("dicom_uploads").select("metadata_json").eq("id", upload_id).single().execute()
+        meta = (curr_res.data or {}).get("metadata_json") or {}
+        if not isinstance(meta, dict):
+            meta = {}
+        for key in ("subtipo_histologico", "lobar_info", "explicabilidad"):
+            if key in payload and payload[key] is not None:
+                meta[key] = payload[key]
+        update["metadata_json"] = meta
+    except Exception as e:
+        log_event("analysis_metadata_read_failed", level="WARNING", error_type=type(e).__name__)
+
     try:
         supabase.table("dicom_uploads").update(update).eq("id", upload_id).execute()
     except Exception as e:
