@@ -15,11 +15,16 @@ export function calibrationFor(geometry: PixelGeometry | null, natural: Size): C
   return { rowMm, colMm };
 }
 
-/** Distancia en mm entre dos puntos normalizados, redondeada a 0,1 mm. */
-export function measureMm(a: Point, b: Point, natural: Size, cal: Calibration): number {
+/** Distancia en mm entre dos puntos normalizados, sin redondear. */
+export function distanceMm(a: Point, b: Point, natural: Size, cal: Calibration): number {
   const dx = (b.x - a.x) * natural.w * cal.colMm;
   const dy = (b.y - a.y) * natural.h * cal.rowMm;
-  return Math.round(Math.hypot(dx, dy) * 10) / 10;
+  return Math.hypot(dx, dy);
+}
+
+/** Distancia en mm entre dos puntos normalizados, redondeada a 0,1 mm. */
+export function measureMm(a: Point, b: Point, natural: Size, cal: Calibration): number {
+  return Math.round(distanceMm(a, b, natural, cal) * 10) / 10;
 }
 
 export function formatMm(mm: number): string {

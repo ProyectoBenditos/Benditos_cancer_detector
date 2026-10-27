@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PixelGeometry } from "@/lib/pixelGeometry";
-import { calibrationFor, formatMm, measureMm } from "./measureMath";
+import { calibrationFor, distanceMm, formatMm, measureMm } from "./measureMath";
 
 const geo512: PixelGeometry = { pixelSpacingMm: [0.7, 0.7], rows: 512, columns: 512 };
 
@@ -30,6 +30,14 @@ describe("measureMm", () => {
 
   it("píxel no cuadrado usa el espaciado de cada eje", () => {
     expect(measureMm({ x: 0, y: 0 }, { x: 0.1, y: 0.1 }, { w: 100, h: 100 }, { rowMm: 1, colMm: 0.5 })).toBe(11.2);
+  });
+});
+
+describe("distanceMm", () => {
+  it("no redondea y usa la misma convención de ejes que measureMm", () => {
+    const d = distanceMm({ x: 0, y: 0 }, { x: 0.1, y: 0.1 }, { w: 100, h: 100 }, { rowMm: 1, colMm: 0.5 });
+    expect(d).toBeCloseTo(Math.hypot(5, 10), 10);
+    expect(d).not.toBe(11.2);
   });
 });
 
