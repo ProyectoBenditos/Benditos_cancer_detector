@@ -19,6 +19,10 @@ apps/api/.cache/
 samples/real-lung/*.nrrd
 samples/real-lung/*.nii
 samples/real-lung/*.nii.gz
+
+# Casos de práctica LIDC-IDRI: DICOM descargados de TCIA y entorno del script
+samples/practice/dicom/
+.venv-practice/
 env/
 venv/
 
@@ -55,4 +59,8 @@ scripts/*
 !scripts/prepare_lung_demo.py
 !scripts/start_local_services.ps1
 !scripts/verify_volume_handoff.py
+!scripts/prepare_practice_cases.py
+!scripts/practice_cases.py
+!scripts/requirements-practice.txt
+!scripts/tests/
 apps/api/scripts/

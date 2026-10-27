@@ -1,0 +1,218 @@
+{
+  "source": "LIDC-IDRI, The Cancer Imaging Archive (TCIA)",
+  "license": "CC BY 3.0",
+  "tcia_url": "https://services.cancerimagingarchive.net/nbia-api/services/v1/getImage",
+  "annotations": "pylidc 0.2.3 (base de datos incluida)",
+  "ai_url": "https://oncoscan-ai.duckdns.org/predict",
+  "model_input": "apps/api/app/services/ct_window.py::model_input_png (pixel_array crudo, min-max)",
+  "reference_rule": "al menos 3 lectores y diámetro medio entre 6 y 30 mm",
+  "split_note": "Pacientes del conjunto de test de la partición del modelo v2 (docs/modelo-v2-densenet/splits/split_assignment.csv), no de la partición de multimodal-v1.2: no se garantiza que la v1.2 no los haya visto en su entrenamiento.",
+  "generated_at": "2026-10-27T22:39:06+00:00",
+  "cases": [
+    {
+      "id": "caso-01",
+      "lidc_patient_id": "LIDC-IDRI-0017",
+      "study_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.853991115059421477233219569301",
+      "series_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.108231420525711026834210228428",
+      "sop_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.222098252047357192090439228841",
+      "z_mm": -85.25,
+      "slice_thickness_mm": 1.25,
+      "chosen_nodule": {
+        "diameter_mm": 7.82,
+        "readers": 4
+      },
+      "reference": [
+        {
+          "x": 0.6124,
+          "y": 0.6587,
+          "diameter_mm": 7.8,
+          "readers": 4
+        }
+      ],
+      "features": {
+        "subtlety": 3.0,
+        "calcification": 6.0,
+        "sphericity": 5.0,
+        "margin": 5.0,
+        "lobulation": 1.0,
+        "spiculation": 1.0,
+        "texture": 5.0,
+        "malignancy": 2.5
+      },
+      "clipped_features": [],
+      "image_png_sha256": "eb207e1e1344e57105e1139908ed0741783ec44f1e4fe73cd728ca46269dbd20",
+      "model_input_png_sha256": "36741b6a8a8964c6b8f9883d3f82d318d6f91929ee6cc506970061386cf15e28",
+      "heatmap_png_sha256": "08796f29d07764fded9b1ecaa502f263794e32b3e3a5eba960d4392795b8bdbb",
+      "ai": {
+        "score": 0.7221,
+        "nivel_riesgo": "ALTO",
+        "modelo_version": "multimodal-v1.2",
+        "recomendacion": "Evaluacion urgente"
+      }
+    },
+    {
+      "id": "caso-02",
+      "lidc_patient_id": "LIDC-IDRI-0027",
+      "study_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.228681789686851016136117645559",
+      "series_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.183843376225716802567192412456",
+      "sop_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.177292493485393261756147499123",
+      "z_mm": -195.25,
+      "slice_thickness_mm": 2.5,
+      "chosen_nodule": {
+        "diameter_mm": 10.43,
+        "readers": 4
+      },
+      "reference": [
+        {
+          "x": 0.6979,
+          "y": 0.5504,
+          "diameter_mm": 10.4,
+          "readers": 4
+        }
+      ],
+      "features": {
+        "subtlety": 4.0,
+        "calcification": 6.0,
+        "sphericity": 5.0,
+        "margin": 5.0,
+        "lobulation": 1.0,
+        "spiculation": 1.0,
+        "texture": 5.0,
+        "malignancy": 3.0
+      },
+      "clipped_features": [],
+      "image_png_sha256": "8dc46b3bbe12d5ef8eed9e0bdfead1e5a9a897a603ce53acc26beb4fd7ab2377",
+      "model_input_png_sha256": "0e126fd5ad949fd290e5b56c6e7ffd6696fe8b8cfd0b76b0b2e0ef04eac1edf6",
+      "heatmap_png_sha256": "4559b824c1d9eaf29e0ff226720116a22265310cae521c0abcc4fec76e7cf564",
+      "ai": {
+        "score": 0.9966,
+        "nivel_riesgo": "ALTO",
+        "modelo_version": "multimodal-v1.2",
+        "recomendacion": "Evaluacion urgente"
+      }
+    },
+    {
+      "id": "caso-03",
+      "lidc_patient_id": "LIDC-IDRI-0044",
+      "study_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.211592828197214585826096300114",
+      "series_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.511347030803753100045216493273",
+      "sop_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.199990067931418401790414946403",
+      "z_mm": -200.0,
+      "slice_thickness_mm": 2.5,
+      "chosen_nodule": {
+        "diameter_mm": 12.52,
+        "readers": 4
+      },
+      "reference": [
+        {
+          "x": 0.2051,
+          "y": 0.4358,
+          "diameter_mm": 12.5,
+          "readers": 4
+        }
+      ],
+      "features": {
+        "subtlety": 4.0,
+        "calcification": 6.0,
+        "sphericity": 4.0,
+        "margin": 4.0,
+        "lobulation": 2.0,
+        "spiculation": 1.0,
+        "texture": 5.0,
+        "malignancy": 3.0
+      },
+      "clipped_features": [],
+      "image_png_sha256": "472611f5ec3626f11753e98cbf01021bb85f9e318db4e07e3ad57e98237d7fae",
+      "model_input_png_sha256": "ac5eeff5a8191832fdedc83b52234249f6ea25cc0674eec9acf993ce84201f2c",
+      "heatmap_png_sha256": "149f6c79a26747d839bcf7fd8676805c7498c55d6cf57e6ddc88390308831457",
+      "ai": {
+        "score": 0.9996,
+        "nivel_riesgo": "ALTO",
+        "modelo_version": "multimodal-v1.2",
+        "recomendacion": "Evaluacion urgente"
+      }
+    },
+    {
+      "id": "caso-04",
+      "lidc_patient_id": "LIDC-IDRI-0063",
+      "study_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.259516711483314195853998851316",
+      "series_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.272190966764020277652079081128",
+      "sop_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.314019471230185315310715180934",
+      "z_mm": -200.5,
+      "slice_thickness_mm": 2.5,
+      "chosen_nodule": {
+        "diameter_mm": 10.48,
+        "readers": 3
+      },
+      "reference": [
+        {
+          "x": 0.3661,
+          "y": 0.6499,
+          "diameter_mm": 10.5,
+          "readers": 3
+        }
+      ],
+      "features": {
+        "subtlety": 3.0,
+        "calcification": 6.0,
+        "sphericity": 4.0,
+        "margin": 5.0,
+        "lobulation": 1.0,
+        "spiculation": 1.0,
+        "texture": 3.0,
+        "malignancy": 3.0
+      },
+      "clipped_features": [],
+      "image_png_sha256": "83e7ffae473096e1fe9205d4f7d9da38225e43618e5fc5d4cce68d3bd3a097ae",
+      "model_input_png_sha256": "bbccd4f0d90328827d2b9cfe2157c45fd51cf6bd6f12810861b7cb25ba1862bf",
+      "heatmap_png_sha256": "65d082fa69eb5d14ee6f8be35d0f0c0e4ecff92e6d056d5a4f27eba94bb2a739",
+      "ai": {
+        "score": 0.9969,
+        "nivel_riesgo": "ALTO",
+        "modelo_version": "multimodal-v1.2",
+        "recomendacion": "Evaluacion urgente"
+      }
+    },
+    {
+      "id": "caso-05",
+      "lidc_patient_id": "LIDC-IDRI-0064",
+      "study_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.262940731886389902640730271210",
+      "series_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.487268565754493433372433148666",
+      "sop_instance_uid": "1.3.6.1.4.1.14519.5.2.1.6279.6001.284930034934229982638718938892",
+      "z_mm": -164.0,
+      "slice_thickness_mm": 2.5,
+      "chosen_nodule": {
+        "diameter_mm": 29.79,
+        "readers": 4
+      },
+      "reference": [
+        {
+          "x": 0.7764,
+          "y": 0.4933,
+          "diameter_mm": 29.8,
+          "readers": 4
+        }
+      ],
+      "features": {
+        "subtlety": 5.0,
+        "calcification": 6.0,
+        "sphericity": 5.0,
+        "margin": 4.5,
+        "lobulation": 1.5,
+        "spiculation": 1.0,
+        "texture": 5.0,
+        "malignancy": 3.0
+      },
+      "clipped_features": [],
+      "image_png_sha256": "58603c21deae85d693586f72cb16248e23af1764bc980017f91eea5984ea2351",
+      "model_input_png_sha256": "a04ac46941d38fc1c095b30d3b4cfd86373da0b6f1798b8c6c62de8e7b56bdfb",
+      "heatmap_png_sha256": "e49cbe2051d23860d99a38dea3e809b90faf79259fdf2935e4a3e5ca044f3d7e",
+      "ai": {
+        "score": 0.9928,
+        "nivel_riesgo": "ALTO",
+        "modelo_version": "multimodal-v1.2",
+        "recomendacion": "Evaluacion urgente"
+      }
+    }
+  ]
+}
