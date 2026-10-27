@@ -204,7 +204,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                   )}
                 </TableCell>
                 <TableCell className="text-slate-700 font-medium">
-                  {!upload.blind_pending && upload.ai_score != null ?`${(upload.ai_score * 100).toFixed(1)}%` : <span className="text-slate-400 text-xs">—</span>}
+                  {!upload.blind_pending && upload.ai_score != null ? `${(upload.ai_score * 100).toFixed(1)}%` : <span className="text-slate-400 text-xs">—</span>}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={upload.upload_status} />
