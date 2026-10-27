@@ -10,14 +10,18 @@ import {
     type AiAgreement,
     type FindingType,
     type Marker,
+    type MarkerKind,
 } from "@/components/ui/markerState";
 import { UUID_RE } from "./uploadReview";
 
 export type AnnotationInput = {
     uploadId: string;
     seq: number;
+    kind: MarkerKind;
     x: number;
     y: number;
+    x2: number | null;
+    y2: number | null;
     findingType: FindingType | null;
     aiAgreement: AiAgreement | null;
     note: string;
@@ -30,8 +34,11 @@ export type AnnotationResult = { ok: true } | { ok: false; error: "sesion" | "in
 /** Fila tal como la devuelve PostgREST (`numeric` puede llegar como texto). */
 export type AnnotationRow = {
     seq: number;
+    kind: string | null;
     x: number;
     y: number;
+    x2: number | null;
+    y2: number | null;
     finding_type: string | null;
     ai_agreement: string | null;
     note: string | null;
@@ -41,16 +48,18 @@ export type AnnotationRow = {
 export type AnnotationDbValues = {
     upload_id: string;
     seq: number;
-    kind: "point";
+    kind: MarkerKind;
     x: number;
     y: number;
+    x2: number | null;
+    y2: number | null;
     finding_type: FindingType | null;
     ai_agreement: AiAgreement | null;
     note: string;
     size_mm: number | null;
 };
 
-export const ANNOTATION_COLUMNS = "seq, x, y, finding_type, ai_agreement, note, size_mm";
+export const ANNOTATION_COLUMNS = "seq, kind, x, y, x2, y2, finding_type, ai_agreement, note, size_mm";
 
 const SEQ_MAX = 32767; // smallint
 
@@ -72,6 +81,14 @@ export function parseAnnotation(input: unknown): { ok: true; values: AnnotationD
     if (typeof a.uploadId !== "string" || !UUID_RE.test(a.uploadId)) return { ok: false };
     if (!isValidSeq(a.seq)) return { ok: false };
     if (!isUnit(a.x) || !isUnit(a.y)) return { ok: false };
+    // Un punto no lleva segundo punto; una medición lo exige, junto con sus mm.
+    if (a.kind === "point") {
+        if (a.x2 !== null || a.y2 !== null) return { ok: false };
+    } else if (a.kind === "measure") {
+        if (!isUnit(a.x2) || !isUnit(a.y2) || a.sizeMm === null) return { ok: false };
+    } else {
+        return { ok: false };
+    }
     if (a.findingType !== null && !(typeof a.findingType === "string" && FINDING_VALUES.has(a.findingType))) {
         return { ok: false };
     }
@@ -88,9 +105,11 @@ export function parseAnnotation(input: unknown): { ok: true; values: AnnotationD
         values: {
             upload_id: a.uploadId,
             seq: a.seq,
-            kind: "point",
+            kind: a.kind,
             x: a.x,
             y: a.y,
+            x2: a.kind === "measure" ? (a.x2 as number) : null,
+            y2: a.kind === "measure" ? (a.y2 as number) : null,
             finding_type: a.findingType as FindingType | null,
             ai_agreement: a.aiAgreement as AiAgreement | null,
             note: a.note,
@@ -99,19 +118,26 @@ export function parseAnnotation(input: unknown): { ok: true; values: AnnotationD
     };
 }
 
-/** Fila guardada → marcador del visor. null si la fila no es válida. */
+/** Fila guardada → marcador del visor. null si la fila no es válida. Sin `kind`, es un punto. */
 export function rowToMarker(row: AnnotationRow): Marker | null {
     if (!isValidSeq(row.seq) || !isUnit(row.x) || !isUnit(row.y)) return null;
     const size = row.size_mm == null ? null : Number(row.size_mm);
+    const sizeMm = size !== null && Number.isFinite(size) && size > 0 ? size : null;
+    const kind: MarkerKind | null = row.kind == null || row.kind === "point" ? "point" : row.kind === "measure" ? "measure" : null;
+    if (kind === null) return null;
+    if (kind === "measure" && (!isUnit(row.x2) || !isUnit(row.y2) || sizeMm === null)) return null;
     return {
         id: `m${row.seq}`,
         seq: row.seq,
+        kind,
         x: row.x,
         y: row.y,
+        x2: kind === "measure" ? row.x2 : null,
+        y2: kind === "measure" ? row.y2 : null,
         findingType: row.finding_type && FINDING_VALUES.has(row.finding_type) ? (row.finding_type as FindingType) : null,
         aiAgreement:
             row.ai_agreement && AGREEMENT_VALUES.has(row.ai_agreement) ? (row.ai_agreement as AiAgreement) : null,
         note: row.note ?? "",
-        sizeMm: size !== null && Number.isFinite(size) && size > 0 ? size : null,
+        sizeMm,
     };
 }

@@ -175,8 +175,8 @@ export function BeforeAfterViewer({
     enabled: persist !== null,
     save: async (m) => {
       if (!persist) return false;
-      const { seq, x, y, findingType, aiAgreement, note, sizeMm } = m;
-      const result = await persist.save({ uploadId: persist.uploadId, seq, x, y, findingType, aiAgreement, note, sizeMm });
+      const { seq, kind, x, y, x2, y2, findingType, aiAgreement, note, sizeMm } = m;
+      const result = await persist.save({ uploadId: persist.uploadId, seq, kind, x, y, x2, y2, findingType, aiAgreement, note, sizeMm });
       return result.ok;
     },
     remove: async (seq) => {

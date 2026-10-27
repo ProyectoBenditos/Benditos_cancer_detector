@@ -3,22 +3,30 @@
  * En la Fase B vive solo en el navegador; los valores de findingType y
  * aiAgreement son los del CHECK de la futura tabla upload_annotations (Fase C).
  * La nota es PHI: nunca se escribe en la consola del navegador ni en logs.
+ * Una medición es un marcador con segundo punto: comparte numeración, panel y guardado.
  */
 import { clamp } from "./panZoomMath";
+import { formatMm } from "./measureMath";
 
 export type FindingType = "solido" | "subsolido" | "vidrio_esmerilado" | "calcificado" | "artefacto" | "otro";
 export type AiAgreement = "ia_marco" | "ia_no_marco" | "ia_falso_positivo";
+export type MarkerKind = "point" | "measure";
 
 export type Marker = {
   id: string;
   /** Número visible. No se reutiliza al borrar (coincide con `seq` de la Fase C). */
   seq: number;
+  kind: MarkerKind;
   /** Coordenadas normalizadas [0,1] sobre la imagen. */
   x: number;
   y: number;
+  /** Segundo punto de una medición; null en los puntos. */
+  x2: number | null;
+  y2: number | null;
   findingType: FindingType | null;
   aiAgreement: AiAgreement | null;
   note: string;
+  /** En una medición es la distancia calculada, no un dato editable. */
   sizeMm: number | null;
 };
 
@@ -26,6 +34,7 @@ export type MarkersState = { markers: Marker[]; selectedId: string | null; nextS
 export type MarkerPatch = Partial<Pick<Marker, "findingType" | "aiAgreement" | "note" | "sizeMm">>;
 export type MarkerAction =
   | { type: "add"; x: number; y: number }
+  | { type: "addMeasure"; x: number; y: number; x2: number; y2: number; sizeMm: number }
   | { type: "update"; id: string; patch: MarkerPatch }
   | { type: "move"; id: string; x: number; y: number }
   | { type: "remove"; id: string }
@@ -71,26 +80,59 @@ function mapMarker(state: MarkersState, id: string, fn: (m: Marker) => Marker): 
   return { ...state, markers: state.markers.map((m) => (m.id === id ? fn(m) : m)) };
 }
 
+function appendMarker(state: MarkersState, fields: Omit<Marker, "id" | "seq">): MarkersState {
+  const seq = state.nextSeq;
+  const marker: Marker = { id: `m${seq}`, seq, ...fields };
+  return { markers: [...state.markers, marker], selectedId: marker.id, nextSeq: seq + 1 };
+}
+
+const EMPTY_DETAILS = { findingType: null, aiAgreement: null, note: "" } as const;
+
+/** Desplaza la medición entera: el paso se acota para que ningún extremo salga de [0,1]. */
+function moveMeasure(m: Marker, x: number, y: number): Marker {
+  const x2 = m.x2 ?? m.x;
+  const y2 = m.y2 ?? m.y;
+  const dx = clamp(x - m.x, -Math.min(m.x, x2), 1 - Math.max(m.x, x2));
+  const dy = clamp(y - m.y, -Math.min(m.y, y2), 1 - Math.max(m.y, y2));
+  return { ...m, x: clamp01(m.x + dx), y: clamp01(m.y + dy), x2: clamp01(x2 + dx), y2: clamp01(y2 + dy) };
+}
+
 export function markersReducer(state: MarkersState, action: MarkerAction): MarkersState {
   switch (action.type) {
-    case "add": {
-      const seq = state.nextSeq;
-      const marker: Marker = {
-        id: `m${seq}`,
-        seq,
+    case "add":
+      return appendMarker(state, {
+        kind: "point",
         x: clamp01(action.x),
         y: clamp01(action.y),
-        findingType: null,
-        aiAgreement: null,
-        note: "",
+        x2: null,
+        y2: null,
+        ...EMPTY_DETAILS,
         sizeMm: null,
-      };
-      return { markers: [...state.markers, marker], selectedId: marker.id, nextSeq: seq + 1 };
+      });
+    case "addMeasure": {
+      // Sin mm válidos no hay medición: no se podría guardar.
+      const sizeMm = validSize(action.sizeMm);
+      if (sizeMm === null) return state;
+      return appendMarker(state, {
+        kind: "measure",
+        x: clamp01(action.x),
+        y: clamp01(action.y),
+        x2: clamp01(action.x2),
+        y2: clamp01(action.y2),
+        ...EMPTY_DETAILS,
+        sizeMm,
+      });
     }
     case "update":
-      return mapMarker(state, action.id, (m) => ({ ...m, ...sanitizePatch(action.patch) }));
+      return mapMarker(state, action.id, (m) => {
+        const patch = sanitizePatch(action.patch);
+        if (m.kind === "measure") delete patch.sizeMm;
+        return { ...m, ...patch };
+      });
     case "move":
-      return mapMarker(state, action.id, (m) => ({ ...m, x: clamp01(action.x), y: clamp01(action.y) }));
+      return mapMarker(state, action.id, (m) =>
+        m.kind === "measure" ? moveMeasure(m, action.x, action.y) : { ...m, x: clamp01(action.x), y: clamp01(action.y) }
+      );
     case "remove":
       if (!state.markers.some((m) => m.id === action.id)) return state;
       return {
@@ -117,9 +159,12 @@ export function findingLabel(t: FindingType | null): string {
   return FINDING_TYPE_OPTIONS.find((o) => o.value === t)?.label ?? "Sin clasificar";
 }
 
-/** «Marcador 2: nódulo subsólido, comienzo de la nota…» */
+/** «Marcador 2: nódulo subsólido, comienzo de la nota…» o «Medición 3: 12,4 mm, …» */
 export function markerAriaLabel(m: Marker): string {
-  let label = `Marcador ${m.seq}: ${findingLabel(m.findingType).toLowerCase()}`;
+  let label =
+    m.kind === "measure" && m.sizeMm !== null
+      ? `Medición ${m.seq}: ${formatMm(m.sizeMm)}`
+      : `Marcador ${m.seq}: ${findingLabel(m.findingType).toLowerCase()}`;
   const note = m.note.trim();
   if (note) {
     const head = note.slice(0, ARIA_NOTE_CHARS).trimEnd();

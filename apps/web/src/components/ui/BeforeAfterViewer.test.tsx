@@ -459,6 +459,9 @@ describe("BeforeAfterViewer — persistencia", () => {
     aiAgreement: null,
     note: "",
     sizeMm: null,
+    kind: "point",
+    x2: null,
+    y2: null,
     ...over,
   });
 

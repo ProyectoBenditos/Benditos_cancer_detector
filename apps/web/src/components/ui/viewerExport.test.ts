@@ -11,6 +11,9 @@ const m = (seq: number, note: string, findingType: Marker["findingType"] = "soli
   aiAgreement: null,
   note,
   sizeMm: null,
+  kind: "point",
+  x2: null,
+  y2: null,
 });
 
 describe("exportLegendLines", () => {
