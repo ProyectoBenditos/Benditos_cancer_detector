@@ -1,15 +1,12 @@
 import React from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
 import {
   ShieldCheck,
-  AlertTriangle,
   CheckCircle2,
   Lock,
   Activity,
-  Layers,
   Stethoscope,
   Microscope,
   FileCheck2,
@@ -21,7 +18,7 @@ import { ReportPrintControls } from "@/components/informe/ReportPrintControls";
 import { AnatomicalLungsDiagram } from "@/components/informe/AnatomicalLungsDiagram";
 import { HistologicalSubtypeCard, type SubtipoHistologicoData } from "@/components/informe/HistologicalSubtypeCard";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
-import { extractLobarLocation, LOBAR_LOCATIONS } from "@/lib/uploadReview";
+import { extractLobarLocation } from "@/lib/uploadReview";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -63,7 +60,6 @@ export default async function InformeClinicoPage({ params }: PageProps) {
     reviewLobar ||
     ((upload.clinical_features as Record<string, unknown> | null)?.lobar_location as string | undefined) ||
     null;
-  const activeLobeDef = LOBAR_LOCATIONS.find((l) => l.value === lobarLocation);
 
   // Auditoría criptográfica (Ley 1581 / PS 3.15)
   const { data: auditRow } = await supabase
@@ -266,6 +262,7 @@ export default async function InformeClinicoPage({ params }: PageProps) {
               </span>
               <div className="w-full aspect-square max-w-[240px] bg-black rounded border border-slate-300 flex items-center justify-center overflow-hidden">
                 {beforeUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- URL firmada de Storage en página de impresión; next/image no aplica
                   <img
                     src={beforeUrl}
                     alt="Corte Tomográfico Axial"
@@ -284,6 +281,7 @@ export default async function InformeClinicoPage({ params }: PageProps) {
               </span>
               <div className="w-full aspect-square max-w-[240px] bg-black rounded border border-slate-300 flex items-center justify-center overflow-hidden">
                 {upload.ai_heatmap_base64 ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- imagen base64 en página de impresión; next/image no aplica
                   <img
                     src={`data:image/png;base64,${upload.ai_heatmap_base64}`}
                     alt="Mapa de calor Grad-CAM"

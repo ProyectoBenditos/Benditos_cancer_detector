@@ -7,6 +7,9 @@ import { getVolumeGeometry, normalizeNodule, type VolumeMetadata } from "./volum
 import { VOLUME_VERTEX_SHADER, VOLUME_FRAGMENT_SHADER } from "./volumeShaders";
 import { volumeKeyActionFromEvent } from "./volumeKeys";
 import { loadPublicVolume, prepareStudyVolume, type PreparedVolumeManifest } from "./volumeClient";
+import { useFocusTrap } from "@/components/ui/useFocusTrap";
+
+const TOOLBAR_BUTTON_FOCUS = "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300";
 
 interface VolumeViewer3DProps {
   uploadId?: string;
@@ -63,6 +66,8 @@ function VolumeViewerSession({
   uploadId, manifestUrl, atlasUrl, volumeMetadata, lobeAtlasUrl, heatmapAtlasUrl, noduleCoords, noduleRadiusMm = 6,
 }: VolumeViewer3DProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const viewerRef = useRef<HTMLDivElement>(null);
+  const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
   const materialRef = useRef<THREE.ShaderMaterial | null>(null);
   const cameraRef = useRef<THREE.PerspectiveCamera | null>(null);
   const rotation = useRef({ x: 0.05, y: 0.15 });
@@ -72,6 +77,7 @@ function VolumeViewerSession({
   const [renderError, setRenderError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  useFocusTrap(viewerRef, isFullscreen);
   const [viewMode, setViewMode] = useState<"anatomy" | "lobes" | "heatmap">("anatomy");
   const [heatOpacity, setHeatOpacity] = useState(0.7);
   const [heatThreshold, setHeatThreshold] = useState(0.6);
@@ -259,11 +265,17 @@ function VolumeViewerSession({
     if (cameraRef.current) cameraRef.current.position.z = 1.45;
     setClip([0.5, 0.5, 0.5]);
   };
+  const exitFullscreen = () => {
+    setIsFullscreen(false);
+    fullscreenButtonRef.current?.focus();
+  };
   return (
-    <div className={`${isFullscreen ? "fixed inset-0 z-50" : "relative rounded-2xl"} flex flex-col overflow-hidden border border-slate-800 bg-[#020610] text-slate-200`}>
+    <div ref={viewerRef}
+      onKeyDown={(e) => { if (isFullscreen && e.key === "Escape") { e.preventDefault(); exitFullscreen(); } }}
+      className={`${isFullscreen ? "fixed inset-0 z-50" : "relative rounded-2xl"} flex flex-col overflow-hidden border border-slate-800 bg-[#020610] text-slate-200`}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/10 p-3">
         <div>
-          <h4 className="flex items-center gap-2 text-sm font-semibold text-white"><Layers className="h-4 w-4" />Reconstrucción volumétrica 3D{resource ? ` · ${resource.metadata.num_slices} cortes` : ""}</h4>
+          <h4 className="flex items-center gap-2 text-sm font-semibold text-white"><Layers className="h-4 w-4" aria-hidden="true" />Reconstrucción volumétrica 3D{resource ? ` · ${resource.metadata.num_slices} cortes` : ""}</h4>
           <p className="mt-1 text-xs text-slate-400">{resource?.lobeTexture ? "Pulmones aislados · Segmentación MONAI" : "Ventana pulmonar −600 / 1500 HU"}{resource?.heatTexture ? " · HiResCAM por corte" : " · Iluminación por gradiente"}</p>
         </div>
         <div className="flex flex-wrap items-center gap-2 text-xs">
@@ -273,19 +285,19 @@ function VolumeViewerSession({
                { value: "heatmap", label: "Mapa de calor", available: !!resource?.heatTexture }] as const).map((mode) => (
               <button key={mode.value} type="button" aria-pressed={selectedMode === mode.value} disabled={!mode.available}
                 onClick={() => setViewMode(mode.value)}
-                className={`rounded-md px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:text-slate-500 ${selectedMode === mode.value ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"}`}>{mode.label}</button>
+                className={`${TOOLBAR_BUTTON_FOCUS} rounded-md px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:text-slate-500 ${selectedMode === mode.value ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"}`}>{mode.label}</button>
             ))}
           </div>
           <button type="button" aria-pressed={breathing} onClick={() => setBreathing(!breathing)} disabled={reducedMotion}
             title={reducedMotion ? "Desactivado por la preferencia de movimiento reducido" : undefined}
-            className={`disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1.5 rounded-md border px-3 py-1.5 ${breathing ? "border-sky-500 text-sky-300" : "border-slate-600 hover:bg-slate-800"}`}><Activity className="h-3.5 w-3.5" />Simular respiración</button>
-          <button type="button" onClick={resetView} aria-label="Restablecer vista" className="rounded-md border border-slate-600 p-1.5 hover:bg-slate-800"><RefreshCw className="h-4 w-4" /></button>
-          <button type="button" onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
-            className="rounded-md border border-slate-600 p-1.5 hover:bg-slate-800">{isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}</button>
+            className={`${TOOLBAR_BUTTON_FOCUS} disabled:cursor-not-allowed disabled:opacity-50 flex items-center gap-1.5 rounded-md border px-3 py-1.5 ${breathing ? "border-sky-500 text-sky-300" : "border-slate-600 hover:bg-slate-800"}`}><Activity className="h-3.5 w-3.5" aria-hidden="true" />Simular respiración</button>
+          <button type="button" onClick={resetView} aria-label="Restablecer vista" className={`${TOOLBAR_BUTTON_FOCUS} rounded-md border border-slate-600 p-1.5 hover:bg-slate-800`}><RefreshCw className="h-4 w-4" aria-hidden="true" /></button>
+          <button ref={fullscreenButtonRef} type="button" onClick={() => setIsFullscreen(!isFullscreen)} aria-label={isFullscreen ? "Salir de pantalla completa" : "Pantalla completa"}
+            className={`${TOOLBAR_BUTTON_FOCUS} rounded-md border border-slate-600 p-1.5 hover:bg-slate-800`}>{isFullscreen ? <Minimize2 className="h-4 w-4" aria-hidden="true" /> : <Maximize2 className="h-4 w-4" aria-hidden="true" />}</button>
         </div>
       </div>
       <div className={`relative ${isFullscreen ? "min-h-0 flex-1" : "h-[420px] sm:h-[480px]"}`}>
-        <div ref={containerRef} role="img" tabIndex={0}
+        <div ref={containerRef} role="application" tabIndex={0}
           aria-label="Volumen torácico 3D; arrastre o use las flechas para rotar, + y − para ampliar, 0 para restablecer"
           onKeyDown={(e) => {
             const action = volumeKeyActionFromEvent(e);

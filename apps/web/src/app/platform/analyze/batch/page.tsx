@@ -155,7 +155,7 @@ const batchStatusColor = (status: string) => {
 };
 
 export default function BatchUploadPage() {
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
 
   // ── State ───────────────────────────────────────────
   const [files, setFiles] = useState<File[]>([]);
@@ -179,7 +179,6 @@ export default function BatchUploadPage() {
   // Polling state
   const [batchId, setBatchId] = useState<string | null>(null);
   const [batchData, setBatchData] = useState<BatchResponse | null>(null);
-  const [polling, setPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
 
@@ -192,7 +191,7 @@ export default function BatchUploadPage() {
       .then(({ data }) => {
         if (data) setPatients(data);
       });
-  }, []);
+  }, [supabase]);
 
   // ── Efecto Paciente Creado ────────────────────────────
   useEffect(() => {
@@ -255,11 +254,10 @@ export default function BatchUploadPage() {
     } catch {
       // Silent retry
     }
-  }, []);
+  }, [supabase]);
 
   const startPolling = useCallback(
     (id: string) => {
-      setPolling(true);
       pollStartRef.current = Date.now();
       fetchBatchStatus(id);
 
@@ -276,7 +274,6 @@ export default function BatchUploadPage() {
   );
 
   const stopPolling = () => {
-    setPolling(false);
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;

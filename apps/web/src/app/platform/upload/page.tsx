@@ -81,9 +81,10 @@ const riskColor = (nivel: string) => {
 };
 
 export default function UploadDicomPage() {
-    const supabase = createClient();
+    const [supabase] = useState(() => createClient());
 
     const [file, setFile]               = useState<File | null>(null);
+    const [fileError, setFileError]     = useState<string | null>(null);
     const [caseRef, setCaseRef]         = useState("");
     const [patientId, setPatientId]     = useState("");
     const [patients, setPatients]       = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
@@ -105,7 +106,7 @@ export default function UploadDicomPage() {
     useEffect(() => {
         supabase.from("patients").select("id, external_id, display_alias").order("created_at", { ascending: false })
             .then(({ data }) => { if (data) setPatients(data); });
-    }, []);
+    }, [supabase]);
 
     useEffect(() => {
         if (!modalState.patient) return;
@@ -148,9 +149,10 @@ export default function UploadDicomPage() {
             return;
         }
 
-        const fileError = validateUploadFile(file);
-        if (fileError) {
-            toast.error(fileError);
+        const invalidFile = validateUploadFile(file);
+        if (invalidFile) {
+            setFileError(invalidFile);
+            toast.error(invalidFile);
             return;
         }
 
@@ -337,15 +339,30 @@ export default function UploadDicomPage() {
 
                         {/* Archivo */}
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label htmlFor="upload-file" className="mb-2 block text-sm font-medium text-slate-700">
                                 Archivo DICOM o imagen
                             </label>
                             <input
+                                id="upload-file"
                                 type="file"
                                 accept={uploadAccept()}
-                                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                aria-invalid={fileError ? true : undefined}
+                                aria-describedby={fileError ? "upload-file-error" : undefined}
+                                onChange={(e) => {
+                                    const chosen = e.target.files?.[0] ?? null;
+                                    setFile(chosen);
+                                    // El error queda bajo el input (WCAG 3.3.1); el toast solo avisa.
+                                    const invalid = chosen ? validateUploadFile(chosen) : null;
+                                    setFileError(invalid);
+                                    if (invalid) toast.error(invalid);
+                                }}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
+                            {fileError && (
+                                <p id="upload-file-error" role="alert" className="mt-2 text-sm font-medium text-slate-800">
+                                    {fileError}
+                                </p>
+                            )}
                             <p className="text-xs text-slate-500 mt-2">
                                 {uploadFormatsLabel()}
                             </p>
