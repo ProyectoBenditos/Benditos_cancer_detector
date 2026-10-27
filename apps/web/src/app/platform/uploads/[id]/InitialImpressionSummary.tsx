@@ -56,7 +56,7 @@ export function InitialImpressionSummary({ impression }: { impression: InitialIm
                     <div className="flex flex-col gap-1 md:col-span-2">
                         <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Nota</dt>
                         <dd className="text-sm text-slate-800 whitespace-pre-line break-words">
-                            {impression.notes ?? <span className="text-slate-400 italic">Sin nota</span>}
+                            {impression.notes ?? <span className="text-slate-500 italic">Sin nota</span>}
                         </dd>
                     </div>
                 </dl>

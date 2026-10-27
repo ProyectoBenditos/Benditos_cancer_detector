@@ -51,6 +51,11 @@ describe("BlindImpressionForm", () => {
         expect(notes).toHaveAttribute("maxLength", "4000");
     });
 
+    it("la etiqueta «(opcional)» no usa slate-400 (contraste insuficiente)", () => {
+        render(<BlindImpressionForm uploadId={UPLOAD_ID} saveStatus="idle" markersLoadFailed={false} />);
+        expect(screen.getByText("(opcional)").className).not.toContain("slate-400");
+    });
+
     it("no tiene ningún campo de concordancia", () => {
         const { container } = render(
             <BlindImpressionForm uploadId={UPLOAD_ID} saveStatus="idle" markersLoadFailed={false} />,

@@ -109,7 +109,7 @@ export function BlindImpressionForm({ uploadId, saveStatus, markersLoadFailed }:
 
                     <div>
                         <label htmlFor="impression_notes" className={LABEL_CLASS}>
-                            Nota <span className="text-slate-400 font-normal">(opcional)</span>
+                            Nota <span className="text-slate-500 font-normal">(opcional)</span>
                         </label>
                         <textarea
                             id="impression_notes"
