@@ -150,8 +150,10 @@ function RadioGroup<T extends string>({
             {/* En móvil los modos van sin icono para que quepan en una línea. */}
             <Icon className={variant === "segment" ? "hidden h-3.5 w-3.5 sm:block" : "h-4 w-4"} aria-hidden="true" />
             {variant === "segment" && o.label}
+            {/* aria-hidden: la descripción llega por aria-describedby y no se
+                repite dentro del nombre de la variante "segment". */}
             {o.description && (
-              <span id={`${descId}-${i}`} className="sr-only">
+              <span id={`${descId}-${i}`} className="sr-only" aria-hidden="true">
                 {o.description}
               </span>
             )}
@@ -191,6 +193,8 @@ export type ViewerToolbarProps = {
   measureAvailable: boolean;
   showAi: boolean;
   onToggleAi: () => void;
+  /** Con motivo, los modos de comparación y el parpadeo quedan deshabilitados y lo explican. */
+  aiHiddenReason?: string;
   isFullscreen: boolean;
   onToggleFullscreen: () => void;
   onZoomIn: () => void;
@@ -208,6 +212,7 @@ export function ViewerToolbar({
   measureAvailable,
   showAi,
   onToggleAi,
+  aiHiddenReason,
   isFullscreen,
   onToggleFullscreen,
   onZoomIn,
@@ -217,12 +222,21 @@ export function ViewerToolbar({
   onHelp,
 }: ViewerToolbarProps) {
   const toolOptions = measureAvailable ? TOOL_OPTIONS_WITH_MEASURE : TOOL_OPTIONS_WITHOUT_MEASURE;
+  const modeOptions = aiHiddenReason
+    ? MODE_OPTIONS.map((o) => ({ ...o, disabled: true, description: aiHiddenReason }))
+    : MODE_OPTIONS;
+  const blinkReasonId = useId();
+  const blinkTitle = aiHiddenReason
+    ? `Parpadeo. ${aiHiddenReason}`
+    : showAi
+      ? "Parpadeo: Ocultar IA (Barra Espaciadora)"
+      : "Parpadeo: Mostrar IA (Barra Espaciadora)";
   return (
     <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <RadioGroup
           label="Modo de visualización"
-          options={MODE_OPTIONS}
+          options={modeOptions}
           value={mode}
           onChange={onModeChange}
           variant="segment"
@@ -241,18 +255,33 @@ export function ViewerToolbar({
           <RotateCcw className="h-4 w-4" aria-hidden="true" />
         </ToolbarButton>
 
-        {/* Parpadeo (con Espacio) */}
+        {/* Parpadeo (con Espacio). Sin IA sigue enfocable (aria-disabled) para
+            que se pueda leer el motivo. */}
         <button
           type="button"
           onClick={onToggleAi}
-          title={showAi ? "Parpadeo: Ocultar IA (Barra Espaciadora)" : "Parpadeo: Mostrar IA (Barra Espaciadora)"}
-          className={`flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors cursor-pointer ${FOCUS_RING} ${
-            !showAi
-              ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
-              : `border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
+          aria-disabled={aiHiddenReason ? true : undefined}
+          aria-describedby={aiHiddenReason ? blinkReasonId : undefined}
+          title={blinkTitle}
+          className={`flex h-9 items-center gap-1.5 rounded-lg border px-2.5 text-xs font-semibold transition-colors cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-50 ${FOCUS_RING} ${
+            aiHiddenReason
+              ? `border-slate-200 bg-white text-slate-700 ${DARK_CONTROL}`
+              : !showAi
+                ? "border-amber-400 bg-amber-50 text-amber-800 shadow-sm"
+                : `border-slate-200 bg-white text-slate-700 hover:bg-slate-100 hover:text-brand-primary ${DARK_CONTROL}`
           }`}
         >
-          {!showAi ? (
+          {aiHiddenReason && (
+            <span id={blinkReasonId} className="sr-only" aria-hidden="true">
+              {aiHiddenReason}
+            </span>
+          )}
+          {aiHiddenReason ? (
+            <>
+              <EyeOff className="h-4 w-4" aria-hidden="true" />
+              <span>Parpadeo</span>
+            </>
+          ) : !showAi ? (
             <>
               <EyeOff className="h-4 w-4 text-amber-600" aria-hidden="true" />
               <span>TAC Pura</span>

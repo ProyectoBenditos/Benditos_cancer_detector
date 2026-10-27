@@ -49,3 +49,16 @@ describe("VolumeViewer3D: accesibilidad", () => {
     icons.forEach((icon) => expect(icon).toHaveAttribute("aria-hidden", "true"));
   });
 });
+
+describe("VolumeViewer3D: sin IA", () => {
+  it("sin hideAi ofrece el modo Mapa de calor (deshabilitado mientras carga)", () => {
+    render(<VolumeViewer3D manifestUrl="/demo/manifest.json" />);
+    expect(screen.getByRole("button", { name: "Mapa de calor" })).toBeDisabled();
+  });
+
+  it("con hideAi no existe el botón Mapa de calor mientras el volumen carga", () => {
+    render(<VolumeViewer3D manifestUrl="/demo/manifest.json" hideAi />);
+    expect(screen.getByRole("button", { name: "Anatomía" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Mapa de calor" })).not.toBeInTheDocument();
+  });
+});

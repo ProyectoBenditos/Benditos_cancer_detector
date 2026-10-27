@@ -25,10 +25,13 @@ export function MarkerEditor({
   marker,
   onChange,
   onClose,
+  hideAiAgreement = false,
 }: {
   marker: Marker;
   onChange: (patch: MarkerPatch) => void;
   onClose: () => void;
+  /** Sin IA visible (lectura ciega, práctica) no se pregunta la opinión frente a ella. */
+  hideAiAgreement?: boolean;
 }) {
   const id = useId();
   const firstRef = useRef<HTMLSelectElement>(null);
@@ -61,24 +64,26 @@ export function MarkerEditor({
         </select>
       </div>
 
-      <div>
-        <label htmlFor={`${id}-ia`} className={LABEL}>
-          Opinión frente a la IA
-        </label>
-        <select
-          id={`${id}-ia`}
-          value={marker.aiAgreement ?? ""}
-          onChange={(e) => onChange({ aiAgreement: (e.target.value || null) as AiAgreement | null })}
-          className={FIELD}
-        >
-          <option value="">Sin indicar</option>
-          {AI_AGREEMENT_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-      </div>
+      {!hideAiAgreement && (
+        <div>
+          <label htmlFor={`${id}-ia`} className={LABEL}>
+            Opinión frente a la IA
+          </label>
+          <select
+            id={`${id}-ia`}
+            value={marker.aiAgreement ?? ""}
+            onChange={(e) => onChange({ aiAgreement: (e.target.value || null) as AiAgreement | null })}
+            className={FIELD}
+          >
+            <option value="">Sin indicar</option>
+            {AI_AGREEMENT_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       <div>
         <label htmlFor={`${id}-nota`} className={LABEL}>

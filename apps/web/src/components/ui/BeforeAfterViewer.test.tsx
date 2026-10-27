@@ -1,9 +1,11 @@
+import type { ComponentProps } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 
 import { BeforeAfterViewer, type ViewerAnnotations, type ViewerSummary } from "./BeforeAfterViewer";
 import type { Marker } from "./markerState";
 import type { PixelGeometry } from "@/lib/pixelGeometry";
+import { BLIND_VIEWER_REASON } from "@/lib/blindReading";
 
 function renderViewer(summary?: ViewerSummary) {
   render(
@@ -666,5 +668,103 @@ describe("BeforeAfterViewer — medir", () => {
     renderMeasure(GEO_512, [saved]);
     expect(screen.getByTestId("measure-line-1")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Medición 1: 179,2 mm" })).toBeInTheDocument();
+  });
+});
+
+describe("BeforeAfterViewer — sin IA", () => {
+  const UPLOAD_ID = "6f1c2b3a-1d2e-4f50-8a9b-0c1d2e3f4a5b";
+
+  function renderBlind(props: Partial<ComponentProps<typeof BeforeAfterViewer>> = {}) {
+    render(
+      <BeforeAfterViewer
+        beforeUrl="/estudio.png"
+        heatmapBase64={null}
+        aiHiddenReason={BLIND_VIEWER_REASON}
+        {...props}
+      />
+    );
+    return screen.getByRole("group", { name: /Visor de tomografía/ });
+  }
+
+  afterEach(() => vi.useRealTimers());
+
+  it("los modos de vista están deshabilitados y su descripción es el motivo", () => {
+    renderBlind();
+    for (const name of [/Cortina/, /Lado a lado/, /Superpuesto/]) {
+      const radio = screen.getByRole("radio", { name });
+      expect(radio).toHaveAttribute("aria-disabled", "true");
+      expect(radio).toHaveAccessibleDescription(BLIND_VIEWER_REASON);
+    }
+    fireEvent.click(screen.getByRole("radio", { name: /Lado a lado/ }));
+    expect(screen.queryByText("Detección IA (Grad-CAM)")).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent(BLIND_VIEWER_REASON);
+  });
+
+  it("el parpadeo está deshabilitado y Espacio con el visor enfocado no cambia nada", () => {
+    const visor = renderBlind();
+    const blink = screen.getByRole("button", { name: /Parpadeo/ });
+    expect(blink).toHaveAttribute("aria-disabled", "true");
+    expect(blink).toHaveAccessibleDescription(BLIND_VIEWER_REASON);
+    visor.focus();
+    fireEvent.keyDown(visor, space);
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+    expect(screen.queryByText("TAC Pura")).not.toBeInTheDocument();
+    expect(screen.queryByText(/Parpadeo Activo/)).not.toBeInTheDocument();
+    fireEvent.click(blink);
+    expect(screen.queryByText("TAC Pura")).not.toBeInTheDocument();
+  });
+
+  it("el lienzo dibuja solo la imagen original aunque llegue un mapa de calor", () => {
+    renderBlind({ heatmapBase64: "AAAA" });
+    expect(screen.getByAltText("Estudio tomográfico original")).toBeInTheDocument();
+    expect(screen.queryByAltText("Detección IA superpuesta")).not.toBeInTheDocument();
+    expect(screen.queryByRole("slider", { name: "Posición de la cortina" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("checkbox", { name: /Enfocar nódulo/ })).not.toBeInTheDocument();
+  });
+
+  it("el texto del motivo se ve en el visor", () => {
+    const visor = renderBlind();
+    const visibles = within(visor)
+      .getAllByText(BLIND_VIEWER_REASON)
+      .filter((el) => !el.classList.contains("sr-only"));
+    expect(visibles).toHaveLength(1);
+  });
+
+  it("el editor de un marcador nuevo no tiene «Opinión frente a la IA»", () => {
+    const visor = renderBlind();
+    addMarkerWithKeyboard(visor);
+    expect(screen.getByRole("combobox", { name: "Tipo de hallazgo" })).toBeInTheDocument();
+    expect(screen.queryByText("Opinión frente a la IA")).not.toBeInTheDocument();
+  });
+
+  it("en pantalla completa el panel no tiene «Resultado IA» y muestra el motivo", () => {
+    renderBlind({ summary: { score: 0.82, riskLevel: "ALTO", review: null } });
+    fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+    const panel = screen.getByRole("complementary", { name: "Panel del caso" });
+    expect(within(panel).queryByRole("heading", { name: "Resultado IA" })).not.toBeInTheDocument();
+    expect(panel).not.toHaveTextContent("82.0%");
+    expect(panel).toHaveTextContent(BLIND_VIEWER_REASON);
+  });
+
+  it("onMarkersChange recibe la lista con el marcador nuevo", () => {
+    const onMarkersChange = vi.fn();
+    const visor = renderBlind({ onMarkersChange });
+    addMarkerWithKeyboard(visor);
+    expect(onMarkersChange).toHaveBeenLastCalledWith([expect.objectContaining({ seq: 1, x: 0.5, y: 0.5 })]);
+  });
+
+  it("annotations.onStatusChange recibe «saving» y luego «saved»", async () => {
+    vi.useFakeTimers();
+    const onStatusChange = vi.fn();
+    const save = vi.fn<ViewerAnnotations["save"]>().mockResolvedValue({ ok: true });
+    const remove = vi.fn<ViewerAnnotations["remove"]>().mockResolvedValue({ ok: true });
+    const visor = renderBlind({ annotations: { uploadId: UPLOAD_ID, initial: [], save, remove, onStatusChange } });
+    addMarkerWithKeyboard(visor);
+    expect(onStatusChange).toHaveBeenLastCalledWith("saving");
+    await act(() => vi.advanceTimersByTimeAsync(700));
+    expect(save).toHaveBeenCalled();
+    expect(onStatusChange).toHaveBeenLastCalledWith("saved");
+    const statuses = onStatusChange.mock.calls.map(([s]) => s);
+    expect(statuses.indexOf("saving")).toBeLessThan(statuses.lastIndexOf("saved"));
   });
 });

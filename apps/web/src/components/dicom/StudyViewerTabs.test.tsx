@@ -4,17 +4,20 @@ import { fireEvent, render, screen, cleanup } from "@testing-library/react";
 
 vi.mock("next/dynamic", () => ({
   default: () =>
-    function Volume3DStub() {
-      return <div>visor-3d</div>;
+    function Volume3DStub({ hideAi }: { hideAi?: boolean }) {
+      return <div data-hide-ai={String(hideAi === true)}>visor-3d</div>;
     },
 }));
 vi.mock("@/components/ui/BeforeAfterViewer", () => ({
-  BeforeAfterViewer: ({ pixelGeometry }: { pixelGeometry?: unknown }) => (
-    <div data-geometry={JSON.stringify(pixelGeometry ?? null)}>visor-2d</div>
+  BeforeAfterViewer: ({ pixelGeometry, aiHiddenReason }: { pixelGeometry?: unknown; aiHiddenReason?: string }) => (
+    <div data-geometry={JSON.stringify(pixelGeometry ?? null)} data-ai-hidden-reason={aiHiddenReason ?? ""}>
+      visor-2d
+    </div>
   ),
 }));
 
 import { StudyViewerTabs } from "./StudyViewerTabs";
+import { BLIND_VIEWER_REASON } from "@/lib/blindReading";
 
 const base = {
   uploadId: "u1",
@@ -89,5 +92,26 @@ describe("StudyViewerTabs", () => {
     expect(screen.getByText("HiResCAM (Draelos y Carin, 2020)")).toBeInTheDocument();
     rerender(<StudyViewerTabs {...base} />);
     expect(screen.getByText("Grad-CAM (Selvaraju et al., 2017)")).toBeInTheDocument();
+  });
+
+  it("sin IA: pasa el motivo al 2D y hideAi al 3D, cambia el pie y oculta el lóbulo", () => {
+    vi.stubEnv("NEXT_PUBLIC_VOLUME_3D_ENABLED", "true");
+    render(
+      <StudyViewerTabs
+        {...base}
+        heatmapBase64={null}
+        fileType="dicom_series"
+        lobarLocation="LID"
+        aiHiddenReason={BLIND_VIEWER_REASON}
+      />
+    );
+    expect(screen.getByText("visor-2d")).toHaveAttribute("data-ai-hidden-reason", BLIND_VIEWER_REASON);
+    expect(screen.queryByText(/Lóbulo/)).toBeNull();
+    expect(screen.queryByText(/Mapa generado con/)).toBeNull();
+    expect(screen.getByText(BLIND_VIEWER_REASON)).toBeInTheDocument();
+    fireEvent.click(screen.getAllByRole("tab")[1]);
+    expect(screen.getByText("visor-3d")).toHaveAttribute("data-hide-ai", "true");
+    expect(screen.queryByText(/El mapa de calor se calcula/)).toBeNull();
+    expect(screen.getByText(BLIND_VIEWER_REASON)).toBeInTheDocument();
   });
 });

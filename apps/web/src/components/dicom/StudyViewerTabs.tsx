@@ -29,7 +29,7 @@ const TAB_ORDER: TabId[] = ["2d", "3d"];
 interface StudyViewerTabsProps {
   uploadId: string;
   beforeUrl: string | null;
-  heatmapBase64: string;
+  heatmapBase64: string | null;
   summary: ViewerSummary;
   annotations: ViewerAnnotations;
   fileType?: string | null;
@@ -38,6 +38,8 @@ interface StudyViewerTabsProps {
   modelVersion?: string | null;
   /** Calibración del corte 2D para Medir (null en PNG/JPG o estudios sin PixelSpacing). */
   pixelGeometry?: PixelGeometry | null;
+  /** Con motivo, los visores 2D y 3D funcionan sin IA y no se muestra el lóbulo. */
+  aiHiddenReason?: string;
 }
 
 export function StudyViewerTabs({
@@ -51,6 +53,7 @@ export function StudyViewerTabs({
   sourceSlice,
   modelVersion,
   pixelGeometry,
+  aiHiddenReason,
 }: StudyViewerTabsProps) {
   const baseId = useId();
   const [activeTab, setActiveTab] = useState<TabId>("2d");
@@ -92,16 +95,22 @@ export function StudyViewerTabs({
         summary={summary}
         annotations={annotations}
         pixelGeometry={pixelGeometry}
+        aiHiddenReason={aiHiddenReason}
       />
-      <p className="text-xs text-slate-500 mt-2 px-1">
-        Mapa generado con <SourceLink href={reference.url}>{reference.short}</SourceLink>: indica las regiones que más
-        pesaron en el score; no delimita el nódulo ni su tamaño.
-        {sourceSlice ? ` Análisis sobre el corte ${sourceSlice.index + 1} de ${sourceSlice.total}.` : null}
-      </p>
+      {aiHiddenReason ? (
+        <p className="text-xs text-slate-500 mt-2 px-1">{aiHiddenReason}</p>
+      ) : (
+        <p className="text-xs text-slate-500 mt-2 px-1">
+          Mapa generado con <SourceLink href={reference.url}>{reference.short}</SourceLink>: indica las regiones que más
+          pesaron en el score; no delimita el nódulo ni su tamaño.
+          {sourceSlice ? ` Análisis sobre el corte ${sourceSlice.index + 1} de ${sourceSlice.total}.` : null}
+        </p>
+      )}
     </div>
   );
 
-  const lobeBadge = lobarLocation ? (
+  // El lóbulo sale del análisis: sin IA no se muestra.
+  const lobeBadge = lobarLocation && !aiHiddenReason ? (
     <span className="px-2.5 py-1 rounded-lg bg-slate-50 text-slate-800 border border-slate-200 font-bold flex items-center gap-1 text-xs">
       <Layers className="w-3.5 h-3.5 text-brand-primary" aria-hidden="true" />
       Lóbulo: {lobarLocation}
@@ -170,9 +179,10 @@ export function StudyViewerTabs({
         </div>
       ) : (
         <div role="tabpanel" id={panelId("3d")} aria-labelledby={tabId("3d")}>
-          <VolumeViewer3D uploadId={uploadId} />
+          <VolumeViewer3D uploadId={uploadId} hideAi={Boolean(aiHiddenReason)} />
           <p className="text-xs text-slate-500 mt-2 px-1">
-            El mapa de calor se calcula por corte y se visualiza en el volumen; no representa una segmentación de tumor.
+            {aiHiddenReason ??
+              "El mapa de calor se calcula por corte y se visualiza en el volumen; no representa una segmentación de tumor."}
           </p>
         </div>
       )}

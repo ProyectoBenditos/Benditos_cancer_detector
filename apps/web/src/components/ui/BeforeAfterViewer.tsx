@@ -16,7 +16,7 @@ import { normalizedToStage, stageToNormalized, visibleCenter, type Point, type S
 import { MARKER_SIZE_MAX_MM, markersReducer, markersStateFrom, type Marker } from "./markerState";
 import { calibrationFor, formatMm, measureMm } from "./measureMath";
 import type { PixelGeometry } from "@/lib/pixelGeometry";
-import { useMarkerAutosave } from "./useMarkerAutosave";
+import { useMarkerAutosave, type SaveStatus } from "./useMarkerAutosave";
 import type { AnnotationInput, AnnotationResult } from "@/lib/uploadAnnotations";
 import { MarkerPanel } from "./MarkerPanel";
 import type { RiskLevel } from "./RiskBadge";
@@ -47,6 +47,8 @@ export type ViewerAnnotations = {
   loadFailed?: boolean;
   save: (input: AnnotationInput) => Promise<AnnotationResult>;
   remove: (uploadId: string, seq: number) => Promise<AnnotationResult>;
+  /** Avisa cada cambio del estado del guardado automático. */
+  onStatusChange?: (status: SaveStatus) => void;
 };
 
 type BeforeAfterViewerProps = {
@@ -59,6 +61,13 @@ type BeforeAfterViewerProps = {
   initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
+  /**
+   * Con motivo, el visor funciona sin IA (lectura ciega, modo práctica): solo
+   * la TAC, sin modos de comparación ni parpadeo, y el motivo a la vista.
+   */
+  aiHiddenReason?: string;
+  /** Recibe la lista de marcadores cada vez que cambia (también al montar). */
+  onMarkersChange?: (markers: Marker[]) => void;
 };
 
 const PAN_STEP = 40;
@@ -123,7 +132,12 @@ export function BeforeAfterViewer({
   initialMode = "curtain",
   initialSplit = 50,
   initialShowAi = true,
+  aiHiddenReason,
+  onMarkersChange,
 }: BeforeAfterViewerProps) {
+  // Sin IA el mapa de calor no se usa aunque llegue: ni se filtra ni se dibuja.
+  const aiHidden = Boolean(aiHiddenReason);
+  const heatmap = aiHidden ? null : heatmapBase64;
   const [mode, setMode] = useState<ViewMode>(initialMode);
   const [tool, setTool] = useState<ViewerTool>("pan");
   // Región aria-live: anuncia cambios que no se ven sin mirar la pantalla.
@@ -133,7 +147,8 @@ export function BeforeAfterViewer({
   // splitPosition representa el % de Detección IA revelado de izquierda a derecha (0% = TAC Original, 100% = IA pura)
   const [splitPosition, setSplitPosition] = useState(initialSplit);
   const [cleanNoise, setCleanNoise] = useState(true);
-  const [showAi, setShowAi] = useState(initialShowAi);
+  const [aiVisible, setAiVisible] = useState(initialShowAi);
+  const showAi = !aiHidden && aiVisible;
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
@@ -189,6 +204,21 @@ export function BeforeAfterViewer({
       return (await persist.remove(persist.uploadId, seq)).ok;
     },
   });
+
+  // Avisos al padre: las funciones viven en refs para no repetir el aviso en
+  // cada render cuando el padre las pasa en línea.
+  const onMarkersChangeRef = useRef(onMarkersChange);
+  const onStatusChangeRef = useRef(annotations?.onStatusChange);
+  useEffect(() => {
+    onMarkersChangeRef.current = onMarkersChange;
+    onStatusChangeRef.current = annotations?.onStatusChange;
+  });
+  useEffect(() => {
+    onMarkersChangeRef.current?.(markersState.markers);
+  }, [markersState.markers]);
+  useEffect(() => {
+    onStatusChangeRef.current?.(saveStatus);
+  }, [saveStatus]);
   const [natural, setNatural] = useState<Size>({ w: 1, h: 1 });
   const onCtLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -333,12 +363,12 @@ export function BeforeAfterViewer({
 
   // Filtrado inteligente automático: atenúa el ruido difuso de esquinas para resaltar el foco principal
   useEffect(() => {
-    if (!heatmapBase64 || !cleanNoise) return;
+    if (!heatmap || !cleanNoise) return;
 
     let active = true;
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `data:image/png;base64,${heatmapBase64}`;
+    img.src = `data:image/png;base64,${heatmap}`;
 
     img.onload = () => {
       if (!active) return;
@@ -375,19 +405,33 @@ export function BeforeAfterViewer({
     return () => {
       active = false;
     };
-  }, [heatmapBase64, cleanNoise]);
+  }, [heatmap, cleanNoise]);
 
   const rawHeatmapSrc = useMemo(
-    () => (heatmapBase64 ? `data:image/png;base64,${heatmapBase64}` : null),
-    [heatmapBase64]
+    () => (heatmap ? `data:image/png;base64,${heatmap}` : null),
+    [heatmap]
   );
 
-  const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
+  const activeHeatmapSrc = heatmap && cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
   const toggleAi = () => {
+    // Sin IA el botón está deshabilitado: solo se anuncia el motivo.
+    if (aiHiddenReason) {
+      setAnnouncement(aiHiddenReason);
+      return;
+    }
     const next = !showAi;
-    setShowAi(next);
+    setAiVisible(next);
     setAnnouncement(next ? "IA visible" : "IA oculta");
+  };
+
+  // Los modos comparan con la IA: sin ella quedan deshabilitados, como Medir sin calibración.
+  const selectMode = (m: ViewMode) => {
+    if (aiHiddenReason) {
+      setAnnouncement(aiHiddenReason);
+      return;
+    }
+    setMode(m);
   };
 
   // Sin calibración Medir queda desactivado: no hay mm reales que mostrar.
@@ -436,7 +480,8 @@ export function BeforeAfterViewer({
         break;
       case "toggleAi":
         e.preventDefault();
-        toggleAi();
+        // Sin IA, Espacio no hace nada (ni siquiera anuncia).
+        if (!aiHidden) toggleAi();
         break;
       case "toolPan":
         selectTool("pan");
@@ -602,7 +647,7 @@ export function BeforeAfterViewer({
         <div
           ref={containerRef}
           role="group"
-          aria-label="Visor de tomografía y mapa de calor Grad-CAM"
+          aria-label={aiHidden ? "Visor de tomografía" : "Visor de tomografía y mapa de calor Grad-CAM"}
           tabIndex={0}
           onKeyDown={onKeyDown}
           className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:flex viewer-full:h-dvh viewer-full:flex-col viewer-full:overflow-y-auto viewer-full:bg-slate-950 viewer-full:p-4 viewer-full:text-slate-100 viewer-full:focus-visible:outline-sky-300 ${
@@ -617,12 +662,13 @@ export function BeforeAfterViewer({
           {/* Barra de herramientas superior */}
           <ViewerToolbar
             mode={mode}
-            onModeChange={setMode}
+            onModeChange={selectMode}
             tool={tool}
             onToolChange={selectTool}
             measureAvailable={calibration !== null}
             showAi={showAi}
             onToggleAi={toggleAi}
+            aiHiddenReason={aiHiddenReason}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             onZoomIn={zoomIn}
@@ -634,7 +680,31 @@ export function BeforeAfterViewer({
 
           {/* ── Visualizador Principal ── */}
           <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
-          {mode === "curtain" ? (
+          {aiHidden ? (
+            // Sin IA: solo la TAC, con las mismas herramientas y marcadores.
+            beforeUrl ? (
+              <Stage
+                handlers={stageHandlers}
+                cursorClass={cursorClass}
+                footer={stageFooter}
+                ariaLabel="Tomografía original"
+                layerStyle={layerStyle}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={beforeUrl}
+                  style={ctStyle}
+                  alt="Estudio tomográfico original"
+                  onLoad={onCtLoad}
+                  draggable={false}
+                  className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                />
+                {markerLayer(true)}
+              </Stage>
+            ) : (
+              <Placeholder message="Vista previa de la tomografía no disponible" />
+            )
+          ) : mode === "curtain" ? (
             beforeUrl ? (
               <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
@@ -891,7 +961,14 @@ export function BeforeAfterViewer({
           )}
           </div>
 
-          {/* ── Opciones Sencillas Inferiores ── */}
+          {/* ── Opciones Sencillas Inferiores ──
+              Sin IA no hay mapa que enfocar ni parpadeo: en su lugar, el motivo. */}
+          {aiHidden ? (
+            <p className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-1.5 text-xs font-medium text-slate-600 viewer-full:border-slate-800 viewer-full:text-slate-300">
+              <EyeOff className="h-3.5 w-3.5 shrink-0 text-slate-500 viewer-full:text-slate-400" aria-hidden="true" />
+              {aiHiddenReason}
+            </p>
+          ) : (
           <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs viewer-full:border-slate-800">
             {/* Switch simple para limpiar ruido de fondo */}
             <label className="inline-flex items-center gap-2 cursor-pointer select-none">
@@ -912,6 +989,7 @@ export function BeforeAfterViewer({
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
+          )}
           </div>
 
           {/* ── Panel del caso (también en pantalla completa) ──
@@ -921,6 +999,7 @@ export function BeforeAfterViewer({
           <div className="lg:w-72 lg:shrink-0 viewer-full:min-h-0 lg:viewer-full:w-80 lg:viewer-full:overflow-y-auto max-lg:viewer-full:fixed max-lg:viewer-full:inset-x-0 max-lg:viewer-full:bottom-0 max-lg:viewer-full:z-40 max-lg:viewer-full:p-2">
             <MarkerPanel
               summary={summary}
+              aiHiddenReason={aiHiddenReason}
               markers={markersState.markers}
               selectedId={markersState.selectedId}
               dispatch={dispatchMarkers}

@@ -43,7 +43,10 @@ export function MarkerPanel({
   sheetOpen,
   onSheetOpenChange,
   saveState,
+  aiHiddenReason,
 }: {
+  /** Con motivo, el panel no muestra el resultado IA ni pregunta la opinión frente a ella. */
+  aiHiddenReason?: string;
   /** Ausente = sin persistencia (el visor se usa sin estudio guardado). */
   saveState?: { status: SaveStatus; loadFailed: boolean; onRetry: () => void };
   isFullscreen: boolean;
@@ -115,7 +118,11 @@ export function MarkerPanel({
       >
       {/* Solo en pantalla completa: fuera de ella el resultado IA ya está en la
           página, justo arriba del visor, y repetirlo es ruido. */}
-      {summary && isFullscreen && (
+      {/* Sin IA, en pantalla completa el lugar del resultado lo ocupa el motivo. */}
+      {aiHiddenReason && isFullscreen && (
+        <p className="text-xs font-medium text-slate-600 viewer-full:text-slate-300">{aiHiddenReason}</p>
+      )}
+      {summary && isFullscreen && !aiHiddenReason && (
         <section className="space-y-2">
           <h2 className={H2}>Resultado IA</h2>
           <div className="flex items-center gap-3">
@@ -264,6 +271,7 @@ export function MarkerPanel({
                       marker={m}
                       onChange={(patch) => dispatch({ type: "update", id: m.id, patch })}
                       onClose={() => dispatch({ type: "select", id: null })}
+                      hideAiAgreement={Boolean(aiHiddenReason)}
                     />
                   )}
                 </li>

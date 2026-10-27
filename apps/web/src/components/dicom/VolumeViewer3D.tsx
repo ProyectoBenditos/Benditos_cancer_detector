@@ -22,6 +22,8 @@ interface VolumeViewer3DProps {
   /** Source voxel indices [column,row,slice], never guessed from a heatmap. */
   noduleCoords?: { x: number; y: number; z: number };
   noduleRadiusMm?: number;
+  /** Sin IA (lectura ciega, práctica): no se descarga el mapa de calor ni se marca el nódulo. */
+  hideAi?: boolean;
 }
 
 interface VolumeResource {
@@ -58,13 +60,16 @@ async function loadScalarTexture(url: string, signal: AbortSignal, labels = fals
 
 export default function VolumeViewer3D(props: VolumeViewer3DProps) {
   // A study/atlas change starts a fresh loading session and disposes the old GPU resources.
-  const sessionKey = JSON.stringify([props.uploadId, props.manifestUrl, props.atlasUrl, props.lobeAtlasUrl, props.heatmapAtlasUrl, props.volumeMetadata]);
+  // Mostrar la IA también recarga: así se descarga el mapa de calor que antes se omitió.
+  const sessionKey = JSON.stringify([props.uploadId, props.manifestUrl, props.atlasUrl, props.lobeAtlasUrl, props.heatmapAtlasUrl, props.volumeMetadata, props.hideAi === true]);
   return <VolumeViewerSession key={sessionKey} {...props} />;
 }
 
 function VolumeViewerSession({
-  uploadId, manifestUrl, atlasUrl, volumeMetadata, lobeAtlasUrl, heatmapAtlasUrl, noduleCoords, noduleRadiusMm = 6,
+  uploadId, manifestUrl, atlasUrl, volumeMetadata, lobeAtlasUrl, heatmapAtlasUrl, noduleCoords: noduleCoordsProp, noduleRadiusMm = 6,
+  hideAi = false,
 }: VolumeViewer3DProps) {
+  const noduleCoords = hideAi ? undefined : noduleCoordsProp;
   const containerRef = useRef<HTMLDivElement>(null);
   const viewerRef = useRef<HTMLDivElement>(null);
   const fullscreenButtonRef = useRef<HTMLButtonElement>(null);
@@ -119,7 +124,7 @@ function VolumeViewerSession({
         }
         const geometry = getVolumeGeometry(metadata, tileWidth, tileHeight);
         const lobeUrl = prepared?.lobes || lobeAtlasUrl;
-        const heatUrl = prepared?.heatmap || heatmapAtlasUrl;
+        const heatUrl = hideAi ? undefined : prepared?.heatmap || heatmapAtlasUrl;
         if (lobeUrl) {
           lobeTexture = await loadScalarTexture(lobeUrl, abort.signal, true, prepared?.headers);
           if (lobeTexture.image.width !== texture.image.width || lobeTexture.image.height !== texture.image.height) {
@@ -140,7 +145,7 @@ function VolumeViewerSession({
     };
     void load();
     return () => { abort.abort(); texture?.dispose(); lobeTexture?.dispose(); heatTexture?.dispose(); };
-  }, [uploadId, manifestUrl, atlasUrl, volumeMetadata, lobeAtlasUrl, heatmapAtlasUrl, retry]);
+  }, [uploadId, manifestUrl, atlasUrl, volumeMetadata, lobeAtlasUrl, heatmapAtlasUrl, hideAi, retry]);
 
   useEffect(() => {
     if (!resource || !containerRef.current) return;
@@ -282,7 +287,8 @@ function VolumeViewerSession({
           <div className="flex rounded-lg border border-slate-700 bg-slate-900/80 p-0.5" role="group" aria-label="Visualización del volumen">
             {([{ value: "anatomy", label: "Anatomía", available: !!resource },
                { value: "lobes", label: "5 lóbulos", available: !!resource?.lobeTexture },
-               { value: "heatmap", label: "Mapa de calor", available: !!resource?.heatTexture }] as const).map((mode) => (
+               { value: "heatmap", label: "Mapa de calor", available: !!resource?.heatTexture }] as const)
+              .filter((mode) => !(hideAi && mode.value === "heatmap")).map((mode) => (
               <button key={mode.value} type="button" aria-pressed={selectedMode === mode.value} disabled={!mode.available}
                 onClick={() => setViewMode(mode.value)}
                 className={`${TOOLBAR_BUTTON_FOCUS} rounded-md px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:text-slate-500 ${selectedMode === mode.value ? "bg-slate-700 text-white" : "text-slate-300 hover:bg-slate-800"}`}>{mode.label}</button>
