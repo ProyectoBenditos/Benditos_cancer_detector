@@ -13,10 +13,12 @@ import nibabel as nib
 
 from app.services.dicom_series import MAX_ZIP_UNCOMPRESSED_BYTES
 
-NIFTI_TEXT_FIELDS = ("descrip", "aux_file", "db_name")
+NIFTI_TEXT_FIELDS = ("descrip", "aux_file", "db_name", "intent_name", "data_type")
 
 _INVALID_MSG = "El archivo NIfTI no es válido."
-_NORMATIVE = "NIfTI: descrip, aux_file, db_name y extensiones de cabecera eliminados"
+_NORMATIVE = (
+    "NIfTI: descrip, aux_file, db_name, intent_name, data_type y extensiones de cabecera eliminados"
+)
 
 
 _TOO_BIG_MSG = "El volumen NIfTI descomprimido supera el tamaño máximo permitido."
@@ -45,7 +47,10 @@ def deidentify_nifti_bytes(
 ) -> Tuple[bytes, Dict[str, Any]]:
     """Vacía los campos de texto libre y las extensiones de la cabecera NIfTI.
 
-    Los vóxeles y el affine no se tocan. Regla de conteo de ``tags_cleared_count``:
+    El affine se conserva. Los vóxeles se vuelven a serializar con nibabel, así que
+    pueden diferir del original por el redondeo del reescalado (``scl_slope`` /
+    ``scl_inter``); no se garantiza que los bytes de vóxel sean idénticos.
+    Regla de conteo de ``tags_cleared_count``:
     un campo de ``NIFTI_TEXT_FIELDS`` cuenta 1 solo si tenía contenido no vacío
     (descontando bytes nulos y espacios), y cada extensión de cabecera presente
     cuenta 1. Lo que ya estaba vacío no se cuenta.

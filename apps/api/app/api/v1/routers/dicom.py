@@ -12,8 +12,6 @@ import httpx
 import numpy as np
 import pydicom
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
-from fastapi.responses import Response
-from PIL import Image
 from pydantic import BaseModel
 
 from app.core.config import SUPABASE_BUCKET_NAME
@@ -28,7 +26,7 @@ from app.services.ai_contract import (
     normalize_ai_response,
     post_predict,
 )
-from app.services.ct_window import apply_lung_window_hu, dicom_to_png_bytes
+from app.services.ct_window import dicom_to_png_bytes
 from app.services.dicom_series import MAX_UPLOAD_BYTES, SeriesError, read_ct_series
 from app.services.upload_types import (
     VOLUME_KINDS,
@@ -98,7 +96,6 @@ async def upload_dicom(
     patient_id_dicom = None
     audit_deid = None
     volume_meta = None
-    preview_bytes = None
 
     try:
         # ── Caso A: Archivo .ZIP con Serie de Cortes DICOM ────────────────────
@@ -108,20 +105,16 @@ async def upload_dicom(
             except SeriesError as series_err:
                 raise HTTPException(status_code=400, detail=str(series_err))
 
-            num_slices = len(extracted_slices)
-
             first_ds = extracted_slices[0][2]
             modality = "CT"
             study_date = str(getattr(first_ds, "StudyDate", "")) or None
 
             # Desidentificar cada corte y re-empaquetar en zip saneado
             cleaned_zip_buf = io.BytesIO()
-            clean_slice_entries = []
             with zipfile.ZipFile(cleaned_zip_buf, "w", compression=zipfile.ZIP_DEFLATED) as clean_zf:
-                for idx, (z_coord, s_bytes, _) in enumerate(extracted_slices):
+                for idx, (_, s_bytes, _) in enumerate(extracted_slices):
                     c_bytes, s_audit = deidentify_dicom_bytes(s_bytes)
                     clean_zf.writestr(f"slice_{idx:04d}.dcm", c_bytes)
-                    clean_slice_entries.append((z_coord, c_bytes))
                     if idx == 0:
                         audit_deid = s_audit
                         patient_id_dicom = s_audit["pseudonymized_patient_id"]
@@ -130,10 +123,6 @@ async def upload_dicom(
 
             # Metadata del volumen 3D
             volume_meta = dicom_volume_metadata([item[2] for item in extracted_slices])
-
-            # Generar preview del corte central
-            mid_idx = num_slices // 2
-            preview_bytes = dicom_to_png_bytes(clean_slice_entries[mid_idx][1])
 
         # ── Caso B: Archivo DICOM Individual (.DCM) ───────────────────────────
         elif is_dicom:
@@ -173,7 +162,6 @@ async def upload_dicom(
                 clean_bytes, audit_deid = deidentify_dicom_bytes(contents)
                 contents = clean_bytes
                 patient_id_dicom = audit_deid["pseudonymized_patient_id"]
-                preview_bytes = dicom_to_png_bytes(contents)
                 volume_meta = dicom_volume_metadata([pydicom.dcmread(io.BytesIO(contents), stop_before_pixels=True)])
             finally:
                 if temp_path and os.path.exists(temp_path):
@@ -203,11 +191,6 @@ async def upload_dicom(
 
                 # Eje axial Z (RAS estándar)
                 num_slices = vol_data.shape[2]
-                slices_px = []
-                for s in range(num_slices):
-                    # Canonical RAS [x,y,z] -> DICOM-like LPS image [row,column].
-                    s_hu = vol_data[::-1, ::-1, s].T
-                    slices_px.append(apply_lung_window_hu(s_hu))
 
                 zooms = nii_obj.header.get_zooms()
                 pixel_spacing = [float(zooms[1]), float(zooms[0])]
@@ -216,12 +199,6 @@ async def upload_dicom(
                 modality = "CT"
                 study_date = datetime.now(timezone.utc).strftime("%Y%m%d")
                 patient_id_dicom = audit_deid["pseudonymized_patient_id"]
-
-                mid_idx = num_slices // 2
-                mid_img = Image.fromarray(slices_px[mid_idx]).convert("RGB")
-                p_buf = io.BytesIO()
-                mid_img.save(p_buf, format="PNG")
-                preview_bytes = p_buf.getvalue()
 
                 volume_meta = {
                     "is_multislice": True,
@@ -251,7 +228,6 @@ async def upload_dicom(
         # ── Caso D: Imagen Estándar (.PNG / .JPG) ─────────────────────────────
         else:
             modality = "IMG"
-            preview_bytes = contents
 
         # ── Persistencia en Supabase Storage ──────────────────────────────────
         content_type_map = {

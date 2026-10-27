@@ -60,7 +60,7 @@ def test_auditoria_claves_y_hashes():
     assert audit["pseudonymized_patient_id"].startswith("ONC-NII-")
     assert "deidentified_at" in audit
     assert audit["normative_compliance"] == (
-        "NIfTI: descrip, aux_file, db_name y extensiones de cabecera eliminados"
+        "NIfTI: descrip, aux_file, db_name, intent_name, data_type y extensiones de cabecera eliminados"
     )
     # El archivo se conserva en Storage: no se afirma retención cero.
     assert "zero_retention_verified" not in audit
@@ -75,6 +75,22 @@ def test_sin_gzip_la_salida_no_es_gzip():
 def test_con_gzip_la_salida_es_gzip():
     out, _ = deidentify_nifti_bytes(_bytes(_nifti_con_phi(), True), gzipped=True)
     assert out.startswith(b"\x1f\x8b")
+
+
+@pytest.mark.parametrize("gzipped", [True, False])
+def test_limpia_intent_name_y_data_type(gzipped):
+    img = _nifti_con_phi()
+    img.header["intent_name"] = b"PEREZ"
+    img.header["data_type"] = b"CC998877"
+    out, audit = deidentify_nifti_bytes(_bytes(img, gzipped), gzipped=gzipped)
+    raw = gzip.decompress(out) if gzipped else out
+    assert b"PEREZ" not in raw
+    assert b"CC998877" not in raw
+    clean = _leer(out, gzipped)
+    assert bytes(clean.header["intent_name"]).strip(b"\x00") == b""
+    assert bytes(clean.header["data_type"]).strip(b"\x00") == b""
+    # descrip, aux_file, intent_name, data_type y la extensión.
+    assert audit["tags_cleared_count"] == 5
 
 
 def test_cabecera_sin_phi_cuenta_cero():

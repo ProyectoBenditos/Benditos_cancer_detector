@@ -7,7 +7,7 @@ Resumen de lo que cambió respecto de la entrega del 22 de octubre (rama `feat/v
 **API**
 - Pines: `numpy==2.3.4`, `Pillow==11.3.0`, `scipy==1.16.3`, `nibabel==5.3.2`; lockfile sincronizado; archivos sueltos de la raíz retirados.
 - Subida: clasificación por tipo (`.dcm`, `.zip`, `.nii`, `.nii.gz`, `.png`, `.jpg`); `.zip`, `.nii` y `.nii.gz` solo con `VOLUME_UPLOADS_ENABLED=true` (si no, 400, también al analizar), límite de 50 MB (413), ZIP revisado antes de descomprimir (1000 entradas, 300 MB, razón 100) y una sola serie CT.
-- NIfTI: la cabecera se desidentifica antes de guardar (`descrip`, `aux_file`, `db_name`, extensiones), gzip acotado a 300 MB; la auditoría registra lo borrado y `zero_retention_verified=False`.
+- NIfTI: la cabecera se desidentifica antes de guardar (`descrip`, `aux_file`, `db_name`, `intent_name`, `data_type`, extensiones), gzip acotado a 300 MB; la auditoría registra lo borrado y `zero_retention_verified=False`.
 - Contrato con la IA: por defecto `AI_INPUT_MODE=png` envía a Oracle v1.2 el mismo PNG min-max que `main` (corte central en series, NIfTI y multiframe); `source` solo para el worker v2 local. `model_version` recupera la semántica de `main`. La respuesta incluye `source_slice`.
 - Errores tipificados de análisis (503/504/502/500) con mensajes fijos; los logs solo llevan `error_type` y hash.
 - Endpoints de atlas retirados; la descarga de Storage ya no bloquea el event loop.

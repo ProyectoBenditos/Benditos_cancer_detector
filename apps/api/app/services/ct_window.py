@@ -13,15 +13,6 @@ from app.services.nifti_deid import _bounded_gunzip
 from app.services.upload_types import UploadKind
 
 
-def apply_lung_window_hu(hu: np.ndarray, wc: float = -600.0, ww: float = 1500.0) -> np.ndarray:
-    """Aplica ventana pulmonar médica a un arreglo que ya está en unidades HU."""
-    hu_min = wc - (ww / 2.0)
-    hu_max = wc + (ww / 2.0)
-    hu_clipped = np.clip(hu, hu_min, hu_max)
-    norm = ((hu_clipped - hu_min) / (hu_max - hu_min) * 255.0).astype(np.uint8)
-    return norm
-
-
 def apply_lung_window(pixel_array: np.ndarray, dataset: pydicom.Dataset) -> np.ndarray:
     """
     Aplica RescaleSlope/Intercept en unidades Hounsfield (HU) y ventana pulmonar
