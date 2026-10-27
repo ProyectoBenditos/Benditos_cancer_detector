@@ -204,6 +204,13 @@ export function BeforeAfterViewer({
   const calibration = calibrationFor(pixelGeometry ?? null, natural);
   // Primer punto de la medición en curso; se descarta al cambiar de herramienta o con Esc.
   const [measureStart, setMeasureStart] = useState<Point | null>(null);
+  // En pantalla completa nativa el navegador consume Esc y el visor no recibe la
+  // tecla: al terminar la pantalla completa se descarta igual el punto pendiente.
+  const [wasFullscreen, setWasFullscreen] = useState(isFullscreen);
+  if (wasFullscreen !== isFullscreen) {
+    setWasFullscreen(isFullscreen);
+    if (!isFullscreen && measureStart) setMeasureStart(null);
+  }
   const placeMeasurePoint = (n: Point) => {
     if (!calibration) return;
     if (!measureStart) {

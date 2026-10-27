@@ -626,6 +626,17 @@ describe("BeforeAfterViewer — medir", () => {
     expect(screen.getByTestId("measure-start")).toBeInTheDocument();
   });
 
+  it("salir de pantalla completa sin pasar por el teclado del visor descarta el primer punto", () => {
+    // En pantalla completa nativa el navegador consume Esc: el visor solo ve que terminó.
+    const { visor, stage } = renderMeasure(GEO_512);
+    fireEvent.click(screen.getByRole("button", { name: "Pantalla completa (F)" }));
+    fireEvent.keyDown(visor, { key: "l" });
+    clickAt(stage, 0, 200);
+    expect(screen.getByTestId("measure-start")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Salir de pantalla completa (F)" }));
+    expect(screen.queryByTestId("measure-start")).toBeNull();
+  });
+
   it("Enter fija el primer punto en el centro y, tras mover la imagen, Enter crea la medición", () => {
     const { visor } = renderMeasure(GEO_512);
     visor.focus();
