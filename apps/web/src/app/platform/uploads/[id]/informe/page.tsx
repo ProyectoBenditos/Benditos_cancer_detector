@@ -19,6 +19,7 @@ import { AnatomicalLungsDiagram } from "@/components/informe/AnatomicalLungsDiag
 import { HistologicalSubtypeCard, type SubtipoHistologicoData } from "@/components/informe/HistologicalSubtypeCard";
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { extractLobarLocation } from "@/lib/uploadReview";
+import { isBlindPending, loadBlindContext } from "@/lib/blindReading";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -40,6 +41,11 @@ export default async function InformeClinicoPage({ params }: PageProps) {
     .single();
 
   if (error || !upload) notFound();
+
+  // Lectura ciega pendiente: el informe revelaría la IA. La lectura se hace en
+  // la página del estudio. loadBlindContext lanza si no puede saberlo (falla cerrado).
+  const blind = await loadBlindContext(supabase, user.id);
+  if (isBlindPending(blind, upload.id)) redirect(`/platform/uploads/${upload.id}`);
 
   // Paciente
   const patient = upload.patient_id

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
-import { FileText } from "lucide-react";
+import { EyeOff, FileText } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
@@ -13,7 +13,11 @@ import { StudyViewerTabs } from "@/components/dicom/StudyViewerTabs";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
 import type { UploadReview } from "@/lib/uploadReview";
+import { isBlindPending, loadBlindContext } from "@/lib/blindReading";
+import type { InitialImpression } from "@/lib/initialImpression";
 import { ClinicalReviewForm } from "./ClinicalReviewForm";
+import { BlindReadingWorkspace } from "./BlindReadingWorkspace";
+import { InitialImpressionSummary } from "./InitialImpressionSummary";
 import { deleteAnnotationAction, saveAnnotationAction } from "./actions";
 import { ANNOTATION_COLUMNS, maxRowSeq, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
 import { pixelGeometryFrom } from "@/lib/pixelGeometry";
@@ -56,10 +60,16 @@ export default async function UploadDetailPage({ params }: PageProps) {
     const hasError = upload.upload_status === "error" || upload.upload_status === "ai_failed";
     const caseRef = upload.metadata_json?.case_ref;
 
+    // Lectura ciega: mientras esté pendiente, nada derivado de la IA sale del
+    // servidor (las props de los Client Components viajan al navegador).
+    // Si no se puede saber qué está revelado, loadBlindContext lanza (falla cerrado).
+    const blind = await loadBlindContext(supabase, user.id);
+    const blindPending = isBlindPending(blind, upload.id);
+
     // Firmar server-side la imagen "antes" (preview PNG para DICOM, original para
     // PNG/JPG). Requiere policy SELECT en storage.objects para el dueño del archivo.
     let beforeUrl: string | null = null;
-    if (isAnalyzed && upload.ai_heatmap_base64) {
+    if (blindPending || (isAnalyzed && upload.ai_heatmap_base64)) {
         const path = upload.preview_storage_path ?? upload.storage_path;
         const { data: signed } = await supabase.storage
             .from("dicom-files")
@@ -77,6 +87,18 @@ export default async function UploadDetailPage({ params }: PageProps) {
             .eq("upload_id", id)
             .maybeSingle<UploadReview>();
         review = reviewError ? null : data;
+    }
+
+    // Impresión inicial de la lectura ciega. Si la consulta falla (p. ej. migración
+    // aún no aplicada) la página sigue como antes, sin la tarjeta.
+    let impression: InitialImpression | null = null;
+    if (isAnalyzed && !blindPending) {
+        const { data, error: impressionError } = await supabase
+            .from("upload_initial_impressions")
+            .select("lung_rads, conducta, notes, markers_snapshot, revealed_at")
+            .eq("upload_id", id)
+            .maybeSingle<InitialImpression>();
+        impression = impressionError ? null : data;
     }
 
     // Marcadores guardados del visor. Si la consulta falla (p. ej. migración aún
@@ -149,7 +171,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         >
                             ← Volver al historial
                         </Link>
-                        {isAnalyzed && (
+                        {isAnalyzed && !blindPending && (
                             <Link
                                 href={`/platform/uploads/${upload.id}/informe`}
                                 className={buttonVariants({ variant: "primary", size: "md" })}
@@ -175,8 +197,38 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 </Link>
             </p>
 
+            {/* Lectura ciega pendiente: visor sin IA e impresión inicial */}
+            {blindPending && (
+                <>
+                    <Card className="mb-6">
+                        <CardContent className="p-6 flex items-start gap-3">
+                            <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
+                                <EyeOff className="w-5 h-5 text-slate-600" aria-hidden="true" />
+                            </div>
+                            <p className="text-sm text-slate-700">
+                                Lectura ciega activa. Marca y mide lo que veas y registra tu impresión. La IA aparece después, y tu impresión inicial no se puede editar.
+                            </p>
+                        </CardContent>
+                    </Card>
+                    <BlindReadingWorkspace
+                        uploadId={upload.id}
+                        beforeUrl={beforeUrl}
+                        fileType={upload.file_type}
+                        pixelGeometry={pixelGeometryFrom(upload.metadata_json?.volume_metadata)}
+                        annotations={{
+                            uploadId: upload.id,
+                            initial: savedMarkers,
+                            reservedSeq,
+                            loadFailed: markersLoadFailed,
+                            save: saveAnnotationAction,
+                            remove: deleteAnnotationAction,
+                        }}
+                    />
+                </>
+            )}
+
             {/* Resultado IA */}
-            {isAnalyzed && (
+            {isAnalyzed && !blindPending && (
                 <Card className="mb-6">
                     <CardContent className="p-6">
                         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
@@ -247,7 +299,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
             )}
 
             {/* Visor Clínico Dual: Axial 2D HiResCAM y Gemelo Digital 3D Raymarching */}
-            {isAnalyzed && upload.ai_heatmap_base64 && (
+            {isAnalyzed && !blindPending && upload.ai_heatmap_base64 && (
                 <div className="mb-6">
                     <StudyViewerTabs
                         uploadId={upload.id}
@@ -292,17 +344,25 @@ export default async function UploadDetailPage({ params }: PageProps) {
                 </div>
             )}
 
-            {/* Valoración del especialista */}
-            {isAnalyzed && (
+            {/* Impresión inicial de la lectura ciega (solo lectura) */}
+            {impression && <InitialImpressionSummary impression={impression} />}
+
+            {/* Valoración del especialista: guardarla también revelaría la IA */}
+            {isAnalyzed && !blindPending && (
                 <ClinicalReviewForm
                     uploadId={upload.id}
                     initial={review}
                     defaultLobarLocation={((upload.clinical_features as Record<string, unknown> | null)?.lobar_location as string | undefined) ?? null}
+                    impressionDefaults={
+                        !review && impression
+                            ? { lung_rads: impression.lung_rads, conducta: impression.conducta }
+                            : null
+                    }
                 />
             )}
 
             {/* Metadata de inferencia */}
-            {isAnalyzed && (upload.model_version || upload.inference_time_ms != null || upload.predicted_at) && (
+            {isAnalyzed && !blindPending && (upload.model_version || upload.inference_time_ms != null || upload.predicted_at) && (
                 <Card className="mb-6">
                     <CardContent className="p-6">
                         <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">

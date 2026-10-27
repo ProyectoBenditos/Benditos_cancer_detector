@@ -16,6 +16,8 @@ import {
     extractLobarLocation,
     NODULE_SIZE_MAX_MM,
     NOTES_MAX_LENGTH,
+    type Conducta,
+    type LungRads,
     type UploadReview,
 } from "@/lib/uploadReview";
 import { saveUploadReviewAction, type ReviewState } from "./actions";
@@ -29,9 +31,11 @@ type Props = {
     uploadId: string;
     initial: UploadReview | null;
     defaultLobarLocation?: string | null;
+    /** Lung-RADS y conducta de la impresión inicial: prellenan el formulario si aún no hay valoración. */
+    impressionDefaults?: { lung_rads: LungRads; conducta: Conducta } | null;
 };
 
-export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: Props) {
+export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation, impressionDefaults }: Props) {
     const [state, formAction, pending] = useActionState<ReviewState, FormData>(saveUploadReviewAction, {});
     const lastSaved = state.savedAt ?? initial?.updated_at ?? null;
 
@@ -41,6 +45,11 @@ export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: 
     // Tras enviar (con éxito o error) se repuebla con lo enviado; antes, con lo guardado en BD.
     const value = (key: string, saved: string | number | null | undefined) =>
         state.fields?.[key] ?? (saved == null ? "" : String(saved));
+
+    // Sin valoración guardada, Lung-RADS y conducta parten de la impresión inicial.
+    const fromImpression = initial ? null : impressionDefaults;
+    const savedLungRads = initial?.lung_rads ?? fromImpression?.lung_rads;
+    const savedConducta = initial?.conducta ?? fromImpression?.conducta;
 
     const defaultLobar = state.fields?.lobar_location ?? (initialLobar || defaultLobarLocation || "");
     const defaultNotes = state.fields?.notes ?? initialNotes;
@@ -95,7 +104,7 @@ export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: 
                             <select
                                 id="lung_rads"
                                 name="lung_rads"
-                                defaultValue={value("lung_rads", initial?.lung_rads)}
+                                defaultValue={value("lung_rads", savedLungRads)}
                                 className={FIELD_CLASS}
                                 aria-describedby="lung_rads-hint"
                             >
@@ -167,7 +176,7 @@ export function ClinicalReviewForm({ uploadId, initial, defaultLobarLocation }: 
                             <select
                                 id="conducta"
                                 name="conducta"
-                                defaultValue={value("conducta", initial?.conducta)}
+                                defaultValue={value("conducta", savedConducta)}
                                 className={FIELD_CLASS}
                             >
                                 <option value="">Sin definir</option>
