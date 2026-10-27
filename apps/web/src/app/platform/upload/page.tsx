@@ -16,7 +16,7 @@ import { ClinicalReviewForm } from "../uploads/[id]/ClinicalReviewForm";
 import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/actions";
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
-import { validateUploadFile } from "@/lib/uploadFile";
+import { uploadAccept, uploadFormatsLabel, validateUploadFile } from "@/lib/uploadFile";
 
 type UploadResponse = {
     message: string;
@@ -342,12 +342,12 @@ export default function UploadDicomPage() {
                             </label>
                             <input
                                 type="file"
-                                accept=".dcm,.zip,.nii,.nii.gz,.png,.jpg,.jpeg,application/dicom,application/zip,application/x-zip-compressed,image/png,image/jpeg"
+                                accept={uploadAccept()}
                                 onChange={(e) => setFile(e.target.files?.[0] ?? null)}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
                             <p className="text-xs text-slate-500 mt-2">
-                                Formatos compatibles: DICOM (.dcm), Serie Multicorte (.zip), Volumen NIfTI (.nii, .nii.gz), PNG y JPG. Tamaño máximo: 50MB.
+                                {uploadFormatsLabel()}
                             </p>
                             <p className="text-xs text-amber-600 mt-1 font-medium">
                                 ⚠️ Solo compatible con tomografías de tórax (Modality: CT). Otros tipos (OT, MR, CR, etc.) producirán resultados no válidos.

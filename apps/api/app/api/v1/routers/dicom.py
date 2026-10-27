@@ -30,7 +30,13 @@ from app.services.ai_contract import (
 )
 from app.services.ct_window import apply_lung_window_hu, dicom_to_png_bytes
 from app.services.dicom_series import MAX_UPLOAD_BYTES, SeriesError, read_ct_series
-from app.services.upload_types import classify_upload, kind_of_record
+from app.services.upload_types import (
+    VOLUME_KINDS,
+    VOLUME_UPLOADS_DISABLED_DETAIL,
+    classify_upload,
+    kind_of_record,
+    volume_uploads_enabled,
+)
 from app.services.volume_geometry import dicom_volume_metadata
 
 router = APIRouter()
@@ -74,6 +80,9 @@ async def upload_dicom(
             status_code=400,
             detail="Formato no soportado. Use .dcm, .zip, .nii, .nii.gz, .png o .jpg"
         )
+    # Antes de leer el archivo: un volumen ocupa varias veces su tamaño en RAM.
+    if upload_kind in VOLUME_KINDS and not volume_uploads_enabled():
+        raise HTTPException(status_code=400, detail=VOLUME_UPLOADS_DISABLED_DETAIL)
 
     contents = await file.read()
     if not contents:
@@ -363,6 +372,8 @@ async def analyze_dicom(
     is_dicom = kind == "dicom"
     is_zip = kind == "dicom_series"
     is_nifti = kind == "nifti_volume"
+    if kind in VOLUME_KINDS and not volume_uploads_enabled():
+        raise HTTPException(status_code=400, detail=VOLUME_UPLOADS_DISABLED_DETAIL)
 
     try:
         # Descargar de Storage

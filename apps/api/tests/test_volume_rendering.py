@@ -60,8 +60,11 @@ def test_endpoints_de_atlas_retirados(client, auth_headers):
 
 
 @pytest.mark.parametrize("oblique", [False, True])
-def test_nifti_upload_exposes_row_column_spacing_after_canonicalization(client, auth_headers, tmp_path, oblique):
+def test_nifti_upload_exposes_row_column_spacing_after_canonicalization(
+    client, auth_headers, tmp_path, monkeypatch, oblique
+):
     import nibabel as nib
+    monkeypatch.setenv("VOLUME_UPLOADS_ENABLED", "true")
     volume = np.full((10, 12, 4), -780, dtype=np.float32)
     path = tmp_path / "volume.nii"
     affine = np.diag([2.0, 3.0, 4.0, 1.0])

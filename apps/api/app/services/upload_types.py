@@ -1,9 +1,15 @@
 """Clasificación de subidas por extensión de archivo."""
 from __future__ import annotations
 
+import os
 from typing import Literal, Optional
 
 UploadKind = Literal["dicom", "dicom_series", "nifti_volume", "image"]
+
+VOLUME_KINDS: tuple[UploadKind, ...] = ("dicom_series", "nifti_volume")
+VOLUME_UPLOADS_DISABLED_DETAIL = (
+    "La carga de series ZIP y volúmenes NIfTI no está habilitada en este entorno."
+)
 
 _BY_SUFFIX: tuple[tuple[str, UploadKind], ...] = (
     (".nii.gz", "nifti_volume"),
@@ -23,6 +29,15 @@ def classify_upload(filename: str) -> Optional[UploadKind]:
         if lowered.endswith(suffix):
             return kind
     return None
+
+
+def volume_uploads_enabled() -> bool:
+    """Bandera ``VOLUME_UPLOADS_ENABLED`` ("true" o "1"); se lee en cada petición.
+
+    Las series ZIP y los volúmenes NIfTI necesitan varias veces su tamaño en RAM,
+    así que quedan apagados salvo en máquinas con memoria para ellos.
+    """
+    return os.getenv("VOLUME_UPLOADS_ENABLED", "").strip().lower() in ("true", "1")
 
 
 def kind_of_record(record: dict) -> UploadKind:

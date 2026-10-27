@@ -15,6 +15,20 @@ import app.api.v1.routers.dicom as dicom_module
 from app.core.logging import _JsonFormatter, hash_id
 from tests.dicom_factory import make_test_dicom_bytes
 
+VOLUME_GATE_DETAIL = "La carga de series ZIP y volúmenes NIfTI no está habilitada en este entorno."
+
+
+@pytest.fixture
+def volume_uploads_on(monkeypatch):
+    """Habilita la carga y el análisis de series ZIP y volúmenes NIfTI."""
+    monkeypatch.setenv("VOLUME_UPLOADS_ENABLED", "true")
+
+
+@pytest.fixture
+def volume_uploads_off(monkeypatch):
+    """Simula producción: la variable no está definida."""
+    monkeypatch.delenv("VOLUME_UPLOADS_ENABLED", raising=False)
+
 
 def test_dicom_upload_sin_auth_devuelve_401(client):
     response = client.post(
@@ -131,7 +145,7 @@ def test_dicom_upload_dcm_modalidad_no_ct_devuelve_400(client, auth_headers):
     assert "Modalidad MR no soportada" in response.json().get("detail", "")
 
 
-def test_dicom_upload_zip_multicorte_acepta_y_extrae_volumen(client, auth_headers, supabase_mock):
+def test_dicom_upload_zip_multicorte_acepta_y_extrae_volumen(client, auth_headers, supabase_mock, volume_uploads_on):
     """Subir un .zip con múltiples cortes CT genera file_type='dicom_series' y metadata 3D."""
     import zipfile
 
@@ -165,7 +179,7 @@ def test_dicom_upload_zip_multicorte_acepta_y_extrae_volumen(client, auth_header
     assert supabase_mock.storage.from_().upload.called
 
 
-def test_dicom_upload_zip_sin_dicoms_devuelve_400(client, auth_headers):
+def test_dicom_upload_zip_sin_dicoms_devuelve_400(client, auth_headers, volume_uploads_on):
     """Subir un .zip que no contiene archivos DICOM devuelve error 400 explicativo."""
     import zipfile
 
@@ -183,7 +197,7 @@ def test_dicom_upload_zip_sin_dicoms_devuelve_400(client, auth_headers):
 
 
 
-def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase_mock):
+def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase_mock, volume_uploads_on):
     """Subir un .nii.gz 3D procesa cortes en HU, genera Texture Atlas y volumen 3D."""
     import os
     import nibabel as nib
@@ -223,7 +237,7 @@ def test_dicom_upload_nii_acepta_y_extrae_volumen(client, auth_headers, supabase
     assert supabase_mock.storage.from_().upload.called
 
 
-def test_dicom_upload_nii_desidentifica_cabecera(client, auth_headers, supabase_mock):
+def test_dicom_upload_nii_desidentifica_cabecera(client, auth_headers, supabase_mock, volume_uploads_on):
     """La cabecera NIfTI se limpia antes de guardar y la auditoría refleja lo limpiado."""
     import gzip
 
@@ -278,7 +292,7 @@ def test_dicom_upload_mayor_a_50mb_devuelve_413(client, auth_headers):
     assert response.json().get("detail") == "El archivo supera el máximo de 50 MB."
 
 
-def test_dicom_upload_zip_varias_series_devuelve_400(client, auth_headers):
+def test_dicom_upload_zip_varias_series_devuelve_400(client, auth_headers, volume_uploads_on):
     import zipfile
 
     zip_buf = io.BytesIO()
@@ -293,6 +307,74 @@ def test_dicom_upload_zip_varias_series_devuelve_400(client, auth_headers):
     )
     assert response.status_code == 400
     assert "2 series CT" in response.json().get("detail", "")
+
+
+# ── VOLUME_UPLOADS_ENABLED: series y volúmenes solo donde hay RAM ────────────
+
+
+def _zip_de_tres_cortes() -> bytes:
+    import zipfile
+
+    zip_buf = io.BytesIO()
+    with zipfile.ZipFile(zip_buf, "w") as zf:
+        for i in range(3):
+            zf.writestr(f"slice_{i:04d}.dcm", make_test_dicom_bytes(series_uid="1.2.3.4", z=float(i)))
+    return zip_buf.getvalue()
+
+
+def _nifti_gz() -> bytes:
+    import gzip
+
+    import nibabel as nib
+    import numpy as np
+
+    img = nib.Nifti1Image(np.full((8, 8, 3), -600.0, dtype=np.float32), np.eye(4))
+    return gzip.compress(img.to_bytes())
+
+
+@pytest.mark.parametrize(
+    ("filename", "content_fn", "content_type"),
+    [
+        ("serie.zip", _zip_de_tres_cortes, "application/zip"),
+        ("torax.nii.gz", _nifti_gz, "application/gzip"),
+        ("TORAX.NII", lambda: b"\x00" * 400, "application/octet-stream"),
+    ],
+    ids=["zip", "nii.gz", "nii"],
+)
+def test_upload_volumen_con_bandera_apagada_devuelve_400(
+    client, auth_headers, supabase_mock, volume_uploads_off, filename, content_fn, content_type
+):
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": (filename, content_fn(), content_type)},
+    )
+    assert response.status_code == 400
+    assert response.json()["detail"] == VOLUME_GATE_DETAIL
+    assert not supabase_mock.storage.from_().upload.called
+    assert not supabase_mock.table().insert.called
+
+
+def test_upload_dcm_sigue_funcionando_con_bandera_apagada(client, auth_headers, supabase_mock, volume_uploads_off):
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("estudio.dcm", make_test_dicom_bytes(), "application/dicom")},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["file_type"] == "dicom"
+    assert supabase_mock.storage.from_().upload.called
+
+
+def test_upload_png_sigue_funcionando_con_bandera_apagada(client, auth_headers, supabase_mock, volume_uploads_off):
+    response = client.post(
+        "/api/v1/dicom/upload",
+        headers=auth_headers,
+        files={"file": ("scan.png", b"\x89PNG\r\n\x1a\nfake-png-bytes", "image/png")},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json()["file_type"] == "image"
+    assert supabase_mock.storage.from_().upload.called
 
 
 # ── /api/v1/dicom/analyze/{id}: contrato con el servicio de IA ───────────────
@@ -400,7 +482,7 @@ def test_analyze_guarda_model_version_como_main(client, auth_headers, supabase_m
     assert payload["modelo_version"] == "multimodal-v1.2"
 
 
-def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, monkeypatch):
+def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, monkeypatch, volume_uploads_on):
     import zipfile
 
     monkeypatch.delenv("AI_INPUT_MODE", raising=False)
@@ -420,6 +502,26 @@ def test_analyze_zip_devuelve_corte_fuente(client, auth_headers, supabase_mock, 
     assert any(
         (u.get("metadata_json") or {}).get("analysis_source_slice") == 2 for u in _updates(supabase_mock)
     )
+
+
+@pytest.mark.parametrize(
+    ("original_name", "file_type"),
+    [("serie.zip", "dicom_series"), ("torax.nii.gz", "nifti_volume")],
+    ids=["zip", "nii.gz"],
+)
+def test_analyze_volumen_con_bandera_apagada_devuelve_400_sin_descargar(
+    client, auth_headers, supabase_mock, monkeypatch, volume_uploads_off, original_name, file_type
+):
+    sent = _prepare_analysis(
+        supabase_mock, monkeypatch,
+        original_name=original_name, file_type=file_type, file_bytes=b"no-se-descarga",
+        metadata_json={"volume_metadata": {"num_slices": 3}},
+    )
+    response = _analyze(client, auth_headers)
+    assert response.status_code == 400, response.text
+    assert response.json()["detail"] == VOLUME_GATE_DETAIL
+    assert not supabase_mock.storage.from_().download.called
+    assert sent == []
 
 
 # ── /api/v1/dicom/analyze/{id}: errores tipados y logs sin PHI ───────────────
@@ -510,7 +612,7 @@ def test_analyze_errores_tipados(client, auth_headers, supabase_mock, monkeypatc
     assert any(u.get("upload_status") == "error" for u in _updates(supabase_mock))
 
 
-def test_analyze_volumen_sin_keyframe_en_modo_source_devuelve_502(client, auth_headers, supabase_mock, monkeypatch):
+def test_analyze_volumen_sin_keyframe_en_modo_source_devuelve_502(client, auth_headers, supabase_mock, monkeypatch, volume_uploads_on):
     import zipfile
 
     monkeypatch.setenv("AI_INPUT_MODE", "source")

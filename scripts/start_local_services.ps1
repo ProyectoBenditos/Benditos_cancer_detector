@@ -11,6 +11,7 @@ $env:AI_INPUT_MODE = 'source'
 $env:LOCAL_ML_URL = 'http://127.0.0.1:8001'
 $env:NEXT_PUBLIC_API_URL = 'http://127.0.0.1:8000'
 $env:NEXT_PUBLIC_VOLUME_3D_ENABLED = 'true'
+$env:VOLUME_UPLOADS_ENABLED = 'true'
 
 function Start-OncoScanService {
     param([string]$Name, [int]$Port, [string]$Executable, [string[]]$ServiceArguments, [string]$Directory)
