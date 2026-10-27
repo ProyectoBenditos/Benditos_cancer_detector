@@ -118,6 +118,11 @@ export function parseAnnotation(input: unknown): { ok: true; values: AnnotationD
     };
 }
 
+/** Mayor seq guardado, también de filas que rowToMarker descarta (0 sin filas). */
+export function maxRowSeq(rows: ReadonlyArray<Pick<AnnotationRow, "seq">>): number {
+    return rows.reduce((max, r) => (isValidSeq(r.seq) && r.seq > max ? r.seq : max), 0);
+}
+
 /** Fila guardada → marcador del visor. null si la fila no es válida. Sin `kind`, es un punto. */
 export function rowToMarker(row: AnnotationRow): Marker | null {
     if (!isValidSeq(row.seq) || !isUnit(row.x) || !isUnit(row.y)) return null;

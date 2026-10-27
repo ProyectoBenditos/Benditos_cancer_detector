@@ -15,7 +15,7 @@ import { REFERENCES } from "@/lib/references";
 import type { UploadReview } from "@/lib/uploadReview";
 import { ClinicalReviewForm } from "./ClinicalReviewForm";
 import { deleteAnnotationAction, saveAnnotationAction } from "./actions";
-import { ANNOTATION_COLUMNS, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
+import { ANNOTATION_COLUMNS, maxRowSeq, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
 import { pixelGeometryFrom } from "@/lib/pixelGeometry";
 import type { Marker } from "@/components/ui/markerState";
 import { AnonymizationCertificate, type AnonymizationAuditData } from "@/components/dicom/AnonymizationCertificate";
@@ -82,6 +82,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
     // Marcadores guardados del visor. Si la consulta falla (p. ej. migración aún
     // no aplicada), el visor no guarda para no sobrescribirlos por número.
     let savedMarkers: Marker[] = [];
+    let reservedSeq = 0;
     let markersLoadFailed = false;
     if (isAnalyzed) {
         const { data: rows, error: markersError } = await supabase
@@ -94,6 +95,8 @@ export default async function UploadDetailPage({ params }: PageProps) {
             markersLoadFailed = true;
         } else {
             savedMarkers = (rows ?? []).map(rowToMarker).filter((m): m is Marker => m !== null);
+            // Una fila descartada conserva su número: el siguiente marcador no la sobrescribe.
+            reservedSeq = maxRowSeq(rows ?? []);
         }
     }
 
@@ -280,6 +283,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
                         annotations={{
                             uploadId: upload.id,
                             initial: savedMarkers,
+                            reservedSeq,
                             loadFailed: markersLoadFailed,
                             save: saveAnnotationAction,
                             remove: deleteAnnotationAction,

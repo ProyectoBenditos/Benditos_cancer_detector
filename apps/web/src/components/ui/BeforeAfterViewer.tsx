@@ -41,6 +41,8 @@ export type ViewerSummary = {
 export type ViewerAnnotations = {
   uploadId: string;
   initial: Marker[];
+  /** Mayor seq guardado, incluidas filas que no se pudieron mostrar: nunca se reutiliza. */
+  reservedSeq?: number;
   /** La carga de los guardados falló: no se guarda nada para no sobrescribirlos. */
   loadFailed?: boolean;
   save: (input: AnnotationInput) => Promise<AnnotationResult>;
@@ -166,10 +168,8 @@ export function BeforeAfterViewer({
 
   // Marcadores (solo en el navegador en la Fase B). El tamaño natural del PNG
   // hace falta para ubicar los pins sobre el rectángulo real de la imagen.
-  const [markersState, dispatchMarkers] = useReducer(
-    markersReducer,
-    annotations?.initial ?? [],
-    markersStateFrom
+  const [markersState, dispatchMarkers] = useReducer(markersReducer, annotations, (a) =>
+    markersStateFrom(a?.initial ?? [], a?.reservedSeq)
   );
 
   // Guardado automático. Si la carga de los guardados falló, no se guarda:

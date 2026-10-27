@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidSeq, parseAnnotation, rowToMarker, type AnnotationRow } from "./uploadAnnotations";
+import { isValidSeq, maxRowSeq, parseAnnotation, rowToMarker, type AnnotationRow } from "./uploadAnnotations";
 
 const OK = {
   uploadId: "6f1c2b3a-1d2e-4f50-8a9b-0c1d2e3f4a5b",
@@ -83,6 +83,18 @@ describe("parseAnnotation", () => {
       { ...OK, kind: undefined },
     ];
     for (const bad of bads) expect(parseAnnotation(bad).ok, JSON.stringify(bad)).toBe(false);
+  });
+});
+
+describe("maxRowSeq", () => {
+  it("cuenta también las filas que rowToMarker descarta", () => {
+    const rows = [
+      { seq: 1, kind: "point", x: 0.5, y: 0.5, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "", size_mm: null },
+      { seq: 2, kind: "measure", x: 0, y: 0, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "nota", size_mm: "10" },
+    ];
+    expect(rowToMarker(rows[1])).toBeNull();
+    expect(maxRowSeq(rows)).toBe(2);
+    expect(maxRowSeq([])).toBe(0);
   });
 });
 

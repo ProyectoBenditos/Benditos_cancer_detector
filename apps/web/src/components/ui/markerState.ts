@@ -147,12 +147,14 @@ export function markersReducer(state: MarkersState, action: MarkerAction): Marke
 
 /**
  * Estado inicial desde marcadores guardados: ordenados por seq, el siguiente
- * número es el mayor + 1 y sin selección.
+ * número es el mayor + 1 y sin selección. `reservedSeq` es el mayor número
+ * guardado, incluidas las filas que no se pudieron mostrar: reutilizarlo
+ * sobrescribiría esa fila al guardar.
  */
-export function markersStateFrom(markers: Marker[]): MarkersState {
+export function markersStateFrom(markers: Marker[], reservedSeq = 0): MarkersState {
   const sorted = [...markers].sort((a, b) => a.seq - b.seq);
   const maxSeq = sorted.length > 0 ? sorted[sorted.length - 1].seq : 0;
-  return { markers: sorted, selectedId: null, nextSeq: maxSeq + 1 };
+  return { markers: sorted, selectedId: null, nextSeq: Math.max(maxSeq, reservedSeq) + 1 };
 }
 
 export function findingLabel(t: FindingType | null): string {

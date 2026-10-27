@@ -124,6 +124,12 @@ describe("markersStateFrom", () => {
   it("sin marcadores empieza en 1", () => {
     expect(markersStateFrom([])).toEqual(MARKERS_INITIAL);
   });
+
+  it("no reutiliza el número de una fila guardada que no se pudo mostrar", () => {
+    const m1 = add(MARKERS_INITIAL).markers[0];
+    expect(markersStateFrom([m1], 2).nextSeq).toBe(3);
+    expect(markersStateFrom([m1], 0).nextSeq).toBe(2);
+  });
 });
 
 describe("etiquetas", () => {

@@ -493,6 +493,12 @@ describe("BeforeAfterViewer — persistencia", () => {
     expect(screen.getByText("Los marcadores se guardan automáticamente.")).toBeInTheDocument();
   });
 
+  it("un marcador nuevo no reutiliza el número de una fila guardada que no se pudo mostrar", () => {
+    const { visor } = renderWithAnnotations({ initial: [mk(1)], reservedSeq: 2 });
+    addMarkerWithKeyboard(visor);
+    expect(screen.getByRole("button", { name: /^Marcador 3/ })).toBeInTheDocument();
+  });
+
   it("un marcador nuevo continúa la numeración y se guarda solo", async () => {
     vi.useFakeTimers();
     const { visor, save } = renderWithAnnotations({ initial: [mk(2)] });
