@@ -111,3 +111,30 @@ def test_analysis_get_inexistente_devuelve_404(client, auth_headers, monkeypatch
         headers=auth_headers,
     )
     assert response.status_code == 404
+
+
+@pytest.mark.parametrize(
+    "exc, expected",
+    [
+        ("hf", "El servicio de IA no respondió correctamente."),
+        ("runtime", "Error inesperado en el análisis."),
+    ],
+)
+def test_run_inference_fallida_guarda_mensaje_fijo_en_ai_error(supabase_mock, monkeypatch, exc, expected):
+    """ai_error nunca guarda el detalle interno de la excepción (rutas, cuerpos de respuesta)."""
+    import app.api.v1.routers.analysis as analysis_module
+    from app.services.hf_client import HFInferenceError
+
+    error = HFInferenceError("HF respondio 500: /ruta/secreta") if exc == "hf" else RuntimeError("/ruta/secreta")
+
+    async def failing_predict(**kwargs):
+        raise error
+
+    monkeypatch.setattr(analysis_module, "hf_predict", failing_predict)
+
+    analysis_module._run_inference("upload-uuid-test", b"img", "img.png", "image/png", {})
+
+    updates = [c.args[0] for c in supabase_mock.table().update.call_args_list if c.args]
+    assert updates, "no se persistió el fallo"
+    assert updates[-1]["ai_error"] == expected
+    assert all("/ruta" not in str(u.get("ai_error", "")) for u in updates)

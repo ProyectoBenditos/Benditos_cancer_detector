@@ -169,7 +169,8 @@ def deidentify_dicom_bytes(
 
     audit_info["source_sha256"] = source_sha256
     audit_info["sanitized_sha256"] = sanitized_sha256
-    audit_info["zero_retention_verified"] = True
+    # Capa 4: zero retention = purgado sin guardarse; aquí el archivo limpio sí queda en Storage.
+    audit_info["zero_retention_verified"] = False
     audit_info["normative_compliance"] = [
         "Ley 1581 de 2012 (Habeas Data Clínico)",
         "Decreto 1377 de 2013",

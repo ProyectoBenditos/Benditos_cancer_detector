@@ -248,7 +248,7 @@ def _run_inference(
             upload_id_hash=hash_id(upload_id),
             error_type=type(e).__name__,
         )
-        _persist_failure(upload_id, str(e))
+        _persist_failure(upload_id, "El servicio de IA no respondió correctamente.")
     except Exception as e:
         log_event(
             "inference_unexpected_error",
@@ -257,7 +257,7 @@ def _run_inference(
             upload_id_hash=hash_id(upload_id),
             error_type=type(e).__name__,
         )
-        _persist_failure(upload_id, f"Error inesperado: {str(e)}")
+        _persist_failure(upload_id, "Error inesperado en el análisis.")
 
 
 def _persist_success(
