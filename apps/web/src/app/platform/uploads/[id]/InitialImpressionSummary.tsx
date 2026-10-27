@@ -2,24 +2,40 @@ import { Lock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { CONDUCTA_OPTIONS, LUNG_RADS_OPTIONS } from "@/lib/uploadReview";
 import type { InitialImpression } from "@/lib/initialImpression";
+import { RevealFocus } from "./RevealFocus";
+
+/** Encabezado de la tarjeta «Resultado del análisis IA» (en page.tsx): primer destino del foco. */
+export const AI_RESULT_HEADING_ID = "resultado-ia";
+const IMPRESSION_HEADING_ID = "impresion-registrada";
 
 function optionLabel(options: readonly { value: string; label: string }[], value: string): string {
     return options.find((o) => o.value === value)?.label ?? value;
 }
 
 // Impresión registrada en la lectura ciega, antes de ver la IA. Solo lectura: la fila es inmutable.
-export function InitialImpressionSummary({ impression }: { impression: InitialImpression }) {
+export function InitialImpressionSummary({
+    impression,
+    uploadId,
+}: {
+    impression: InitialImpression;
+    uploadId: string;
+}) {
     const markerCount = Array.isArray(impression.markers_snapshot) ? impression.markers_snapshot.length : 0;
 
     return (
         <Card className="mb-6">
+            <RevealFocus uploadId={uploadId} targetIds={[AI_RESULT_HEADING_ID, IMPRESSION_HEADING_ID]} />
             <CardContent className="p-6">
                 <div className="flex items-start gap-3 mb-5">
                     <div className="w-9 h-9 bg-slate-100 rounded-lg flex items-center justify-center shrink-0">
                         <Lock className="w-5 h-5 text-slate-600" aria-hidden="true" />
                     </div>
                     <div>
-                        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider">
+                        <h2
+                            id={IMPRESSION_HEADING_ID}
+                            tabIndex={-1}
+                            className="text-sm font-semibold text-slate-500 uppercase tracking-wider outline-none"
+                        >
                             Impresión inicial (antes de la IA)
                         </h2>
                         <p className="text-sm text-slate-600 mt-1">

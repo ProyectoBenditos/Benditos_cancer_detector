@@ -17,7 +17,7 @@ import { isBlindPending, loadBlindContext } from "@/lib/blindReading";
 import type { InitialImpression } from "@/lib/initialImpression";
 import { ClinicalReviewForm } from "./ClinicalReviewForm";
 import { BlindReadingWorkspace } from "./BlindReadingWorkspace";
-import { InitialImpressionSummary } from "./InitialImpressionSummary";
+import { AI_RESULT_HEADING_ID, InitialImpressionSummary } from "./InitialImpressionSummary";
 import { deleteAnnotationAction, saveAnnotationAction } from "./actions";
 import { ANNOTATION_COLUMNS, maxRowSeq, rowToMarker, type AnnotationRow } from "@/lib/uploadAnnotations";
 import { pixelGeometryFrom } from "@/lib/pixelGeometry";
@@ -231,7 +231,11 @@ export default async function UploadDetailPage({ params }: PageProps) {
             {isAnalyzed && !blindPending && (
                 <Card className="mb-6">
                     <CardContent className="p-6">
-                        <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5">
+                        <h2
+                            id={AI_RESULT_HEADING_ID}
+                            tabIndex={-1}
+                            className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-5 outline-none"
+                        >
                             Resultado del análisis IA
                         </h2>
 
@@ -345,7 +349,7 @@ export default async function UploadDetailPage({ params }: PageProps) {
             )}
 
             {/* Impresión inicial de la lectura ciega (solo lectura) */}
-            {impression && <InitialImpressionSummary impression={impression} />}
+            {impression && <InitialImpressionSummary impression={impression} uploadId={upload.id} />}
 
             {/* Valoración del especialista: guardarla también revelaría la IA */}
             {isAnalyzed && !blindPending && (

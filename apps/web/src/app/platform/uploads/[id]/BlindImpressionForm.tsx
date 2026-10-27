@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useId } from "react";
+import { useActionState, useEffect, useId } from "react";
 import { EyeOff } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
@@ -10,6 +10,7 @@ import { REFERENCES } from "@/lib/references";
 import { CONDUCTA_OPTIONS, LUNG_RADS_OPTIONS, NOTES_MAX_LENGTH } from "@/lib/uploadReview";
 import type { SaveStatus } from "@/components/ui/useMarkerAutosave";
 import { registerInitialImpressionAction, type ImpressionState } from "./actions";
+import { clearRevealPending, markRevealPending } from "./RevealFocus";
 
 const FIELD_CLASS =
     "w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 outline-none transition-all focus:border-brand-primary focus-visible:ring-2 focus-visible:ring-brand-primary";
@@ -38,6 +39,14 @@ export function BlindImpressionForm({ uploadId, saveStatus, markersLoadFailed }:
     );
     const statusId = useId();
 
+    // Una señal vieja (envío que no llegó a revelar) no debe mover el foco más tarde.
+    useEffect(() => {
+        clearRevealPending();
+    }, []);
+    useEffect(() => {
+        if (state.error) clearRevealPending();
+    }, [state.error]);
+
     // La copia de los marcadores se toma en el servidor: registrar con cambios
     // sin guardar dejaría una impresión que no coincide con lo marcado.
     const markersNotSaved = markersLoadFailed || saveStatus === "error";
@@ -62,7 +71,7 @@ export function BlindImpressionForm({ uploadId, saveStatus, markersLoadFailed }:
                     </div>
                 </div>
 
-                <form action={formAction} className="space-y-5">
+                <form action={formAction} onSubmit={() => markRevealPending(uploadId)} className="space-y-5">
                     <input type="hidden" name="upload_id" value={uploadId} />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-5">

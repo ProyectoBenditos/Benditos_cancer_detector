@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({ action: vi.fn() }));
 
@@ -54,6 +54,15 @@ describe("BlindImpressionForm", () => {
     it("la etiqueta «(opcional)» no usa slate-400 (contraste insuficiente)", () => {
         render(<BlindImpressionForm uploadId={UPLOAD_ID} saveStatus="idle" markersLoadFailed={false} />);
         expect(screen.getByText("(opcional)").className).not.toContain("slate-400");
+    });
+
+    it("al enviar deja la señal para llevar el foco al resultado tras la revelación", () => {
+        window.sessionStorage.clear();
+        render(<BlindImpressionForm uploadId={UPLOAD_ID} saveStatus="idle" markersLoadFailed={false} />);
+        expect(window.sessionStorage.length).toBe(0);
+        const form = screen.getByRole("button", { name: BUTTON }).closest("form") as HTMLFormElement;
+        fireEvent.submit(form);
+        expect(window.sessionStorage.length).toBe(1);
     });
 
     it("no tiene ningún campo de concordancia", () => {
