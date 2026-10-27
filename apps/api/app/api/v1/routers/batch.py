@@ -669,11 +669,11 @@ async def _process_batch_async(
 
             except Exception as e:
                 failed += 1
-                error_msg = str(e)[:1000]
                 try:
+                    # Mensaje fijo: str(e) puede traer rutas o nombres de archivo (PHI).
                     supabase.table("dicom_uploads").update({
                         "upload_status": "error",
-                        "ai_error": error_msg,
+                        "ai_error": "No se pudo analizar este estudio del lote.",
                         "ai_processed_at": datetime.now(timezone.utc).isoformat(),
                     }).eq("id", upload_id).execute()
                 except Exception:
