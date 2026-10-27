@@ -18,6 +18,8 @@ import { createPatientInline, type PatientInlineState } from "../pacientes/actio
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 import { uploadAccept, uploadFormatsLabel, validateUploadFile } from "@/lib/uploadFile";
 import { pixelGeometryFrom } from "@/lib/pixelGeometry";
+import { useBlindReadingPreference } from "@/lib/useBlindReadingPreference";
+import { EyeOff } from "lucide-react";
 
 type UploadResponse = {
     message: string;
@@ -98,6 +100,8 @@ export default function UploadDicomPage() {
     const [features, setFeatures]       = useState<ClinicalFeatures>(DEFAULT_FEATURES);
     const [lobarLocation, setLobarLocation] = useState<string>("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    // Lectura ciega: null mientras carga. Solo con false se muestra el resultado aquí.
+    const blindReading = useBlindReadingPreference();
 
     const [modalOpen, setModalOpen]       = useState(false);
     const processedPatientId              = useRef<string | null>(null);
@@ -263,6 +267,16 @@ export default function UploadDicomPage() {
         } finally {
             setAnalyzing(false);
         }
+    };
+
+    const handleReset = () => {
+        setSuccessData(null);
+        setAnalysisResult(null);
+        setFeatures(DEFAULT_FEATURES);
+        setLobarLocation("");
+        setCaseRef("");
+        setPatientId("");
+        setErrorMsg("");
     };
 
     return (
@@ -518,8 +532,40 @@ export default function UploadDicomPage() {
                 </Card>
             )}
 
+            {/* PASO 3 con la preferencia aún cargando: no se muestra el resultado. */}
+            {analysisResult && blindReading === null && (
+                <p role="status" className="mt-6 text-sm text-slate-500">
+                    Cargando el resultado…
+                </p>
+            )}
+
+            {/* PASO 3 con lectura ciega: sin resultado, visor ni valoración; la lectura se hace en el estudio. */}
+            {analysisResult && blindReading === true && (
+                <Card className="mt-6">
+                    <CardContent className="p-8">
+                        <div className="flex items-start gap-3">
+                            <EyeOff className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+                            <p className="text-sm text-slate-700">
+                                Análisis completado. Tienes la lectura ciega activa: abre el estudio para registrar tu impresión antes de ver la IA.
+                            </p>
+                        </div>
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <Link
+                                href={`/platform/uploads/${analysisResult.dicom_id}`}
+                                className={buttonVariants({ variant: "primary", size: "md" })}
+                            >
+                                Abrir el estudio
+                            </Link>
+                            <Button onClick={handleReset} variant="secondary" size="md">
+                                Subir otro estudio
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* PASO 3: Resultado */}
-            {analysisResult && (
+            {analysisResult && blindReading === false && (
                 <Card className="mt-6">
                     <CardContent className="p-8">
                         <h2 className="text-lg font-bold text-slate-800 mb-6">
@@ -608,15 +654,7 @@ export default function UploadDicomPage() {
                                 Ver estudio en historial
                             </Link>
                             <Button
-                                onClick={() => {
-                                    setSuccessData(null);
-                                    setAnalysisResult(null);
-                                    setFeatures(DEFAULT_FEATURES);
-                                    setLobarLocation("");
-                                    setCaseRef("");
-                                    setPatientId("");
-                                    setErrorMsg("");
-                                }}
+                                onClick={handleReset}
                                 variant="secondary"
                                 size="md"
                             >
@@ -628,8 +666,9 @@ export default function UploadDicomPage() {
             )}
 
             {/* PASO 4: Valoración del especialista (la misma que en el historial).
-                key por estudio: "Subir otro estudio" arranca con el formulario limpio. */}
-            {analysisResult && (
+                key por estudio: "Subir otro estudio" arranca con el formulario limpio.
+                Con lectura ciega no se muestra: guardar una valoración revelaría la IA. */}
+            {analysisResult && blindReading === false && (
                 <div className="mt-6">
                     <ClinicalReviewForm
                         key={analysisResult.dicom_id}

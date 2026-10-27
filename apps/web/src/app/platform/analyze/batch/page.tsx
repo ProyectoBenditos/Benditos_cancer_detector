@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { BlindPendingBadge } from "@/components/ui/BlindPendingBadge";
+import { useBlindReadingPreference } from "@/lib/useBlindReadingPreference";
 import { Modal } from "@/components/ui/Modal";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
@@ -156,6 +158,9 @@ const batchStatusColor = (status: string) => {
 
 export default function BatchUploadPage() {
   const [supabase] = useState(() => createClient());
+  // Lectura ciega: null mientras carga (no se muestra el resultado); con true, cada
+  // ítem completado muestra "Pendiente de lectura" en lugar del score y el riesgo.
+  const blindReading = useBlindReadingPreference();
 
   // ── State ───────────────────────────────────────────
   const [files, setFiles] = useState<File[]>([]);
@@ -858,12 +863,13 @@ export default function BatchUploadPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        {isCompleted && item.ai_score !== null && (
+                        {isCompleted && blindReading === true && <BlindPendingBadge />}
+                        {isCompleted && blindReading === false && item.ai_score !== null && (
                           <span className="text-sm font-bold text-slate-700">
                             {(item.ai_score * 100).toFixed(1)}%
                           </span>
                         )}
-                        {isCompleted && (
+                        {isCompleted && blindReading === false && (
                           <RiskBadge level={item.ai_risk_level as RiskLevel | null} />
                         )}
                         {isCompleted && (

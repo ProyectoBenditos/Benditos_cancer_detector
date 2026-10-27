@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { NextRequest, NextResponse } from "next/server";
+import { isBlindPending, loadBlindContext, type BlindContext } from "@/lib/blindReading";
 
 export async function GET(req: NextRequest) {
     const supabase = await createClient();
@@ -30,8 +31,18 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: error?.message ?? "Error" }, { status: 500 });
     }
 
+    // Lectura ciega: el CSV no incluye los estudios pendientes. Si no se puede saber
+    // qué está revelado, no se genera el reporte (falla cerrado, texto fijo).
+    let blind: BlindContext;
+    try {
+        blind = await loadBlindContext(supabase, user.id);
+    } catch {
+        return NextResponse.json({ error: "No se pudo generar el reporte." }, { status: 500 });
+    }
+    const visibles = data.filter(u => !isBlindPending(blind, u.id));
+
     const headers = ["ID", "Archivo", "Referencia", "Modalidad", "Fecha Estudio", "Riesgo IA", "Score IA (%)", "Recomendación", "Modelo", "Estado", "Ingresado"];
-    const rows = data.map(u => [
+    const rows = visibles.map(u => [
         u.id,
         u.original_name,
         u.metadata_json?.case_ref ?? "",
