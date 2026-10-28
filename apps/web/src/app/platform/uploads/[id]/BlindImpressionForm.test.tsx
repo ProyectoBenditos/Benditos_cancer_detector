@@ -51,9 +51,11 @@ describe("BlindImpressionForm", () => {
         expect(notes).toHaveAttribute("maxLength", "4000");
     });
 
-    it("la etiqueta «(opcional)» no usa slate-400 (contraste insuficiente)", () => {
+    it("la etiqueta «(opcional)» usa text-slate-500 (contraste AA; slate-400 no alcanza)", () => {
         render(<BlindImpressionForm uploadId={UPLOAD_ID} saveStatus="idle" markersLoadFailed={false} />);
-        expect(screen.getByText("(opcional)").className).not.toContain("slate-400");
+        const className = screen.getByText("(opcional)").className;
+        expect(className).toContain("text-slate-500");
+        expect(className).not.toContain("slate-400");
     });
 
     it("al enviar deja la señal para llevar el foco al resultado tras la revelación", () => {

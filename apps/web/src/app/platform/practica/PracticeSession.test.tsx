@@ -111,12 +111,14 @@ describe("PracticeSession", () => {
     expect(screen.getByText(PRACTICE_SUPPORT_NOTICE)).toBeInTheDocument();
   });
 
-  it("con el mapa de calor apagado el carril del interruptor no usa slate-300", async () => {
+  it("con el mapa de calor apagado el carril del interruptor usa bg-slate-500 (contraste 3:1; slate-300 no alcanza)", async () => {
     await start();
     fireEvent.click(screen.getByRole("button", { name: "Ver resultado" }));
     const toggle = screen.getByRole("switch", { name: "Mostrar mapa de calor de la IA" });
     expect(toggle).toHaveAttribute("aria-checked", "false");
-    expect(toggle.firstElementChild?.className).not.toContain("bg-slate-300");
+    const className = toggle.firstElementChild?.className ?? "";
+    expect(className).toContain("bg-slate-500");
+    expect(className).not.toContain("bg-slate-300");
   });
 
   it("una marca sobre el nódulo cuenta como encontrada y se lista", async () => {

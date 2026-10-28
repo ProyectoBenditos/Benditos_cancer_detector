@@ -13,9 +13,11 @@ const IMPRESSION: InitialImpression = {
 };
 
 describe("InitialImpressionSummary", () => {
-    it("«Sin nota» no usa slate-400 (contraste insuficiente)", () => {
+    it("«Sin nota» usa text-slate-500 (contraste AA; slate-400 no alcanza)", () => {
         render(<InitialImpressionSummary impression={IMPRESSION} uploadId="u1" />);
-        expect(screen.getByText("Sin nota").className).not.toContain("slate-400");
+        const className = screen.getByText("Sin nota").className;
+        expect(className).toContain("text-slate-500");
+        expect(className).not.toContain("slate-400");
     });
 
     it("muestra la hora de registro en es-CO y en la zona de Bogotá aunque el servidor esté en UTC", () => {
