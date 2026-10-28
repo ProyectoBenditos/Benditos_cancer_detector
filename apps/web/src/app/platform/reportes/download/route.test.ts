@@ -5,6 +5,7 @@ const mocks = vi.hoisted(() => ({
   getUser: vi.fn(),
   loadBlindContext: vi.fn(),
   rows: [] as unknown[],
+  queryError: null as { message: string } | null,
 }));
 
 // Query builder fluido: soporta cadenas arbitrarias y es awaitable
@@ -16,9 +17,12 @@ function makeQuery() {
   });
   // thenable — permite `await query`
   self["then"] = (
-    resolve: (v: { data: unknown[]; error: null }) => void,
+    resolve: (v: { data: unknown[] | null; error: { message: string } | null }) => void,
     reject?: (e: unknown) => void
-  ) => Promise.resolve({ data: mocks.rows, error: null }).then(resolve, reject);
+  ) =>
+    Promise.resolve(
+      mocks.queryError ? { data: null, error: mocks.queryError } : { data: mocks.rows, error: null },
+    ).then(resolve, reject);
   return self;
 }
 
@@ -56,6 +60,7 @@ describe("GET /platform/reportes/download", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.rows = [];
+    mocks.queryError = null;
     mocks.loadBlindContext.mockResolvedValue({ enabled: false, pendingIds: new Set() });
   });
 
@@ -103,5 +108,17 @@ describe("GET /platform/reportes/download", () => {
     const body = await res.text();
     expect(body).not.toContain("pendiente-1");
     expect(body).not.toContain("detalle interno");
+  });
+
+  it("si la consulta falla responde con un texto fijo, sin el detalle de Supabase", async () => {
+    mocks.getUser.mockResolvedValueOnce({ data: { user: { id: "user-123" } } });
+    mocks.queryError = { message: 'relation "dicom_uploads" does not exist' };
+    const req = new NextRequest("http://localhost/platform/reportes/download");
+    const res = await GET(req);
+    expect(res.status).toBe(500);
+    const body = await res.text();
+    expect(body).not.toContain("dicom_uploads");
+    expect(body).not.toContain("does not exist");
+    expect(JSON.parse(body)).toEqual({ error: "No se pudo generar el reporte." });
   });
 });

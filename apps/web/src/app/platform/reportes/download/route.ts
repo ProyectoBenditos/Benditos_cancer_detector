@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
     const { data, error } = await query;
 
     if (error || !data) {
-        return NextResponse.json({ error: error?.message ?? "Error" }, { status: 500 });
+        // Texto fijo: el detalle de Supabase no sale al cliente.
+        return NextResponse.json({ error: "No se pudo generar el reporte." }, { status: 500 });
     }
 
     // Lectura ciega: el CSV no incluye los estudios pendientes. Si no se puede saber
