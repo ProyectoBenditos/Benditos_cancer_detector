@@ -45,9 +45,11 @@ export function BlindReadingToggle({ initial, available }: { initial: boolean; a
                     aria-checked={checked}
                     aria-labelledby={labelId}
                     aria-describedby={descId}
-                    disabled={!available || pending}
+                    // `disabled` haría perder el foco del teclado mientras guarda; el guard de toggle bloquea el reingreso.
+                    disabled={!available}
+                    aria-disabled={pending || undefined}
                     onClick={toggle}
-                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50 ${checked ? "bg-brand-primary" : "bg-slate-300"}`}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary disabled:cursor-not-allowed disabled:opacity-50 aria-disabled:cursor-progress ${checked ? "bg-brand-primary" : "bg-slate-300"}`}
                 >
                     <span
                         aria-hidden="true"

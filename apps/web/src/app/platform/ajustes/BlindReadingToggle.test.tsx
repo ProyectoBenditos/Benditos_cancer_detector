@@ -38,6 +38,26 @@ describe("BlindReadingToggle", () => {
         expect(sw).toHaveAttribute("aria-checked", "false");
     });
 
+    it("mientras guarda conserva el foco, marca aria-disabled y no admite un segundo cambio", async () => {
+        let finish: (value: { ok: true }) => void = () => {};
+        mocks.action.mockReturnValue(new Promise((resolve) => (finish = resolve)));
+        render(<BlindReadingToggle initial={false} available={true} />);
+        const sw = screen.getByRole("switch", { name: "Lectura ciega" });
+        sw.focus();
+        fireEvent.click(sw);
+
+        expect(sw).not.toBeDisabled();
+        expect(sw).toHaveAttribute("aria-disabled", "true");
+        expect(sw).toHaveFocus();
+        fireEvent.click(sw);
+        expect(mocks.action).toHaveBeenCalledTimes(1);
+        expect(sw).toHaveAttribute("aria-checked", "true");
+
+        finish({ ok: true });
+        await waitFor(() => expect(sw).not.toHaveAttribute("aria-disabled"));
+        expect(sw).toHaveFocus();
+    });
+
     it("con available=false está deshabilitado y explica por qué", () => {
         render(<BlindReadingToggle initial={false} available={false} />);
         expect(screen.getByRole("switch", { name: "Lectura ciega" })).toBeDisabled();
