@@ -20,6 +20,8 @@ import { HistologicalSubtypeCard, type SubtipoHistologicoData } from "@/componen
 import { asRiskLevel } from "@/components/ui/RiskBadge";
 import { extractLobarLocation } from "@/lib/uploadReview";
 import { isBlindPending, loadBlindContext } from "@/lib/blindReading";
+import type { InitialImpression } from "@/lib/initialImpression";
+import { reportConducta, reportLungRads } from "@/lib/reportCategory";
 
 type PageProps = {
   params: Promise<{ id: string }>;
@@ -58,6 +60,15 @@ export default async function InformeClinicoPage({ params }: PageProps) {
     .select("*")
     .eq("upload_id", id)
     .maybeSingle();
+
+  // Impresión inicial de la lectura ciega. Si la consulta falla (p. ej. migración
+  // aún no aplicada) se trata como "sin impresión".
+  const { data: impressionRow, error: impressionError } = await supabase
+    .from("upload_initial_impressions")
+    .select("lung_rads, conducta")
+    .eq("upload_id", id)
+    .maybeSingle<Pick<InitialImpression, "lung_rads" | "conducta">>();
+  const impression = impressionError ? null : impressionRow;
 
   // Extraer localización lobar y notas limpias de la revisión del especialista,
   // con fallback a la selección inicial registrada en el análisis del estudio
@@ -101,7 +112,9 @@ export default async function InformeClinicoPage({ params }: PageProps) {
   const subtipoData = (upload.metadata_json?.subtipo_histologico as SubtipoHistologicoData | undefined) ?? null;
   const features = (upload.clinical_features || {}) as ClinicalFeatures;
   const noduleSizeMm = review?.nodule_size_mm ? `${review.nodule_size_mm} mm` : null;
-  const lungRads = review?.lung_rads || (upload.ai_risk_level === "ALTO" ? "4B" : upload.ai_risk_level === "MEDIO" ? "3" : "2");
+  // La categoría y la conducta las asigna el especialista; nunca salen del riesgo de la IA.
+  const lungRads = reportLungRads(review, impression);
+  const conducta = reportConducta(review, impression);
 
   // Orientación patológica basada estrictamente en las variables numéricas reales
   const calcVal = Number(features.calcification ?? 0);
@@ -391,26 +404,28 @@ export default async function InformeClinicoPage({ params }: PageProps) {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                Categoría Lung-RADS Registrada
+                {lungRads.heading}
               </span>
-              <span className="text-lg font-black text-slate-900 block mt-0.5">
-                Categoría {lungRads}
+              <span
+                className={
+                  lungRads.source === "none"
+                    ? "text-sm font-semibold text-slate-900 block mt-1"
+                    : "text-lg font-black text-slate-900 block mt-0.5"
+                }
+              >
+                {lungRads.text}
               </span>
-              <span className="text-[11px] text-slate-500">
-                {upload.ai_risk_level === "ALTO"
-                  ? "Nódulo con características de sospecha (> 15% riesgo referencial)."
-                  : upload.ai_risk_level === "MEDIO"
-                  ? "Hallazgo indeterminado; requiere control o seguimiento."
-                  : "Hallazgo de baja probabilidad de malignidad."}
-              </span>
+              {lungRads.description && (
+                <span className="text-[11px] text-slate-500">{lungRads.description}</span>
+              )}
             </div>
 
             <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg">
               <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">
-                Conducta Registrada por el Especialista
+                {conducta.heading}
               </span>
               <span className="text-sm font-semibold text-slate-900 block mt-1">
-                {review?.conducta || "[ Pendiente de asignación por médico tratante ]"}
+                {conducta.text}
               </span>
               <span className="text-[11px] text-slate-500">
                 Prioridad asistencial sujeta a triaje médico institucional.
