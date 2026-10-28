@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isValidSeq, parseAnnotation, rowToMarker } from "./uploadAnnotations";
+import { isValidSeq, maxRowSeq, parseAnnotation, rowToMarker, type AnnotationRow } from "./uploadAnnotations";
 
 const OK = {
   uploadId: "6f1c2b3a-1d2e-4f50-8a9b-0c1d2e3f4a5b",
@@ -10,7 +10,12 @@ const OK = {
   aiAgreement: "ia_no_marco",
   note: "Borde liso",
   sizeMm: 8.46,
+  kind: "point",
+  x2: null,
+  y2: null,
 };
+
+const MEASURE = { ...OK, kind: "measure", x2: 0.5, y2: 0.25, sizeMm: 179.2 };
 
 describe("parseAnnotation", () => {
   it("acepta un marcador válido y lo pasa a columnas", () => {
@@ -22,6 +27,8 @@ describe("parseAnnotation", () => {
         kind: "point",
         x: 0.25,
         y: 0.75,
+        x2: null,
+        y2: null,
         finding_type: "solido",
         ai_agreement: "ia_no_marco",
         note: "Borde liso",
@@ -56,6 +63,39 @@ describe("parseAnnotation", () => {
   it("acepta tipo, opinión, tamaño y nota vacíos", () => {
     expect(parseAnnotation({ ...OK, findingType: null, aiAgreement: null, sizeMm: null, note: "" }).ok).toBe(true);
   });
+
+  it("acepta una medición con segundo punto y tamaño", () => {
+    expect(parseAnnotation(MEASURE)).toMatchObject({
+      ok: true,
+      values: { kind: "measure", x: 0.25, y: 0.75, x2: 0.5, y2: 0.25, size_mm: 179.2 },
+    });
+  });
+
+  it("rechaza mediciones y puntos incoherentes", () => {
+    const bads: Array<Record<string, unknown>> = [
+      { ...MEASURE, x2: null },
+      { ...MEASURE, y2: 1.5 },
+      { ...MEASURE, x2: "0.5" },
+      { ...MEASURE, sizeMm: null },
+      { ...OK, x2: 0.5 },
+      { ...OK, y2: 0.5 },
+      { ...OK, kind: "linea" },
+      { ...OK, kind: undefined },
+    ];
+    for (const bad of bads) expect(parseAnnotation(bad).ok, JSON.stringify(bad)).toBe(false);
+  });
+});
+
+describe("maxRowSeq", () => {
+  it("cuenta también las filas que rowToMarker descarta", () => {
+    const rows = [
+      { seq: 1, kind: "point", x: 0.5, y: 0.5, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "", size_mm: null },
+      { seq: 2, kind: "measure", x: 0, y: 0, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "nota", size_mm: "10" },
+    ];
+    expect(rowToMarker(rows[1])).toBeNull();
+    expect(maxRowSeq(rows)).toBe(2);
+    expect(maxRowSeq([])).toBe(0);
+  });
 });
 
 describe("isValidSeq", () => {
@@ -71,12 +111,15 @@ describe("isValidSeq", () => {
 describe("rowToMarker", () => {
   it("convierte la fila (size_mm puede venir como texto)", () => {
     expect(
-      rowToMarker({ seq: 3, x: 0.5, y: 0.5, finding_type: "otro", ai_agreement: null, note: null, size_mm: "12.0" })
+      rowToMarker({ seq: 3, kind: "point", x: 0.5, y: 0.5, x2: null, y2: null, finding_type: "otro", ai_agreement: null, note: null, size_mm: "12.0" })
     ).toEqual({
       id: "m3",
       seq: 3,
+      kind: "point",
       x: 0.5,
       y: 0.5,
+      x2: null,
+      y2: null,
       findingType: "otro",
       aiAgreement: null,
       note: "",
@@ -84,15 +127,32 @@ describe("rowToMarker", () => {
     });
   });
 
+  it("convierte una medición guardada", () => {
+    expect(
+      rowToMarker({ seq: 2, kind: "measure", x: 0, y: 0, x2: 0.5, y2: 0, finding_type: null, ai_agreement: null, note: "", size_mm: "179.2" })
+    ).toMatchObject({ kind: "measure", x2: 0.5, y2: 0, sizeMm: 179.2 });
+  });
+
+  it("descarta una medición sin segundo punto válido", () => {
+    const row = { seq: 2, kind: "measure", x: 0, y: 0, finding_type: null, ai_agreement: null, note: "", size_mm: "10" };
+    expect(rowToMarker({ ...row, x2: null, y2: 0 })).toBeNull();
+    expect(rowToMarker({ ...row, x2: 0.5, y2: 1.5 })).toBeNull();
+  });
+
+  it("una fila sin kind es un punto", () => {
+    const row = { seq: 1, x: 0.5, y: 0.5, finding_type: null, ai_agreement: null, note: "", size_mm: null } as unknown as AnnotationRow;
+    expect(rowToMarker(row)).toMatchObject({ kind: "point", x2: null, y2: null });
+  });
+
   it("descarta filas corruptas y limpia valores desconocidos", () => {
     expect(
-      rowToMarker({ seq: 0, x: 0.5, y: 0.5, finding_type: null, ai_agreement: null, note: "", size_mm: null })
+      rowToMarker({ seq: 0, kind: "point", x: 0.5, y: 0.5, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "", size_mm: null })
     ).toBeNull();
     expect(
-      rowToMarker({ seq: 1, x: 2, y: 0.5, finding_type: null, ai_agreement: null, note: "", size_mm: null })
+      rowToMarker({ seq: 1, kind: "point", x: 2, y: 0.5, x2: null, y2: null, finding_type: null, ai_agreement: null, note: "", size_mm: null })
     ).toBeNull();
     expect(
-      rowToMarker({ seq: 1, x: 0.5, y: 0.5, finding_type: "raro", ai_agreement: "raro", note: "", size_mm: null })
+      rowToMarker({ seq: 1, kind: "point", x: 0.5, y: 0.5, x2: null, y2: null, finding_type: "raro", ai_agreement: "raro", note: "", size_mm: null })
     ).toMatchObject({ findingType: null, aiAgreement: null });
   });
 });

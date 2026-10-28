@@ -22,8 +22,43 @@ describe("markersReducer", () => {
       findingType: null,
       aiAgreement: null,
       sizeMm: null,
+      kind: "point",
+      x2: null,
+      y2: null,
     });
     expect(s.selectedId).toBe("m1");
+  });
+
+  it("addMeasure crea una medición numerada con dos puntos acotados", () => {
+    const s = markersReducer(add(MARKERS_INITIAL), { type: "addMeasure", x: -0.1, y: 0.5, x2: 1.2, y2: 0.5, sizeMm: 179.2 });
+    expect(s.markers[1]).toMatchObject({ id: "m2", seq: 2, kind: "measure", x: 0, y: 0.5, x2: 1, y2: 0.5, sizeMm: 179.2 });
+    expect(s.selectedId).toBe("m2");
+    expect(s.nextSeq).toBe(3);
+  });
+
+  it("addMeasure con tamaño inválido no crea nada", () => {
+    for (const bad of [0, -1, 301, Number.NaN]) {
+      expect(markersReducer(MARKERS_INITIAL, { type: "addMeasure", x: 0, y: 0, x2: 0.5, y2: 0, sizeMm: bad })).toBe(
+        MARKERS_INITIAL
+      );
+    }
+  });
+
+  it("move traslada los dos puntos de una medición sin salir de la imagen", () => {
+    let s = markersReducer(MARKERS_INITIAL, { type: "addMeasure", x: 0.8, y: 0.5, x2: 0.9, y2: 0.6, sizeMm: 10 });
+    // Se pide llevar el primer punto a x = 0.95: el segundo tocaría 1.05, así que el desplazamiento se acota a 0.1.
+    s = markersReducer(s, { type: "move", id: "m1", x: 0.95, y: 0.4 });
+    const m = s.markers[0];
+    expect(m.x).toBeCloseTo(0.9);
+    expect(m.x2).toBeCloseTo(1);
+    expect(m.y).toBeCloseTo(0.4);
+    expect(m.y2).toBeCloseTo(0.5);
+  });
+
+  it("update no cambia el tamaño derivado de una medición", () => {
+    let s = markersReducer(MARKERS_INITIAL, { type: "addMeasure", x: 0, y: 0, x2: 0.5, y2: 0, sizeMm: 179.2 });
+    s = markersReducer(s, { type: "update", id: "m1", patch: { sizeMm: 5, note: "borde" } });
+    expect(s.markers[0]).toMatchObject({ sizeMm: 179.2, note: "borde" });
   });
 
   it("no reutiliza números al borrar", () => {
@@ -89,6 +124,12 @@ describe("markersStateFrom", () => {
   it("sin marcadores empieza en 1", () => {
     expect(markersStateFrom([])).toEqual(MARKERS_INITIAL);
   });
+
+  it("no reutiliza el número de una fila guardada que no se pudo mostrar", () => {
+    const m1 = add(MARKERS_INITIAL).markers[0];
+    expect(markersStateFrom([m1], 2).nextSeq).toBe(3);
+    expect(markersStateFrom([m1], 0).nextSeq).toBe(2);
+  });
 });
 
 describe("etiquetas", () => {
@@ -113,5 +154,11 @@ describe("etiquetas", () => {
   it("nota corta sin puntos suspensivos", () => {
     const m = { ...add(MARKERS_INITIAL).markers[0], findingType: "otro" as const, note: "Revisar" };
     expect(markerAriaLabel(m)).toBe("Marcador 1: otro, Revisar");
+  });
+
+  it("medición: número, mm y nota", () => {
+    const s = markersReducer(MARKERS_INITIAL, { type: "addMeasure", x: 0, y: 0, x2: 0.5, y2: 0, sizeMm: 179.2 });
+    expect(markerAriaLabel(s.markers[0])).toBe("Medición 1: 179,2 mm");
+    expect(markerAriaLabel({ ...s.markers[0], note: "Eje largo" })).toBe("Medición 1: 179,2 mm, Eje largo");
   });
 });

@@ -10,7 +10,7 @@ type PointerHandler = (e: React.PointerEvent<HTMLDivElement>) => void;
 /**
  * Reparte los gestos del puntero sobre el lienzo según la herramienta activa.
  * - pan: arrastrar desplaza (delegado en usePanZoom).
- * - marker: un clic llama a onClickAt; un arrastre desplaza.
+ * - marker y measure: un clic llama a onClickAt; un arrastre desplaza.
  * - adjust: arrastre horizontal = contraste, vertical = brillo; doble clic restablece.
  * La rueda (registrada en `ref`) hace zoom con cualquier herramienta.
  */
@@ -52,7 +52,7 @@ export function useToolPointer(opts: {
       return;
     }
     pan.onPointerUp(e);
-    if (tool === "marker" && s && isClick(e.clientX - s.x, e.clientY - s.y)) {
+    if ((tool === "marker" || tool === "measure") && s && isClick(e.clientX - s.x, e.clientY - s.y)) {
       const el = e.currentTarget;
       const rect = el.getBoundingClientRect();
       onClickAt({ x: e.clientX - rect.left, y: e.clientY - rect.top }, { w: el.clientWidth, h: el.clientHeight });

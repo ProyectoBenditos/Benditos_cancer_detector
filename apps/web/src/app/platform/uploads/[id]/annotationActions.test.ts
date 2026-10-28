@@ -49,6 +49,9 @@ const OK: AnnotationInput = {
     aiAgreement: null,
     note: "Borde liso",
     sizeMm: null,
+    kind: "point",
+    x2: null,
+    y2: null,
 };
 
 describe("saveAnnotationAction", () => {

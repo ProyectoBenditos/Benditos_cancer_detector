@@ -13,6 +13,9 @@ const mk = (seq: number, over: Partial<Marker> = {}): Marker => ({
   aiAgreement: null,
   note: "",
   sizeMm: null,
+  kind: "point",
+  x2: null,
+  y2: null,
   ...over,
 });
 
@@ -43,6 +46,12 @@ describe("diffMarkers", () => {
 
   it("sin cambios no hay nada que hacer", () => {
     expect(diffMarkers([mk(1)], [mk(1)])).toEqual({ upserts: [], removals: [] });
+  });
+
+  it("mover el segundo punto de una medición es un cambio que se guarda", () => {
+    const measure = mk(1, { kind: "measure", x2: 0.7, y2: 0.5, sizeMm: 10 });
+    expect(diffMarkers([measure], [{ ...measure, x2: 0.8 }]).upserts).toHaveLength(1);
+    expect(diffMarkers([measure], [{ ...measure, y2: 0.6 }]).upserts).toHaveLength(1);
   });
 });
 

@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "cases": [
+    {
+      "id": "caso-01",
+      "image": "caso-01.png",
+      "heatmap": "caso-01-heatmap.png",
+      "pixel_spacing": [
+        0.728516,
+        0.728516
+      ],
+      "rows": 512,
+      "columns": 512,
+      "reference": [
+        {
+          "x": 0.6124,
+          "y": 0.6587,
+          "diameter_mm": 7.8,
+          "readers": 4
+        }
+      ],
+      "ai": {
+        "score": 0.7221,
+        "risk_level": "ALTO",
+        "model_version": "multimodal-v1.2"
+      }
+    },
+    {
+      "id": "caso-02",
+      "image": "caso-02.png",
+      "heatmap": "caso-02-heatmap.png",
+      "pixel_spacing": [
+        0.859375,
+        0.859375
+      ],
+      "rows": 512,
+      "columns": 512,
+      "reference": [
+        {
+          "x": 0.6979,
+          "y": 0.5504,
+          "diameter_mm": 10.4,
+          "readers": 4
+        }
+      ],
+      "ai": {
+        "score": 0.9966,
+        "risk_level": "ALTO",
+        "model_version": "multimodal-v1.2"
+      }
+    },
+    {
+      "id": "caso-03",
+      "image": "caso-03.png",
+      "heatmap": "caso-03-heatmap.png",
+      "pixel_spacing": [
+        0.703125,
+        0.703125
+      ],
+      "rows": 512,
+      "columns": 512,
+      "reference": [
+        {
+          "x": 0.2051,
+          "y": 0.4358,
+          "diameter_mm": 12.5,
+          "readers": 4
+        }
+      ],
+      "ai": {
+        "score": 0.9996,
+        "risk_level": "ALTO",
+        "model_version": "multimodal-v1.2"
+      }
+    },
+    {
+      "id": "caso-04",
+      "image": "caso-04.png",
+      "heatmap": "caso-04-heatmap.png",
+      "pixel_spacing": [
+        0.78125,
+        0.78125
+      ],
+      "rows": 512,
+      "columns": 512,
+      "reference": [
+        {
+          "x": 0.3661,
+          "y": 0.6499,
+          "diameter_mm": 10.5,
+          "readers": 3
+        }
+      ],
+      "ai": {
+        "score": 0.9969,
+        "risk_level": "ALTO",
+        "model_version": "multimodal-v1.2"
+      }
+    },
+    {
+      "id": "caso-05",
+      "image": "caso-05.png",
+      "heatmap": "caso-05-heatmap.png",
+      "pixel_spacing": [
+        0.78125,
+        0.78125
+      ],
+      "rows": 512,
+      "columns": 512,
+      "reference": [
+        {
+          "x": 0.7764,
+          "y": 0.4933,
+          "diameter_mm": 29.8,
+          "readers": 4
+        }
+      ],
+      "ai": {
+        "score": 0.9928,
+        "risk_level": "ALTO",
+        "model_version": "multimodal-v1.2"
+      }
+    }
+  ]
+}

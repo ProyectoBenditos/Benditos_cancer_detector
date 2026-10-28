@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { redirect } from "next/navigation";
+import { loadBlindContext } from "@/lib/blindReading";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -16,10 +17,20 @@ export default async function ReportesPage() {
         .from("dicom_uploads")
         .select("*", { count: "exact", head: true });
 
-    const { count: altosRiesgo } = await supabase
+    // Lectura ciega: los estudios pendientes no cuentan en ningún conteo por riesgo
+    // (falla cerrado si no se puede saber qué está revelado). Sin pendientes no se
+    // filtra: una lista `in ()` vacía no es válida en PostgREST.
+    const blind = await loadBlindContext(supabase, user.id);
+    const pendingFilter = blind.enabled && blind.pendingIds.size > 0
+        ? `(${[...blind.pendingIds].join(",")})`
+        : null;
+
+    let altosQuery = supabase
         .from("dicom_uploads")
         .select("*", { count: "exact", head: true })
         .eq("ai_risk_level", "ALTO");
+    if (pendingFilter) altosQuery = altosQuery.not("id", "in", pendingFilter);
+    const { count: altosRiesgo } = await altosQuery;
 
     const { count: analizados } = await supabase
         .from("dicom_uploads")

@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import { Printer, ArrowLeft, Copy, Check, ShieldCheck, Download } from "lucide-react";
+import { ArrowLeft, Copy, Check, Download } from "lucide-react";
 
 interface Props {
   uploadId: string;

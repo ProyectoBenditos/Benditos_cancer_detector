@@ -6,6 +6,8 @@ import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { BlindPendingBadge } from "@/components/ui/BlindPendingBadge";
+import { loadBlindContext, maskBlindPending } from "@/lib/blindReading";
 import { deletePatientAction } from "../actions";
 
 export default async function PacienteDetailPage({
@@ -26,12 +28,16 @@ export default async function PacienteDetailPage({
 
   if (!patient) notFound();
 
-  const { data: uploads } = await supabase
+  const { data: rows } = await supabase
     .from("dicom_uploads")
     .select("id, original_name, modality, study_date, ai_risk_level, upload_status, created_at")
     .eq("patient_id", patient.id)
     .eq("user_id", user!.id)
     .order("created_at", { ascending: false });
+
+  // Lectura ciega: el riesgo de los pendientes no sale del servidor (falla cerrado).
+  const blind = await loadBlindContext(supabase, user!.id);
+  const uploads = rows ? maskBlindPending(rows, blind) : null;
 
   return (
     <PageContainer>
@@ -90,7 +96,9 @@ export default async function PacienteDetailPage({
                       <td className="py-3 pr-4 text-slate-600">{u.modality ?? "—"}</td>
                       <td className="py-3 pr-4 text-slate-500">{u.study_date ?? "—"}</td>
                       <td className="py-3 pr-4">
-                        {u.ai_risk_level ? (
+                        {u.blind_pending ? (
+                          <BlindPendingBadge />
+                        ) : u.ai_risk_level ? (
                           <span className={`font-semibold text-xs ${
                             u.ai_risk_level === "ALTO" ? "text-brand-danger" :
                             u.ai_risk_level === "MEDIO" ? "text-amber-600" : "text-emerald-600"

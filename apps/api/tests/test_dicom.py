@@ -131,6 +131,15 @@ def test_dicom_upload_dcm_desidentifica_en_origen_y_persiste(client, auth_header
     assert uploaded_ds.StudyDate == "20261005"
     assert uploaded_ds.Modality == "CT"
 
+    audit_rows = [
+        c.args[0]
+        for c in supabase_mock.table().insert.call_args_list
+        if c.args and "tags_cleared_count" in c.args[0]
+    ]
+    assert audit_rows, "no se insertó la auditoría"
+    # El archivo queda en Storage: no se afirma retención cero.
+    assert audit_rows[0]["zero_retention_verified"] is False
+
 
 def test_dicom_upload_dcm_modalidad_no_ct_devuelve_400(client, auth_headers):
     """Subir un .dcm de resonancia (MR) o rayos X (XR) es rechazado."""

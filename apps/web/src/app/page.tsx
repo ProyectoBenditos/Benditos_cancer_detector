@@ -14,6 +14,7 @@ import {
   User,
   ExternalLink,
   Eye,
+  Box,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/Card";
 import { HeroDemoViewer } from "@/components/landing/HeroDemoViewer";
@@ -115,7 +116,7 @@ export default function LandingPage() {
               <strong>Aviso Clínico:</strong> Esta solución es una herramienta de apoyo analítico e investigativo. No constituye un diagnóstico médico definitivo y no reemplaza el juicio clínico del especialista.
             </p>
 
-            <div className="flex flex-wrap items-center justify-center gap-4 mb-14">
+            <div className="flex flex-wrap items-center justify-center gap-4 mb-3">
               <Link
                 href="/login"
                 className="flex items-center px-6 py-3 bg-brand-danger hover:bg-brand-danger-hover text-white font-semibold text-sm rounded-xl shadow-xs transition active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-danger focus-visible:ring-offset-2"
@@ -128,7 +129,17 @@ export default function LandingPage() {
               >
                 Conoce más
               </a>
+              <Link
+                href="/demo/pulmon-3d"
+                className="flex items-center px-6 py-3 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-sm rounded-xl border border-slate-300 shadow-2xs transition"
+              >
+                <Box className="mr-2 w-4 h-4" aria-hidden="true" />
+                Ver demostración 3D
+              </Link>
             </div>
+            <p className="text-xs text-slate-500 mb-14">
+              Demostración con una TC pública; no procesa estudios de pacientes.
+            </p>
 
             {/* Visor Clínico Interactivo con Grad-CAM */}
             <div className="w-full max-w-xl">

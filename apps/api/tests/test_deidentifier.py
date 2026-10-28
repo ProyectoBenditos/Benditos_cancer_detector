@@ -146,7 +146,8 @@ class TestDeidentifier(unittest.TestCase):
         self.assertEqual(len(audit["source_sha256"]), 64)
         self.assertEqual(len(audit["sanitized_sha256"]), 64)
         self.assertNotEqual(audit["source_sha256"], audit["sanitized_sha256"])
-        self.assertTrue(audit["zero_retention_verified"])
+        # El archivo desidentificado queda en Storage: no hay retención cero (Capa 4).
+        self.assertIs(audit["zero_retention_verified"], False)
         self.assertIn("Ley 1581 de 2012 (Habeas Data Clínico)", audit["normative_compliance"])
 
 

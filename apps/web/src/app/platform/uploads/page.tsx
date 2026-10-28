@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/utils/supabase/server";
+import { loadBlindContext, maskBlindPending } from "@/lib/blindReading";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -11,9 +13,21 @@ type PageProps = {
     searchParams: Promise<{ q?: string }>;
 };
 
+// La tabla es un Client Component: sus props viajan al navegador. De metadata_json
+// solo pasan las claves que lee; el resto (salida de la IA, email de quien subió) no sale.
+function tableMetadata(meta: UploadRecord["metadata_json"]): UploadRecord["metadata_json"] {
+    if (!meta) return null;
+    const out: NonNullable<UploadRecord["metadata_json"]> = {};
+    if (meta.case_ref !== undefined) out.case_ref = meta.case_ref;
+    if (meta.batch_sequence !== undefined) out.batch_sequence = meta.batch_sequence;
+    return out;
+}
+
 export default async function UploadsPage({ searchParams }: PageProps) {
     const { q } = await searchParams;
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
 
     let query = supabase
         .from("dicom_uploads")
@@ -32,7 +46,11 @@ export default async function UploadsPage({ searchParams }: PageProps) {
     }
 
     const { data: uploads, error } = await query;
-    const filtered = (uploads as unknown as UploadRecord[]) || [];
+    // Lectura ciega: el riesgo y el score de los pendientes no salen del servidor.
+    // Si no se puede saber qué está revelado, loadBlindContext lanza (falla cerrado).
+    const blind = await loadBlindContext(supabase, user.id);
+    const filtered: UploadRecord[] = maskBlindPending((uploads as unknown as UploadRecord[]) || [], blind)
+        .map((row) => ({ ...row, metadata_json: tableMetadata(row.metadata_json) }));
 
     return (
         <PageContainer>

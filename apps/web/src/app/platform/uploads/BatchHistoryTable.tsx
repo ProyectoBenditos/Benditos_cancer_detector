@@ -5,6 +5,7 @@ import Link from "next/link";
 import { TableWrapper, TableHead, TableBody, TableRow, TableHeaderCell, TableCell } from "@/components/ui/Table";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { BlindPendingBadge } from "@/components/ui/BlindPendingBadge";
 import { ChevronDown, ChevronRight, Layers } from "lucide-react";
 
 export type UploadRecord = {
@@ -24,6 +25,8 @@ export type UploadRecord = {
     batch_sequence?: number;
     [key: string]: unknown;
   } | null;
+  /** Lectura ciega: el servidor ya quitó la IA; la fila no la muestra aunque llegue. */
+  blind_pending?: boolean;
 };
 
 type GroupedBatch = {
@@ -33,6 +36,8 @@ type GroupedBatch = {
   items: UploadRecord[];
   highest_risk: RiskLevel | null;
   avg_score: number | null;
+  /** Sin riesgo revelado y con imágenes pendientes de lectura ciega. */
+  all_blind_pending: boolean;
   status: string;
 };
 
@@ -51,6 +56,7 @@ function getHighestRisk(items: UploadRecord[]): RiskLevel | null {
   let maxWeight = 0;
 
   for (const item of items) {
+    if (item.blind_pending) continue;
     if (item.ai_risk_level && RISK_WEIGHT[item.ai_risk_level]) {
       const w = RISK_WEIGHT[item.ai_risk_level];
       if (w > maxWeight) {
@@ -94,7 +100,11 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
         processedBatchIds.add(upload.batch_id);
         const batchItems = batchMap.get(upload.batch_id)!;
         const highestRisk = getHighestRisk(batchItems);
-        const scores = batchItems.map((i) => i.ai_score).filter((s): s is number => s !== null);
+        // Las imágenes pendientes de lectura ciega no cuentan en el riesgo ni en el promedio.
+        const scores = batchItems
+          .filter((i) => !i.blind_pending)
+          .map((i) => i.ai_score)
+          .filter((s): s is number => s !== null);
         const avgScore = scores.length > 0 ? scores.reduce((a, b) => a + b, 0) / scores.length : null;
 
         // Sequence number from metadata or 1
@@ -109,6 +119,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
             items: batchItems,
             highest_risk: highestRisk,
             avg_score: avgScore,
+            all_blind_pending: highestRisk === null && batchItems.some((i) => i.blind_pending),
             status: batchItems.every((i) => i.upload_status === "analyzed" || i.upload_status === "ai_completed")
               ? "analyzed"
               : batchItems.some((i) => i.upload_status === "processing")
@@ -186,10 +197,14 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                 <TableCell>{upload.modality ?? "N/D"}</TableCell>
                 <TableCell className="text-slate-500">{upload.study_date ?? "N/D"}</TableCell>
                 <TableCell>
-                  <RiskBadge level={upload.ai_risk_level as RiskLevel | null} />
+                  {upload.blind_pending ? (
+                    <BlindPendingBadge />
+                  ) : (
+                    <RiskBadge level={upload.ai_risk_level as RiskLevel | null} />
+                  )}
                 </TableCell>
                 <TableCell className="text-slate-700 font-medium">
-                  {upload.ai_score != null ? `${(upload.ai_score * 100).toFixed(1)}%` : <span className="text-slate-400 text-xs">—</span>}
+                  {!upload.blind_pending && upload.ai_score != null ? `${(upload.ai_score * 100).toFixed(1)}%` : <span className="text-slate-400 text-xs">—</span>}
                 </TableCell>
                 <TableCell>
                   <StatusBadge status={upload.upload_status} />
@@ -252,7 +267,7 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                   {group.items[0]?.study_date ?? "N/D"}
                 </TableCell>
                 <TableCell>
-                  <RiskBadge level={group.highest_risk} />
+                  {group.all_blind_pending ? <BlindPendingBadge /> : <RiskBadge level={group.highest_risk} />}
                 </TableCell>
                 <TableCell className="text-slate-700 font-medium">
                   {group.avg_score !== null ? (
@@ -308,12 +323,18 @@ export function BatchHistoryTable({ uploads }: { uploads: UploadRecord[] }) {
                                 )}
                               </div>
                               <div className="flex items-center gap-4">
-                                {subItem.ai_score !== null && (
-                                  <span className="font-bold text-slate-700">
-                                    {(subItem.ai_score * 100).toFixed(1)}%
-                                  </span>
+                                {subItem.blind_pending ? (
+                                  <BlindPendingBadge />
+                                ) : (
+                                  <>
+                                    {subItem.ai_score !== null && (
+                                      <span className="font-bold text-slate-700">
+                                        {(subItem.ai_score * 100).toFixed(1)}%
+                                      </span>
+                                    )}
+                                    <RiskBadge level={subItem.ai_risk_level as RiskLevel | null} />
+                                  </>
                                 )}
-                                <RiskBadge level={subItem.ai_risk_level as RiskLevel | null} />
                                 <StatusBadge status={subItem.upload_status} />
                                 <Link
                                   href={subDetailHref}

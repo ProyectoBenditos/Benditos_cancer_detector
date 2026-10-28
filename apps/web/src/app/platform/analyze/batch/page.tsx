@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/Card";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { AlertBanner } from "@/components/ui/AlertBanner";
 import { RiskBadge, type RiskLevel } from "@/components/ui/RiskBadge";
+import { BlindPendingBadge } from "@/components/ui/BlindPendingBadge";
+import { useBlindReadingPreference } from "@/lib/useBlindReadingPreference";
 import { Modal } from "@/components/ui/Modal";
 import { SourceLink } from "@/components/referencias/SourceLink";
 import { REFERENCES } from "@/lib/references";
@@ -155,7 +157,10 @@ const batchStatusColor = (status: string) => {
 };
 
 export default function BatchUploadPage() {
-  const supabase = createClient();
+  const [supabase] = useState(() => createClient());
+  // Lectura ciega: null mientras carga (no se muestra el resultado); con true, cada
+  // ítem completado muestra "Pendiente de lectura" en lugar del score y el riesgo.
+  const blindReading = useBlindReadingPreference();
 
   // ── State ───────────────────────────────────────────
   const [files, setFiles] = useState<File[]>([]);
@@ -179,7 +184,6 @@ export default function BatchUploadPage() {
   // Polling state
   const [batchId, setBatchId] = useState<string | null>(null);
   const [batchData, setBatchData] = useState<BatchResponse | null>(null);
-  const [polling, setPolling] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollStartRef = useRef<number>(0);
 
@@ -192,7 +196,7 @@ export default function BatchUploadPage() {
       .then(({ data }) => {
         if (data) setPatients(data);
       });
-  }, []);
+  }, [supabase]);
 
   // ── Efecto Paciente Creado ────────────────────────────
   useEffect(() => {
@@ -255,11 +259,10 @@ export default function BatchUploadPage() {
     } catch {
       // Silent retry
     }
-  }, []);
+  }, [supabase]);
 
   const startPolling = useCallback(
     (id: string) => {
-      setPolling(true);
       pollStartRef.current = Date.now();
       fetchBatchStatus(id);
 
@@ -276,7 +279,6 @@ export default function BatchUploadPage() {
   );
 
   const stopPolling = () => {
-    setPolling(false);
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
@@ -861,12 +863,13 @@ export default function BatchUploadPage() {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        {isCompleted && item.ai_score !== null && (
+                        {isCompleted && blindReading === true && <BlindPendingBadge />}
+                        {isCompleted && blindReading === false && item.ai_score !== null && (
                           <span className="text-sm font-bold text-slate-700">
                             {(item.ai_score * 100).toFixed(1)}%
                           </span>
                         )}
-                        {isCompleted && (
+                        {isCompleted && blindReading === false && (
                           <RiskBadge level={item.ai_risk_level as RiskLevel | null} />
                         )}
                         {isCompleted && (

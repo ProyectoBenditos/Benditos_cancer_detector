@@ -172,7 +172,7 @@ export function LungLobeDiagram({
 
       <div className="mt-2 text-center">
         <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-          <span className="w-2 h-2 rounded-full bg-rose-500 animate-ping inline-block" />
+          <span className="w-2 h-2 rounded-full bg-rose-500 motion-safe:animate-ping inline-block" />
           {lobeNames[activeLobe]}
         </span>
       </div>

@@ -1,5 +1,8 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
+import { EyeOff } from "lucide-react";
 import { createClient } from "@/utils/supabase/server";
+import { isBlindPending, loadBlindContext } from "@/lib/blindReading";
 import { PageContainer } from "@/components/ui/PageContainer";
 import { SectionHeader } from "@/components/ui/SectionHeader";
 import { Card, CardContent } from "@/components/ui/Card";
@@ -9,14 +12,20 @@ import { buttonVariants } from "@/components/ui/Button";
 
 export default async function AlertasPage() {
     const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) redirect("/login");
 
-    const { data: alertas, error } = await supabase
+    const { data: rows, error } = await supabase
         .from("dicom_uploads")
         .select("id, original_name, modality, ai_score, ai_risk_level, ai_recommendation, ai_processed_at, patient_id_dicom")
         .eq("ai_risk_level", "ALTO")
         .order("ai_processed_at", { ascending: false });
 
-    const total = alertas?.length ?? 0;
+    // Lectura ciega: un estudio pendiente no aparece en las alertas (falla cerrado si
+    // no se puede saber qué está revelado).
+    const blind = await loadBlindContext(supabase, user.id);
+    const alertas = (rows ?? []).filter((r) => !isBlindPending(blind, r.id));
+    const total = alertas.length;
 
     return (
         <PageContainer>
@@ -32,6 +41,14 @@ export default async function AlertasPage() {
                     </Link>
                 }
             />
+
+            {/* Nota fija con la lectura ciega activa, haya o no pendientes, para no revelar nada. */}
+            {blind.enabled && (
+                <p className="mb-6 flex items-center gap-2 text-sm text-slate-600">
+                    <EyeOff className="h-4 w-4 shrink-0 text-slate-500" aria-hidden="true" />
+                    Los estudios con lectura ciega pendiente aparecen aquí cuando registras tu impresión.
+                </p>
+            )}
 
             {total > 0 && (
                 <div className="mb-6">
@@ -81,7 +98,7 @@ export default async function AlertasPage() {
                         </tr>
                     </TableHead>
                     <TableBody>
-                        {alertas!.map((alerta) => (
+                        {alertas.map((alerta) => (
                             <TableRow key={alerta.id}>
                                 <TableCell className="font-bold text-slate-800 truncate max-w-[160px]" title={alerta.original_name}>
                                     {alerta.original_name}

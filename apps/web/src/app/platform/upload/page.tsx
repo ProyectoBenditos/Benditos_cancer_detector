@@ -17,6 +17,9 @@ import { deleteAnnotationAction, saveAnnotationAction } from "../uploads/[id]/ac
 import { createPatientInline, type PatientInlineState } from "../pacientes/actions";
 import { LOBAR_LOCATIONS } from "@/lib/uploadReview";
 import { uploadAccept, uploadFormatsLabel, validateUploadFile } from "@/lib/uploadFile";
+import { pixelGeometryFrom } from "@/lib/pixelGeometry";
+import { useBlindReadingPreference } from "@/lib/useBlindReadingPreference";
+import { EyeOff } from "lucide-react";
 
 type UploadResponse = {
     message: string;
@@ -28,6 +31,8 @@ type UploadResponse = {
     modality: string | null;
     study_date: string | null;
     patient_id_dicom: string | null;
+    /** PixelSpacing, rows y columns del DICOM (null en PNG/JPG): calibra Medir. */
+    volume_metadata?: unknown;
 };
 
 type AnalysisResult = {
@@ -81,9 +86,10 @@ const riskColor = (nivel: string) => {
 };
 
 export default function UploadDicomPage() {
-    const supabase = createClient();
+    const [supabase] = useState(() => createClient());
 
     const [file, setFile]               = useState<File | null>(null);
+    const [fileError, setFileError]     = useState<string | null>(null);
     const [caseRef, setCaseRef]         = useState("");
     const [patientId, setPatientId]     = useState("");
     const [patients, setPatients]       = useState<{ id: string; external_id: string; display_alias: string | null }[]>([]);
@@ -94,6 +100,8 @@ export default function UploadDicomPage() {
     const [features, setFeatures]       = useState<ClinicalFeatures>(DEFAULT_FEATURES);
     const [lobarLocation, setLobarLocation] = useState<string>("");
     const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
+    // Lectura ciega: null mientras carga. Solo con false se muestra el resultado aquí.
+    const blindReading = useBlindReadingPreference();
 
     const [modalOpen, setModalOpen]       = useState(false);
     const processedPatientId              = useRef<string | null>(null);
@@ -105,7 +113,7 @@ export default function UploadDicomPage() {
     useEffect(() => {
         supabase.from("patients").select("id, external_id, display_alias").order("created_at", { ascending: false })
             .then(({ data }) => { if (data) setPatients(data); });
-    }, []);
+    }, [supabase]);
 
     useEffect(() => {
         if (!modalState.patient) return;
@@ -148,9 +156,10 @@ export default function UploadDicomPage() {
             return;
         }
 
-        const fileError = validateUploadFile(file);
-        if (fileError) {
-            toast.error(fileError);
+        const invalidFile = validateUploadFile(file);
+        if (invalidFile) {
+            setFileError(invalidFile);
+            toast.error(invalidFile);
             return;
         }
 
@@ -260,6 +269,16 @@ export default function UploadDicomPage() {
         }
     };
 
+    const handleReset = () => {
+        setSuccessData(null);
+        setAnalysisResult(null);
+        setFeatures(DEFAULT_FEATURES);
+        setLobarLocation("");
+        setCaseRef("");
+        setPatientId("");
+        setErrorMsg("");
+    };
+
     return (
         <PageContainer maxWidth="4xl">
             <SectionHeader
@@ -337,15 +356,30 @@ export default function UploadDicomPage() {
 
                         {/* Archivo */}
                         <div>
-                            <label className="mb-2 block text-sm font-medium text-slate-700">
+                            <label htmlFor="upload-file" className="mb-2 block text-sm font-medium text-slate-700">
                                 Archivo DICOM o imagen
                             </label>
                             <input
+                                id="upload-file"
                                 type="file"
                                 accept={uploadAccept()}
-                                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                                aria-invalid={fileError ? true : undefined}
+                                aria-describedby={fileError ? "upload-file-error" : undefined}
+                                onChange={(e) => {
+                                    const chosen = e.target.files?.[0] ?? null;
+                                    setFile(chosen);
+                                    // El error queda bajo el input (WCAG 3.3.1); el toast solo avisa.
+                                    const invalid = chosen ? validateUploadFile(chosen) : null;
+                                    setFileError(invalid);
+                                    if (invalid) toast.error(invalid);
+                                }}
                                 className="block w-full rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-sm file:font-semibold file:bg-brand-primary/10 file:text-brand-primary hover:file:bg-brand-primary/20 transition-all font-medium focus:border-brand-primary focus:ring-1 focus:ring-brand-primary outline-none"
                             />
+                            {fileError && (
+                                <p id="upload-file-error" role="alert" className="mt-2 text-sm font-medium text-slate-800">
+                                    {fileError}
+                                </p>
+                            )}
                             <p className="text-xs text-slate-500 mt-2">
                                 {uploadFormatsLabel()}
                             </p>
@@ -498,8 +532,40 @@ export default function UploadDicomPage() {
                 </Card>
             )}
 
+            {/* PASO 3 con la preferencia aún cargando: no se muestra el resultado. */}
+            {analysisResult && blindReading === null && (
+                <p role="status" className="mt-6 text-sm text-slate-500">
+                    Cargando el resultado…
+                </p>
+            )}
+
+            {/* PASO 3 con lectura ciega: sin resultado, visor ni valoración; la lectura se hace en el estudio. */}
+            {analysisResult && blindReading === true && (
+                <Card className="mt-6">
+                    <CardContent className="p-8">
+                        <div className="flex items-start gap-3">
+                            <EyeOff className="mt-0.5 h-5 w-5 shrink-0 text-slate-500" aria-hidden="true" />
+                            <p className="text-sm text-slate-700">
+                                Análisis completado. Tienes la lectura ciega activa: abre el estudio para registrar tu impresión antes de ver la IA.
+                            </p>
+                        </div>
+                        <div className="mt-6 flex flex-col sm:flex-row gap-3">
+                            <Link
+                                href={`/platform/uploads/${analysisResult.dicom_id}`}
+                                className={buttonVariants({ variant: "primary", size: "md" })}
+                            >
+                                Abrir el estudio
+                            </Link>
+                            <Button onClick={handleReset} variant="secondary" size="md">
+                                Subir otro estudio
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            )}
+
             {/* PASO 3: Resultado */}
-            {analysisResult && (
+            {analysisResult && blindReading === false && (
                 <Card className="mt-6">
                     <CardContent className="p-8">
                         <h2 className="text-lg font-bold text-slate-800 mb-6">
@@ -542,6 +608,7 @@ export default function UploadDicomPage() {
                                     lobarLocation={lobarLocation || null}
                                     sourceSlice={analysisResult.source_slice ?? null}
                                     modelVersion={analysisResult.modelo_version}
+                                    pixelGeometry={pixelGeometryFrom(successData?.volume_metadata)}
                                     summary={{
                                         score: analysisResult.score,
                                         riskLevel: asRiskLevel(analysisResult.nivel_riesgo),
@@ -587,15 +654,7 @@ export default function UploadDicomPage() {
                                 Ver estudio en historial
                             </Link>
                             <Button
-                                onClick={() => {
-                                    setSuccessData(null);
-                                    setAnalysisResult(null);
-                                    setFeatures(DEFAULT_FEATURES);
-                                    setLobarLocation("");
-                                    setCaseRef("");
-                                    setPatientId("");
-                                    setErrorMsg("");
-                                }}
+                                onClick={handleReset}
                                 variant="secondary"
                                 size="md"
                             >
@@ -607,8 +666,9 @@ export default function UploadDicomPage() {
             )}
 
             {/* PASO 4: Valoración del especialista (la misma que en el historial).
-                key por estudio: "Subir otro estudio" arranca con el formulario limpio. */}
-            {analysisResult && (
+                key por estudio: "Subir otro estudio" arranca con el formulario limpio.
+                Con lectura ciega no se muestra: guardar una valoración revelaría la IA. */}
+            {analysisResult && blindReading === false && (
                 <div className="mt-6">
                     <ClinicalReviewForm
                         key={analysisResult.dicom_id}

@@ -12,9 +12,11 @@ import { isFormControlTarget, resolveViewerKey } from "./viewerKeys";
 import { useToolPointer } from "./useToolPointer";
 import { useFocusTrap } from "./useFocusTrap";
 import { MarkerLayer } from "./MarkerLayer";
-import { normalizedToStage, stageToNormalized, visibleCenter, type Size } from "./markerMath";
-import { markersReducer, markersStateFrom, type Marker } from "./markerState";
-import { useMarkerAutosave } from "./useMarkerAutosave";
+import { normalizedToStage, stageToNormalized, visibleCenter, type Point, type Size } from "./markerMath";
+import { MARKER_SIZE_MAX_MM, markersReducer, markersStateFrom, type Marker } from "./markerState";
+import { calibrationFor, formatMm, measureMm } from "./measureMath";
+import type { PixelGeometry } from "@/lib/pixelGeometry";
+import { useMarkerAutosave, type SaveStatus } from "./useMarkerAutosave";
 import type { AnnotationInput, AnnotationResult } from "@/lib/uploadAnnotations";
 import { MarkerPanel } from "./MarkerPanel";
 import type { RiskLevel } from "./RiskBadge";
@@ -39,10 +41,14 @@ export type ViewerSummary = {
 export type ViewerAnnotations = {
   uploadId: string;
   initial: Marker[];
+  /** Mayor seq guardado, incluidas filas que no se pudieron mostrar: nunca se reutiliza. */
+  reservedSeq?: number;
   /** La carga de los guardados falló: no se guarda nada para no sobrescribirlos. */
   loadFailed?: boolean;
   save: (input: AnnotationInput) => Promise<AnnotationResult>;
   remove: (uploadId: string, seq: number) => Promise<AnnotationResult>;
+  /** Avisa cada cambio del estado del guardado automático. */
+  onStatusChange?: (status: SaveStatus) => void;
 };
 
 type BeforeAfterViewerProps = {
@@ -50,9 +56,18 @@ type BeforeAfterViewerProps = {
   heatmapBase64: string | null;
   summary?: ViewerSummary;
   annotations?: ViewerAnnotations;
+  /** Geometría del DICOM (PixelSpacing, rows, columns). Sin ella, Medir queda deshabilitado. */
+  pixelGeometry?: PixelGeometry | null;
   initialMode?: ViewMode;
   initialSplit?: number;
   initialShowAi?: boolean;
+  /**
+   * Con motivo, el visor funciona sin IA (lectura ciega, modo práctica): solo
+   * la TAC, sin modos de comparación ni parpadeo, y el motivo a la vista.
+   */
+  aiHiddenReason?: string;
+  /** Recibe la lista de marcadores cada vez que cambia (también al montar). */
+  onMarkersChange?: (markers: Marker[]) => void;
 };
 
 const PAN_STEP = 40;
@@ -113,10 +128,16 @@ export function BeforeAfterViewer({
   heatmapBase64,
   summary,
   annotations,
+  pixelGeometry,
   initialMode = "curtain",
   initialSplit = 50,
   initialShowAi = true,
+  aiHiddenReason,
+  onMarkersChange,
 }: BeforeAfterViewerProps) {
+  // Sin IA el mapa de calor no se usa aunque llegue: ni se filtra ni se dibuja.
+  const aiHidden = Boolean(aiHiddenReason);
+  const heatmap = aiHidden ? null : heatmapBase64;
   const [mode, setMode] = useState<ViewMode>(initialMode);
   const [tool, setTool] = useState<ViewerTool>("pan");
   // Región aria-live: anuncia cambios que no se ven sin mirar la pantalla.
@@ -126,7 +147,8 @@ export function BeforeAfterViewer({
   // splitPosition representa el % de Detección IA revelado de izquierda a derecha (0% = TAC Original, 100% = IA pura)
   const [splitPosition, setSplitPosition] = useState(initialSplit);
   const [cleanNoise, setCleanNoise] = useState(true);
-  const [showAi, setShowAi] = useState(initialShowAi);
+  const [aiVisible, setAiVisible] = useState(initialShowAi);
+  const showAi = !aiHidden && aiVisible;
   const [filteredHeatmapUrl, setFilteredHeatmapUrl] = useState<string | null>(null);
   const [helpOpen, setHelpOpen] = useState(false);
   const closeHelp = useCallback(() => setHelpOpen(false), []);
@@ -161,10 +183,8 @@ export function BeforeAfterViewer({
 
   // Marcadores (solo en el navegador en la Fase B). El tamaño natural del PNG
   // hace falta para ubicar los pins sobre el rectángulo real de la imagen.
-  const [markersState, dispatchMarkers] = useReducer(
-    markersReducer,
-    annotations?.initial ?? [],
-    markersStateFrom
+  const [markersState, dispatchMarkers] = useReducer(markersReducer, annotations, (a) =>
+    markersStateFrom(a?.initial ?? [], a?.reservedSeq)
   );
 
   // Guardado automático. Si la carga de los guardados falló, no se guarda:
@@ -175,8 +195,8 @@ export function BeforeAfterViewer({
     enabled: persist !== null,
     save: async (m) => {
       if (!persist) return false;
-      const { seq, x, y, findingType, aiAgreement, note, sizeMm } = m;
-      const result = await persist.save({ uploadId: persist.uploadId, seq, x, y, findingType, aiAgreement, note, sizeMm });
+      const { seq, kind, x, y, x2, y2, findingType, aiAgreement, note, sizeMm } = m;
+      const result = await persist.save({ uploadId: persist.uploadId, seq, kind, x, y, x2, y2, findingType, aiAgreement, note, sizeMm });
       return result.ok;
     },
     remove: async (seq) => {
@@ -184,6 +204,21 @@ export function BeforeAfterViewer({
       return (await persist.remove(persist.uploadId, seq)).ok;
     },
   });
+
+  // Avisos al padre: las funciones viven en refs para no repetir el aviso en
+  // cada render cuando el padre las pasa en línea.
+  const onMarkersChangeRef = useRef(onMarkersChange);
+  const onStatusChangeRef = useRef(annotations?.onStatusChange);
+  useEffect(() => {
+    onMarkersChangeRef.current = onMarkersChange;
+    onStatusChangeRef.current = annotations?.onStatusChange;
+  });
+  useEffect(() => {
+    onMarkersChangeRef.current?.(markersState.markers);
+  }, [markersState.markers]);
+  useEffect(() => {
+    onStatusChangeRef.current?.(saveStatus);
+  }, [saveStatus]);
   const [natural, setNatural] = useState<Size>({ w: 1, h: 1 });
   const onCtLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
     const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
@@ -192,6 +227,39 @@ export function BeforeAfterViewer({
   const addMarkerAt = (n: { x: number; y: number }) => {
     setAnnouncement(`Marcador ${markersState.nextSeq} agregado`);
     dispatchMarkers({ type: "add", x: n.x, y: n.y });
+    setSheetOpen(true);
+  };
+
+  // Medir: solo con calibración real (PixelSpacing y la imagen a su tamaño original).
+  const calibration = calibrationFor(pixelGeometry ?? null, natural);
+  // Primer punto de la medición en curso; se descarta al cambiar de herramienta o con Esc.
+  const [measureStart, setMeasureStart] = useState<Point | null>(null);
+  // En pantalla completa nativa el navegador consume Esc y el visor no recibe la
+  // tecla: al terminar la pantalla completa se descarta igual el punto pendiente.
+  const [wasFullscreen, setWasFullscreen] = useState(isFullscreen);
+  if (wasFullscreen !== isFullscreen) {
+    setWasFullscreen(isFullscreen);
+    if (!isFullscreen && measureStart) setMeasureStart(null);
+  }
+  const placeMeasurePoint = (n: Point) => {
+    if (!calibration) return;
+    if (!measureStart) {
+      setMeasureStart(n);
+      setAnnouncement("Primer punto de la medición fijado. Elige el segundo punto.");
+      return;
+    }
+    const sizeMm = measureMm(measureStart, n, natural, calibration);
+    if (sizeMm <= 0 || sizeMm > MARKER_SIZE_MAX_MM) {
+      setAnnouncement(
+        sizeMm <= 0
+          ? "Los dos puntos coinciden. Elige otro segundo punto."
+          : `La medición supera ${MARKER_SIZE_MAX_MM} mm. Elige otro segundo punto.`
+      );
+      return;
+    }
+    setAnnouncement(`Medición ${markersState.nextSeq}: ${formatMm(sizeMm)}`);
+    dispatchMarkers({ type: "addMeasure", x: measureStart.x, y: measureStart.y, x2: n.x, y2: n.y, sizeMm });
+    setMeasureStart(null);
     setSheetOpen(true);
   };
   const centerOnMarker = (m: Marker) => {
@@ -215,6 +283,7 @@ export function BeforeAfterViewer({
       natural={natural}
       scale={scale}
       focusable={focusable}
+      measureStart={tool === "measure" ? measureStart : null}
       onSelect={(id) => {
         dispatchMarkers({ type: "select", id });
         setSheetOpen(true);
@@ -232,10 +301,12 @@ export function BeforeAfterViewer({
     pan: panHandlers,
     adjust,
     onAdjust: setAdjust,
-    // Un clic en una franja negra (fuera de la imagen) no crea marcador.
+    // Un clic en una franja negra (fuera de la imagen) no crea marcador ni punto.
     onClickAt: (p, stage) => {
       const n = stageToNormalized(p, getTransform(), stage, natural);
-      if (n) addMarkerAt(n);
+      if (!n) return;
+      if (tool === "measure") placeMeasurePoint(n);
+      else addMarkerAt(n);
     },
   });
 
@@ -247,7 +318,7 @@ export function BeforeAfterViewer({
   const cursorClass =
     tool === "adjust"
       ? "cursor-ns-resize"
-      : tool === "marker"
+      : tool === "marker" || tool === "measure"
         ? "cursor-crosshair"
         : canPan
           ? "cursor-grab active:cursor-grabbing"
@@ -292,12 +363,12 @@ export function BeforeAfterViewer({
 
   // Filtrado inteligente automático: atenúa el ruido difuso de esquinas para resaltar el foco principal
   useEffect(() => {
-    if (!heatmapBase64 || !cleanNoise) return;
+    if (!heatmap || !cleanNoise) return;
 
     let active = true;
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `data:image/png;base64,${heatmapBase64}`;
+    img.src = `data:image/png;base64,${heatmap}`;
 
     img.onload = () => {
       if (!active) return;
@@ -334,27 +405,43 @@ export function BeforeAfterViewer({
     return () => {
       active = false;
     };
-  }, [heatmapBase64, cleanNoise]);
+  }, [heatmap, cleanNoise]);
 
   const rawHeatmapSrc = useMemo(
-    () => (heatmapBase64 ? `data:image/png;base64,${heatmapBase64}` : null),
-    [heatmapBase64]
+    () => (heatmap ? `data:image/png;base64,${heatmap}` : null),
+    [heatmap]
   );
 
-  const activeHeatmapSrc = cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
+  const activeHeatmapSrc = heatmap && cleanNoise && filteredHeatmapUrl ? filteredHeatmapUrl : rawHeatmapSrc;
 
   const toggleAi = () => {
+    // Sin IA el botón está deshabilitado: solo se anuncia el motivo.
+    if (aiHiddenReason) {
+      setAnnouncement(aiHiddenReason);
+      return;
+    }
     const next = !showAi;
-    setShowAi(next);
+    setAiVisible(next);
     setAnnouncement(next ? "IA visible" : "IA oculta");
   };
 
-  // Medir queda desactivado: sin PixelSpacing no hay mm reales que mostrar.
+  // Los modos comparan con la IA: sin ella quedan deshabilitados, como Medir sin calibración.
+  const selectMode = (m: ViewMode) => {
+    if (aiHiddenReason) {
+      setAnnouncement(aiHiddenReason);
+      return;
+    }
+    setMode(m);
+  };
+
+  // Sin calibración Medir queda desactivado: no hay mm reales que mostrar.
   const selectTool = (t: ViewerTool) => {
-    if (t === "measure") {
+    if (t === "measure" && !calibration) {
       setAnnouncement(MEASURE_UNAVAILABLE);
       return;
     }
+    // Cambiar de herramienta descarta una medición a medias (nunca se guarda media).
+    if (t !== tool) setMeasureStart(null);
     setTool(t);
     setAnnouncement(`Herramienta: ${TOOL_LABELS[t]}`);
   };
@@ -383,11 +470,18 @@ export function BeforeAfterViewer({
         toggleFullscreen();
         break;
       case "exitFullscreen":
+        // Con una medición a medias, Esc primero descarta el punto.
+        if (measureStart) {
+          setMeasureStart(null);
+          setAnnouncement("Medición descartada");
+          break;
+        }
         exitFullscreen();
         break;
       case "toggleAi":
         e.preventDefault();
-        toggleAi();
+        // Sin IA, Espacio no hace nada (ni siquiera anuncia).
+        if (!aiHidden) toggleAi();
         break;
       case "toolPan":
         selectTool("pan");
@@ -402,9 +496,13 @@ export function BeforeAfterViewer({
         selectTool("measure");
         break;
       case "addMarker":
-        if (tool !== "marker") break;
-        e.preventDefault();
-        addMarkerAt(visibleCenter(getTransform(), getStageSize(), natural));
+        if (tool === "marker") {
+          e.preventDefault();
+          addMarkerAt(visibleCenter(getTransform(), getStageSize(), natural));
+        } else if (tool === "measure") {
+          e.preventDefault();
+          placeMeasurePoint(visibleCenter(getTransform(), getStageSize(), natural));
+        }
         break;
       case "openHelp":
         e.preventDefault();
@@ -462,6 +560,18 @@ export function BeforeAfterViewer({
         ctx.textBaseline = "middle";
         ctx.font = "bold 13px sans-serif";
         for (const p of exportPinPositions(markersState.markers, S)) {
+          if (p.x2 !== undefined && p.y2 !== undefined) {
+            // Línea de medición con halo blanco, debajo del pin.
+            ctx.lineCap = "round";
+            for (const [width, color] of [[5, "#ffffff"], [3, "#012641"]] as const) {
+              ctx.beginPath();
+              ctx.moveTo(p.x, p.y);
+              ctx.lineTo(p.x2, p.y2);
+              ctx.lineWidth = width;
+              ctx.strokeStyle = color;
+              ctx.stroke();
+            }
+          }
           ctx.beginPath();
           ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
           ctx.fillStyle = "#012641";
@@ -537,7 +647,7 @@ export function BeforeAfterViewer({
         <div
           ref={containerRef}
           role="group"
-          aria-label="Visor de tomografía y mapa de calor Grad-CAM"
+          aria-label={aiHidden ? "Visor de tomografía" : "Visor de tomografía y mapa de calor Grad-CAM"}
           tabIndex={0}
           onKeyDown={onKeyDown}
           className={`rounded-xl focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-primary viewer-full:flex viewer-full:h-dvh viewer-full:flex-col viewer-full:overflow-y-auto viewer-full:bg-slate-950 viewer-full:p-4 viewer-full:text-slate-100 viewer-full:focus-visible:outline-sky-300 ${
@@ -552,11 +662,13 @@ export function BeforeAfterViewer({
           {/* Barra de herramientas superior */}
           <ViewerToolbar
             mode={mode}
-            onModeChange={setMode}
+            onModeChange={selectMode}
             tool={tool}
             onToolChange={selectTool}
+            measureAvailable={calibration !== null}
             showAi={showAi}
             onToggleAi={toggleAi}
+            aiHiddenReason={aiHiddenReason}
             isFullscreen={isFullscreen}
             onToggleFullscreen={toggleFullscreen}
             onZoomIn={zoomIn}
@@ -568,7 +680,31 @@ export function BeforeAfterViewer({
 
           {/* ── Visualizador Principal ── */}
           <div className="viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
-          {mode === "curtain" ? (
+          {aiHidden ? (
+            // Sin IA: solo la TAC, con las mismas herramientas y marcadores.
+            beforeUrl ? (
+              <Stage
+                handlers={stageHandlers}
+                cursorClass={cursorClass}
+                footer={stageFooter}
+                ariaLabel="Tomografía original"
+                layerStyle={layerStyle}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={beforeUrl}
+                  style={ctStyle}
+                  alt="Estudio tomográfico original"
+                  onLoad={onCtLoad}
+                  draggable={false}
+                  className="pointer-events-none absolute inset-0 h-full w-full object-contain"
+                />
+                {markerLayer(true)}
+              </Stage>
+            ) : (
+              <Placeholder message="Vista previa de la tomografía no disponible" />
+            )
+          ) : mode === "curtain" ? (
             beforeUrl ? (
               <div className="relative viewer-full:flex viewer-full:min-h-0 viewer-full:flex-1 viewer-full:flex-col">
                 <Stage
@@ -825,7 +961,14 @@ export function BeforeAfterViewer({
           )}
           </div>
 
-          {/* ── Opciones Sencillas Inferiores ── */}
+          {/* ── Opciones Sencillas Inferiores ──
+              Sin IA no hay mapa que enfocar ni parpadeo: en su lugar, el motivo. */}
+          {aiHidden ? (
+            <p className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-1.5 text-xs font-medium text-slate-600 viewer-full:border-slate-800 viewer-full:text-slate-300">
+              <EyeOff className="h-3.5 w-3.5 shrink-0 text-slate-500 viewer-full:text-slate-400" aria-hidden="true" />
+              {aiHiddenReason}
+            </p>
+          ) : (
           <div className="mt-4 pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs viewer-full:border-slate-800">
             {/* Switch simple para limpiar ruido de fondo */}
             <label className="inline-flex items-center gap-2 cursor-pointer select-none">
@@ -846,6 +989,7 @@ export function BeforeAfterViewer({
               <span>Con el visor enfocado, alterna entre TAC limpia e IA.</span>
             </span>
           </div>
+          )}
           </div>
 
           {/* ── Panel del caso (también en pantalla completa) ──
@@ -855,6 +999,7 @@ export function BeforeAfterViewer({
           <div className="lg:w-72 lg:shrink-0 viewer-full:min-h-0 lg:viewer-full:w-80 lg:viewer-full:overflow-y-auto max-lg:viewer-full:fixed max-lg:viewer-full:inset-x-0 max-lg:viewer-full:bottom-0 max-lg:viewer-full:z-40 max-lg:viewer-full:p-2">
             <MarkerPanel
               summary={summary}
+              aiHiddenReason={aiHiddenReason}
               markers={markersState.markers}
               selectedId={markersState.selectedId}
               dispatch={dispatchMarkers}

@@ -8,7 +8,7 @@ export type SaveStatus = "idle" | "saving" | "saved" | "error";
 /** Espera tras el último cambio de un marcador antes de guardarlo. */
 export const AUTOSAVE_DELAY_MS = 700;
 
-const PERSISTED_FIELDS = ["x", "y", "findingType", "aiAgreement", "note", "sizeMm"] as const;
+const PERSISTED_FIELDS = ["x", "y", "x2", "y2", "findingType", "aiAgreement", "note", "sizeMm"] as const;
 
 /** Por seq: marcadores nuevos o con algún campo guardable distinto → upserts; seq que ya no está → removals. */
 export function diffMarkers(prev: Marker[], next: Marker[]): { upserts: Marker[]; removals: number[] } {

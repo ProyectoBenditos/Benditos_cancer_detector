@@ -27,6 +27,20 @@ describe("AnonymizationCertificate", () => {
         expect(screen.getByText(/Ley 1581 de 2012/)).toBeInTheDocument();
     });
 
+    it("sin retención cero verificada no la afirma y dice dónde queda el archivo", () => {
+        render(<AnonymizationCertificate audit={{ zero_retention_verified: false }} />);
+
+        expect(screen.queryByText(/Zero Data Retention/)).toBeNull();
+        expect(screen.queryByText("Cómputo Efímero")).toBeNull();
+        expect(screen.getByText("Copia desidentificada en Storage privado")).toBeInTheDocument();
+    });
+
+    it("sin auditoría tampoco afirma retención cero", () => {
+        render(<AnonymizationCertificate audit={null} />);
+
+        expect(screen.queryByText(/Zero Data Retention/)).toBeNull();
+    });
+
     it("renderiza correctamente con valores por defecto cuando audit es null", () => {
         render(<AnonymizationCertificate audit={null} fallbackPatientId="ONC-PAT-FALLBACK" />);
 
