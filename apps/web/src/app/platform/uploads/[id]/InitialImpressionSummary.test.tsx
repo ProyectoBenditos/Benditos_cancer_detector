@@ -18,6 +18,25 @@ describe("InitialImpressionSummary", () => {
         expect(screen.getByText("Sin nota").className).not.toContain("slate-400");
     });
 
+    it("muestra la hora de registro en es-CO y en la zona de Bogotá aunque el servidor esté en UTC", () => {
+        const previousTz = process.env.TZ;
+        process.env.TZ = "UTC";
+        try {
+            // 02:30 UTC del 28 de octubre = 9:30 p. m. del 27 de octubre en Bogotá (UTC-5).
+            render(
+                <InitialImpressionSummary
+                    impression={{ ...IMPRESSION, revealed_at: "2026-10-28T02:30:00Z" }}
+                    uploadId="u1"
+                />,
+            );
+            const registrada = screen.getByText("Registrada").nextElementSibling?.textContent ?? "";
+            expect(registrada).toMatch(/^27\/10\/2026,\s9:30\sp\.\sm\.$/);
+        } finally {
+            if (previousTz === undefined) delete process.env.TZ;
+            else process.env.TZ = previousTz;
+        }
+    });
+
     it("trae la región de estado y su encabezado puede recibir el foco", () => {
         render(<InitialImpressionSummary impression={IMPRESSION} uploadId="u1" />);
         expect(screen.getByRole("status")).toBeInTheDocument();

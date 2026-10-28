@@ -66,7 +66,12 @@ export function InitialImpressionSummary({
                     <div className="flex flex-col gap-1">
                         <dt className="text-xs font-semibold uppercase tracking-wider text-slate-500">Registrada</dt>
                         <dd className="text-sm font-medium text-slate-800">
-                            {new Date(impression.revealed_at).toLocaleString()}
+                            {/* Se renderiza en el servidor (UTC): fija idioma y zona horaria. */}
+                            {new Date(impression.revealed_at).toLocaleString("es-CO", {
+                                timeZone: "America/Bogota",
+                                dateStyle: "medium",
+                                timeStyle: "short",
+                            })}
                         </dd>
                     </div>
                     <div className="flex flex-col gap-1 md:col-span-2">
